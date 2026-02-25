@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -17,8 +17,14 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: false
     }
+  })
+
+  // Grant microphone permission for audio recording
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    const allowed = ['media', 'mediaKeySystem']
+    callback(allowed.includes(permission))
   })
 
   mainWindow.on('ready-to-show', () => {
