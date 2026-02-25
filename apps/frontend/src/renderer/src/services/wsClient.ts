@@ -26,8 +26,8 @@ export class WSClient {
         resolve()
       }
 
-      this.ws.onerror = (error) => {
-        reject(error)
+      this.ws.onerror = () => {
+        reject(new Error(`WebSocket baglantisi kurulamadi: ${this.url}`))
       }
 
       this.ws.onmessage = (event) => {

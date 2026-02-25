@@ -11,6 +11,11 @@ export class AudioCapture {
     this.onChunk = onChunk
     this.onLevel = onLevel || null
 
+    // Check if getUserMedia is available
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error('Tarayici ses kayit API\'sini desteklemiyor (getUserMedia)')
+    }
+
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
@@ -29,14 +34,34 @@ export class AudioCapture {
       this.startLevelMonitoring()
     }
 
-    this.mediaRecorder = new MediaRecorder(this.stream, {
-      mimeType: 'audio/webm;codecs=opus',
+    // Find a supported MIME type for MediaRecorder
+    const mimeTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4',
+      '',  // empty = browser default
+    ]
+    const mimeType = mimeTypes.find((t) => {
+      if (t === '') return true
+      return MediaRecorder.isTypeSupported(t)
     })
+
+    const recorderOptions: MediaRecorderOptions = {}
+    if (mimeType) {
+      recorderOptions.mimeType = mimeType
+    }
+
+    this.mediaRecorder = new MediaRecorder(this.stream, recorderOptions)
 
     this.mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0 && this.onChunk) {
         this.onChunk(event.data)
       }
+    }
+
+    this.mediaRecorder.onerror = (event) => {
+      console.error('MediaRecorder error:', event)
     }
 
     this.mediaRecorder.start(250) // 250ms chunks

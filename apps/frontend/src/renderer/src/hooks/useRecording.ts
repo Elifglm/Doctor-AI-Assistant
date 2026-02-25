@@ -80,16 +80,22 @@ export function useRecording(sessionId: number | null) {
       timerRef.current = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
       }, 1000)
-    } catch (err) {
-      const message =
-        err instanceof DOMException && err.name === 'NotAllowedError'
-          ? 'Mikrofon erisimi reddedildi. Lutfen mikrofon iznini kontrol edin.'
-          : err instanceof DOMException && err.name === 'NotFoundError'
-            ? 'Mikrofon bulunamadi. Lutfen bir mikrofon baglayip tekrar deneyin.'
-            : err instanceof Error
-              ? err.message
-              : 'Kayit baslatilirken bilinmeyen bir hata olustu.'
+    } catch (err: unknown) {
       console.error('Recording start failed:', err)
+      let message: string
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        message = 'Mikrofon erisimi reddedildi. Lutfen mikrofon iznini kontrol edin.'
+      } else if (err instanceof DOMException && err.name === 'NotFoundError') {
+        message = 'Mikrofon bulunamadi. Lutfen bir mikrofon baglayip tekrar deneyin.'
+      } else if (err instanceof DOMException && err.name === 'NotSupportedError') {
+        message = 'Ses kayit formati desteklenmiyor.'
+      } else if (err instanceof Error) {
+        message = err.message
+      } else if (err && typeof err === 'object' && 'message' in err) {
+        message = String((err as { message: unknown }).message)
+      } else {
+        message = `Kayit baslatilirken beklenmeyen hata: ${String(err)}`
+      }
       setError(message)
       setRecordingState('idle')
       // Cleanup partial state
