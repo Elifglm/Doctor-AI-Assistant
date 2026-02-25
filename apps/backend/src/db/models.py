@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 
 from sqlalchemy import (
@@ -82,6 +83,13 @@ class TranscriptionSegment(Base):
 
     session = relationship("Session", back_populates="segments")
 
+    @property
+    def words(self) -> list | None:
+        """Parse words_json for Pydantic serialization."""
+        if self.words_json:
+            return json.loads(self.words_json)
+        return None
+
 
 class Report(Base):
     __tablename__ = "reports"
@@ -103,6 +111,13 @@ class Report(Base):
     )
 
     session = relationship("Session", back_populates="reports")
+
+    @property
+    def content(self) -> dict:
+        """Parse content_json for Pydantic serialization."""
+        if self.content_json:
+            return json.loads(self.content_json)
+        return {"sections": [], "approved_sections": 0, "total_sections": 12}
 
 
 class AuditLog(Base):
