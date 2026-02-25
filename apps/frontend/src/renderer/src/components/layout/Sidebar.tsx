@@ -1,4 +1,5 @@
-import { Link, useLocation } from 'react-router-dom'
+import { useCallback } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Mic,
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useUIStore } from '../../stores/uiStore'
 import { useAuthStore } from '../../stores/authStore'
+import { useSessionStore } from '../../stores/sessionStore'
 import { cn } from '../../lib/utils'
 
 const navItems = [
@@ -20,8 +22,26 @@ const navItems = [
 
 export function Sidebar(): React.JSX.Element {
   const location = useLocation()
+  const navigate = useNavigate()
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const logout = useAuthStore((s) => s.logout)
+  const recordingState = useSessionStore((s) => s.recordingState)
+
+  const handleNavClick = useCallback(
+    (e: React.MouseEvent, path: string) => {
+      if (recordingState !== 'idle') {
+        e.preventDefault()
+        const confirmed = window.confirm(
+          'Aktif bir kayit var. Sayfadan ayrilmak istediginize emin misiniz? Kayit durdurulacak.'
+        )
+        if (confirmed) {
+          useSessionStore.getState().reset()
+          navigate(path)
+        }
+      }
+    },
+    [recordingState, navigate]
+  )
 
   return (
     <aside
@@ -44,6 +64,7 @@ export function Sidebar(): React.JSX.Element {
             <Link
               key={item.path}
               to={item.path}
+              onClick={(e) => handleNavClick(e, item.path)}
               className={cn(
                 'flex items-center gap-3 px-4 py-3 text-sm transition-colors',
                 isActive

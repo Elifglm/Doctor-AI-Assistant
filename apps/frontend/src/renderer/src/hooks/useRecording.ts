@@ -14,10 +14,27 @@ export function useRecording(sessionId: number | null) {
   const { setRecordingState, setElapsedTime, setAudioLevel, recordingState } = useSessionStore()
   const { setProcessing, setSegments, reset: resetTranscription } = useTranscriptionStore()
 
+  // Shared cleanup - releases all recording resources
+  const cleanup = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    audioCapture.current?.stop()
+    audioCapture.current = null
+    wsClient.current?.close()
+    wsClient.current = null
+  }, [])
+
   const startRecording = useCallback(async () => {
     if (!sessionId) return
 
+    // Always clean up previous resources before starting
+    cleanup()
+
     setError(null)
+    setElapsedTime(0)
+    setAudioLevel(0)
     resetTranscription()
 
     try {
@@ -36,7 +53,6 @@ export function useRecording(sessionId: number | null) {
 
       wsClient.current.on('result', (data) => {
         const msg = data as WSResult
-        // Map to TranscriptionSegment format
         const segments = msg.segments.map((seg, i) => ({
           id: i,
           session_id: msg.session_id,
@@ -65,7 +81,6 @@ export function useRecording(sessionId: number | null) {
       audioCapture.current = new AudioCapture()
       await audioCapture.current.start(
         (chunk) => {
-          // Send binary audio chunk to WebSocket
           wsClient.current?.sendBinary(chunk)
         },
         (level) => {
@@ -75,7 +90,7 @@ export function useRecording(sessionId: number | null) {
 
       setRecordingState('recording')
 
-      // Start timer
+      // Start timer from zero
       const startTime = Date.now()
       timerRef.current = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
@@ -98,13 +113,9 @@ export function useRecording(sessionId: number | null) {
       }
       setError(message)
       setRecordingState('idle')
-      // Cleanup partial state
-      audioCapture.current?.stop()
-      audioCapture.current = null
-      wsClient.current?.close()
-      wsClient.current = null
+      cleanup()
     }
-  }, [sessionId, resetTranscription, setProcessing, setSegments, setRecordingState, setElapsedTime, setAudioLevel])
+  }, [sessionId, cleanup, resetTranscription, setProcessing, setSegments, setRecordingState, setElapsedTime, setAudioLevel])
 
   const pauseRecording = useCallback(() => {
     audioCapture.current?.pause()
@@ -134,14 +145,15 @@ export function useRecording(sessionId: number | null) {
     setAudioLevel(0)
   }, [setRecordingState, setAudioLevel])
 
-  // Cleanup on unmount
+  // Cleanup on unmount OR when sessionId changes
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-      audioCapture.current?.stop()
-      wsClient.current?.close()
+      cleanup()
+      setRecordingState('idle')
+      setElapsedTime(0)
+      setAudioLevel(0)
     }
-  }, [])
+  }, [sessionId, cleanup, setRecordingState, setElapsedTime, setAudioLevel])
 
   return {
     startRecording,

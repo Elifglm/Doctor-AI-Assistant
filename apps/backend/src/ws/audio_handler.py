@@ -74,6 +74,8 @@ class AudioHandler:
         """Convert accumulated audio and run ASR pipeline."""
         if not self._chunks:
             await self._send_error("Ses verisi alinamadi")
+            # Reset session status since no audio was recorded
+            await self._reset_session_status("NOT_STARTED")
             return
 
         await self._send_progress("Stage 0/4", "Ses dosyasi hazirlaniyor...", 0.0)
@@ -84,6 +86,7 @@ class AudioHandler:
         temp_webm = tempfile.NamedTemporaryFile(
             suffix=".webm", dir=str(RECORDINGS_DIR), delete=False
         )
+        wav_path: str | None = None
         try:
             for chunk in self._chunks:
                 temp_webm.write(chunk)
@@ -107,7 +110,6 @@ class AudioHandler:
 
             # Run ASR pipeline
             async def progress_cb(stage: str, message: str):
-                # Map stages to progress values
                 progress_map = {
                     "Stage 0/4": 0.0,
                     "Stage 1/4": 0.25,
@@ -136,13 +138,43 @@ class AudioHandler:
             # Send result
             await self._send_result(segments, asr_result)
 
+        except Exception as e:
+            logger.error("Processing failed for session %d: %s", self.session_id, str(e))
+            await self._send_error(f"Isleme hatasi: {str(e)[:200]}")
+            await self._reset_session_status("NOT_STARTED")
+            raise
         finally:
-            # Clean up temp webm (keep wav for records)
+            # Clean up temp files
             if self._temp_webm and os.path.exists(self._temp_webm):
                 try:
                     os.unlink(self._temp_webm)
                 except OSError:
                     pass
+            # Clean up WAV if processing failed (keep on success for records)
+            if wav_path and os.path.exists(wav_path):
+                # Only delete if session didn't reach AWAITING_REVIEW
+                try:
+                    result = await self.db.execute(
+                        select(SessionModel).where(SessionModel.id == self.session_id)
+                    )
+                    session = result.scalar_one_or_none()
+                    if session and session.status != "AWAITING_REVIEW":
+                        os.unlink(wav_path)
+                except Exception:
+                    pass
+
+    async def _reset_session_status(self, status: str) -> None:
+        """Reset session status (used on error/disconnect cleanup)."""
+        try:
+            result = await self.db.execute(
+                select(SessionModel).where(SessionModel.id == self.session_id)
+            )
+            session = result.scalar_one_or_none()
+            if session and session.status in ("RECORDING", "PROCESSING"):
+                session.status = status
+                await self.db.commit()
+        except Exception as e:
+            logger.error("Failed to reset session %d status: %s", self.session_id, str(e))
 
     async def _convert_to_wav(self, input_path: str, output_path: str) -> None:
         """Convert webm/opus to 16kHz mono WAV using FFmpeg."""

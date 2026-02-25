@@ -20,6 +20,7 @@ class ASRService:
     def __init__(self):
         self._pipeline = None
         self._lock = asyncio.Lock()
+        self._process_lock = asyncio.Lock()
         self._initialized = False
 
     async def initialize(self) -> None:
@@ -45,6 +46,8 @@ class ASRService:
         """
         Process audio through the full ASR pipeline in a separate thread.
 
+        Only one processing job can run at a time (GPU resource protection).
+
         Args:
             audio_path: Path to the WAV file.
             progress_callback: async callable(stage: str, message: str).
@@ -54,22 +57,32 @@ class ASRService:
         """
         await self.initialize()
 
-        loop = asyncio.get_event_loop()
+        if self._process_lock.locked():
+            raise RuntimeError(
+                "ASR pipeline mesgul. Baska bir kayit isleniyor, lutfen bekleyin."
+            )
 
-        def sync_progress_cb(stage: str, message: str):
-            if progress_callback:
-                asyncio.run_coroutine_threadsafe(
-                    progress_callback(stage, message), loop
-                )
+        async with self._process_lock:
+            loop = asyncio.get_event_loop()
 
-        result = await asyncio.to_thread(
-            self._pipeline.process, audio_path, sync_progress_cb
-        )
-        return result
+            def sync_progress_cb(stage: str, message: str):
+                if progress_callback:
+                    asyncio.run_coroutine_threadsafe(
+                        progress_callback(stage, message), loop
+                    )
+
+            result = await asyncio.to_thread(
+                self._pipeline.process, audio_path, sync_progress_cb
+            )
+            return result
 
     @property
     def is_ready(self) -> bool:
         return self._initialized
+
+    @property
+    def is_busy(self) -> bool:
+        return self._process_lock.locked()
 
 
 # Singleton instance

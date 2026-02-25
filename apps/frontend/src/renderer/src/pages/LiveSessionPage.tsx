@@ -10,16 +10,16 @@ export function LiveSessionPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const sessionId = id ? Number(id) : null
-  const hasStarted = useRef(false)
+  const lastStartedId = useRef<number | null>(null)
 
   const { startRecording, pauseRecording, resumeRecording, stopRecording, recordingState, error } =
     useRecording(sessionId)
   const { segments } = useTranscription()
 
-  // Auto-start recording on mount
+  // Auto-start recording when sessionId changes (handles both mount and session switch)
   useEffect(() => {
-    if (sessionId && !hasStarted.current) {
-      hasStarted.current = true
+    if (sessionId && lastStartedId.current !== sessionId) {
+      lastStartedId.current = sessionId
       startRecording().catch((err) => {
         console.error('Auto-start recording failed:', err)
       })

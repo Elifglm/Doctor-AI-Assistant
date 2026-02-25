@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { useSessionStore } from './sessionStore'
+import { useTranscriptionStore } from './transcriptionStore'
 
 interface UserInfo {
   username: string
@@ -22,7 +24,12 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       setAuth: (token, user) => set({ token, user, isAuthenticated: true }),
-      logout: () => set({ token: null, user: null, isAuthenticated: false }),
+      logout: () => {
+        // Clean up all stores on logout
+        useSessionStore.getState().reset()
+        useTranscriptionStore.getState().reset()
+        set({ token: null, user: null, isAuthenticated: false })
+      },
     }),
     { name: 'auth-storage' }
   )

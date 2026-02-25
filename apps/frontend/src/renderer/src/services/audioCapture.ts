@@ -8,6 +8,11 @@ export class AudioCapture {
   private animFrameId: number | null = null
 
   async start(onChunk: (data: Blob) => void, onLevel?: (level: number) => void): Promise<void> {
+    // Stop any existing recording first
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.stop()
+    }
+
     this.onChunk = onChunk
     this.onLevel = onLevel || null
 

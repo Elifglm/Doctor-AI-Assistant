@@ -110,6 +110,16 @@ async def audio_websocket(websocket: WebSocket, session_id: int):
                 await websocket.close()
                 return
 
+            # Prevent concurrent recording on the same session
+            if session.status == "RECORDING":
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Bu gorusme zaten kayit altinda",
+                    "code": "ALREADY_RECORDING",
+                })
+                await websocket.close()
+                return
+
             # Update session status to RECORDING
             session.status = "RECORDING"
             session.started_at = datetime.now(timezone.utc)
@@ -132,3 +142,24 @@ async def audio_websocket(websocket: WebSocket, session_id: int):
                 await websocket.close()
             except Exception:
                 pass
+        finally:
+            # Reset session status if still RECORDING (disconnected without stop)
+            try:
+                result = await db.execute(
+                    select(Session).where(Session.id == session_id)
+                )
+                session = result.scalar_one_or_none()
+                if session and session.status == "RECORDING":
+                    session.status = "NOT_STARTED"
+                    session.started_at = None
+                    await db.commit()
+                    logger.info(
+                        "Reset session %d status from RECORDING to NOT_STARTED (disconnect cleanup)",
+                        session_id,
+                    )
+            except Exception as cleanup_err:
+                logger.error(
+                    "Failed to reset session %d status: %s",
+                    session_id,
+                    str(cleanup_err),
+                )
