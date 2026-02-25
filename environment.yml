@@ -1,0 +1,28 @@
+name: asr
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - ffmpeg
+  - pip
+  - pip:
+      - torch
+      - torchaudio
+      - whisperx
+      - deepfilternet
+      - pyannote.audio
+      - python-dotenv
+      - pydantic
+      - pydantic-settings
+      - rich
+      - pytest
+      - gradio
+      - "numpy<2.0"
+      - fastapi>=0.115.0
+      - "uvicorn[standard]>=0.32.0"
+      - "python-jose[cryptography]>=3.3.0"
+      - "passlib[bcrypt]>=1.7.4"
+      - python-multipart>=0.0.12
+      - sqlalchemy>=2.0.0
+      - aiosqlite>=0.20.0

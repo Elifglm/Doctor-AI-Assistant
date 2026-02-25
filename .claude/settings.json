@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "grep -rn \"patient_name\\|tc_kimlik\\|TC Kimlik\" \"$FILE\" && echo \"WARNING: Potential PHI in code!\" || true"
+      }
+    ]
+  }
+}

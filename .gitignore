@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv/
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Models (large files)
+models/
+*.pt
+*.bin
+*.onnx
+
+# Output
+output/
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Audio temp files
+*_enhanced.wav
+test_audio/*.wav
+!test_audio/generate_test_audio.py
+
+# Conda
+*.conda
+
+# Node
+node_modules/
+apps/frontend/out/
+apps/frontend/build/
+apps/frontend/dist/
+
+# Electron
+apps/frontend/release/
+
+# Data (large/generated files)
+data/recordings/
+data/exports/
+data/asr.db
+
+# Temp
+*.tmp
+*.bak
