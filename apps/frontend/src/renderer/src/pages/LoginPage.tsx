@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/authStore'
 
 interface LoginResponse {
   access_token: string
+  expires_in: number
   user: {
     username: string
     display_name: string
@@ -32,13 +33,13 @@ export function LoginPage(): React.JSX.Element {
         username,
         password,
       })
-      setAuth(response.access_token, response.user)
+      setAuth(response.access_token, response.user, response.expires_in)
       navigate('/', { replace: true })
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message)
       } else {
-        setError('Giris sirasinda bir hata olustu')
+        setError('Giriş sırasında bir hata oluştu')
       }
     } finally {
       setLoading(false)
@@ -53,20 +54,20 @@ export function LoginPage(): React.JSX.Element {
             <Stethoscope className="h-7 w-7 text-blue-600" />
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Doctor AI Assistant</h1>
-          <p className="text-sm text-slate-500">Devam etmek icin giris yapin</p>
+          <p className="text-sm text-slate-500">Devam etmek için giriş yapın</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Kullanici Adi
+              Kullanıcı Adı
             </label>
             <input
               id="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Kullanici adi"
+              placeholder="Kullanıcı adı"
               required
               className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
@@ -74,14 +75,14 @@ export function LoginPage(): React.JSX.Element {
 
           <div>
             <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Sifre
+              Şifre
             </label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Sifre"
+              placeholder="Şifre"
               required
               className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
@@ -93,7 +94,7 @@ export function LoginPage(): React.JSX.Element {
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Giris Yap
+            Giriş Yap
           </button>
 
           {error && (

@@ -23,7 +23,7 @@ async def login(body: LoginRequest) -> TokenResponse:
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Geçersiz kullanıcı adı veya şifre",
         )
     token = create_access_token(
         {

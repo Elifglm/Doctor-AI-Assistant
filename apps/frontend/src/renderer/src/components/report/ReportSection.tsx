@@ -10,11 +10,11 @@ const statusConfig: Record<ReportSectionType['status'], { label: string; classNa
     className: 'bg-gray-100 text-gray-600',
   },
   edited: {
-    label: 'Duzenlendi',
+    label: 'Düzenlendi',
     className: 'bg-amber-50 text-amber-700',
   },
   approved: {
-    label: 'Onaylandi',
+    label: 'Onaylandı',
     className: 'bg-emerald-50 text-emerald-700',
   },
 }
@@ -86,7 +86,7 @@ export function ReportSectionCard({
             }}
             rows={3}
             className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            placeholder="Bu bolum icin icerik giriniz..."
+            placeholder="Bu bölüm için içerik giriniz..."
           />
           <div className="flex justify-end">
             {section.status === 'approved' ? (
@@ -96,7 +96,7 @@ export function ReportSectionCard({
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200 hover:bg-amber-50 transition-colors"
               >
                 <Pencil className="h-3.5 w-3.5" />
-                Duzenle
+                Düzenle
               </button>
             ) : (
               <button

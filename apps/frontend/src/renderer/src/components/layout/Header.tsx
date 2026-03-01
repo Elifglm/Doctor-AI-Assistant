@@ -21,7 +21,7 @@ export function Header(): React.JSX.Element {
         </button>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50">
           <User className="h-4 w-4 text-slate-500" />
-          <span className="text-sm text-slate-700">{user?.display_name || 'Kullanici'}</span>
+          <span className="text-sm text-slate-700">{user?.display_name || 'Kullanıcı'}</span>
         </div>
       </div>
     </header>

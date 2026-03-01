@@ -19,7 +19,12 @@ from apps.backend.src.schemas.transcription import (
     TranscriptionSegment as TranscriptionSegmentSchema,
 )
 from apps.backend.src.services.audit_service import AuditService
-from apps.backend.src.ws.audio_handler import AudioHandler
+from apps.backend.src.ws.audio_handler import (
+    AudioHandler,
+    is_session_connected,
+    register_connection,
+    unregister_connection,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +99,20 @@ async def audio_websocket(websocket: WebSocket, session_id: int):
     """
     await websocket.accept()
 
+    # ---- Concurrent-connection guard (in-memory) ----
+    if is_session_connected(session_id):
+        await websocket.send_json({
+            "type": "error",
+            "message": "Bu gorusme baska bir pencerede zaten aktif",
+            "code": "SESSION_ALREADY_CONNECTED",
+        })
+        await websocket.close()
+        return
+
+    # Register this connection *before* any async DB work so that a second
+    # connect attempt arriving in the meantime is rejected immediately.
+    register_connection(session_id, websocket)
+
     async with async_session_maker() as db:
         try:
             # Verify session exists
@@ -143,6 +162,9 @@ async def audio_websocket(websocket: WebSocket, session_id: int):
             except Exception:
                 pass
         finally:
+            # Always unregister the connection so the session can be used again
+            unregister_connection(session_id)
+
             # Reset session status if still RECORDING (disconnected without stop)
             try:
                 result = await db.execute(

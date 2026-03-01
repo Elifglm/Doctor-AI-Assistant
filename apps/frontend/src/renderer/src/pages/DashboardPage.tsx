@@ -39,14 +39,14 @@ export function DashboardPage(): React.JSX.Element {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Ana Sayfa</h1>
-          <p className="text-sm text-slate-500 mt-1">Gorusme yonetimi ve genel bakis</p>
+          <p className="text-sm text-slate-500 mt-1">Görüşme yönetimi ve genel bakış</p>
         </div>
         <button
           onClick={() => navigate('/session/new')}
           className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
         >
           <Plus className="h-4 w-4" />
-          Yeni Gorusme Baslat
+          Yeni Görüşme Başlat
         </button>
       </div>
 
@@ -57,13 +57,13 @@ export function DashboardPage(): React.JSX.Element {
       />
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-slate-800">Son Gorusmeler</h2>
+        <h2 className="mb-3 text-lg font-semibold text-slate-800">Son Görüşmeler</h2>
 
         {isLoading && (
           <div className="flex items-center justify-center rounded-xl bg-white p-12 shadow-sm ring-1 ring-slate-200/60">
             <div className="flex flex-col items-center gap-2">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-              <p className="text-sm text-slate-500">Gorusmeler yukleniyor...</p>
+              <p className="text-sm text-slate-500">Görüşmeler yükleniyor...</p>
             </div>
           </div>
         )}
@@ -72,19 +72,19 @@ export function DashboardPage(): React.JSX.Element {
           <div className="flex items-center gap-3 rounded-xl bg-red-50 p-4 ring-1 ring-red-200">
             <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
             <p className="text-sm text-red-700">
-              Gorusmeler yuklenirken hata olustu: {error instanceof Error ? error.message : 'Bilinmeyen hata'}
+              Görüşmeler yüklenirken hata oluştu: {error instanceof Error ? error.message : 'Bilinmeyen hata'}
             </p>
           </div>
         )}
 
         {!isLoading && !error && sessions.length === 0 && (
           <div className="flex flex-col items-center justify-center rounded-xl bg-white p-12 shadow-sm ring-1 ring-slate-200/60">
-            <p className="text-sm text-slate-500">Henuz gorusme bulunmuyor</p>
+            <p className="text-sm text-slate-500">Henüz görüşme bulunmuyor</p>
             <button
               onClick={() => navigate('/session/new')}
               className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700"
             >
-              Ilk gorusmenizi baslatin
+              İlk görüşmenizi başlatın
             </button>
           </div>
         )}

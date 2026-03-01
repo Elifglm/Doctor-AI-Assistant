@@ -1,10 +1,35 @@
 import { useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Info, AlertCircle, RotateCcw } from 'lucide-react'
+import { Info, AlertCircle, RotateCcw, Loader2 } from 'lucide-react'
 import { useRecording } from '../hooks/useRecording'
 import { useTranscription } from '../hooks/useTranscription'
+import { useSessionStore } from '../stores/sessionStore'
 import { RecordingControls } from '../components/session/RecordingControls'
 import { TranscriptView } from '../components/session/TranscriptView'
+
+const stageLabelMap: Record<string, string> = {
+  'Stage 0/6': 'Dosya doğrulanıyor...',
+  'Stage 1/6': 'Gürültü bastırma...',
+  'Stage 2/6': 'Transkripsiyon...',
+  'Stage 3/6': 'Konuşmacı ayrıştırma...',
+  'Stage 4/6': 'Tıbbi bilgi çıkarma (NER)...',
+  'Stage 5/6': 'Rapor oluşturma (LLM)...',
+  'Stage 6/6': 'Sonuçlar kaydediliyor...',
+  // Backward compat with old 5-stage format
+  'Stage 0/4': 'Dosya doğrulanıyor...',
+  'Stage 1/4': 'Gürültü bastırma...',
+  'Stage 2/4': 'Transkripsiyon...',
+  'Stage 3/4': 'Konuşmacı ayrıştırma...',
+  'Stage 4/4': 'Sonuçlar kaydediliyor...',
+}
+
+function getStageInfo(stage: string): { index: number; total: number } {
+  const match = stage.match(/Stage (\d+)\/(\d+)/)
+  if (match) {
+    return { index: parseInt(match[1], 10), total: parseInt(match[2], 10) + 1 }
+  }
+  return { index: 0, total: 7 }
+}
 
 export function LiveSessionPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>()
@@ -14,9 +39,11 @@ export function LiveSessionPage(): React.JSX.Element {
 
   const { startRecording, pauseRecording, resumeRecording, stopRecording, recordingState, error } =
     useRecording(sessionId)
-  const { segments } = useTranscription()
+  const { segments, processingStage, processingMessage, processingProgress, hasResults } =
+    useTranscription()
+  const recordingStateFromStore = useSessionStore((s) => s.recordingState)
 
-  // Auto-start recording when sessionId changes (handles both mount and session switch)
+  // Auto-start recording when sessionId changes (handles React StrictMode)
   useEffect(() => {
     if (sessionId && lastStartedId.current !== sessionId) {
       lastStartedId.current = sessionId
@@ -24,13 +51,26 @@ export function LiveSessionPage(): React.JSX.Element {
         console.error('Auto-start recording failed:', err)
       })
     }
+    return () => {
+      lastStartedId.current = null
+    }
   }, [sessionId, startRecording])
+
+  // Navigate to review when results are ready
+  useEffect(() => {
+    if (hasResults && sessionId && recordingStateFromStore === 'idle') {
+      const timeout = setTimeout(() => {
+        navigate(`/session/${sessionId}/review`)
+      }, 500)
+      return (): void => {
+        clearTimeout(timeout)
+      }
+    }
+    return undefined
+  }, [hasResults, sessionId, recordingStateFromStore, navigate])
 
   const handleStop = (): void => {
     stopRecording()
-    if (sessionId) {
-      navigate(`/session/${sessionId}/processing`)
-    }
   }
 
   const handleRetry = (): void => {
@@ -39,17 +79,26 @@ export function LiveSessionPage(): React.JSX.Element {
     })
   }
 
+  const isProcessing = recordingStateFromStore === 'processing'
+  const { index: stageIndex, total: totalStages } = getStageInfo(processingStage)
+  const displayProgress = Math.min(
+    processingProgress > 0 ? Math.round(processingProgress * 100) : Math.round((stageIndex / Math.max(totalStages - 1, 1)) * 100),
+    100
+  )
+
   return (
     <div className="flex h-full flex-col gap-4">
-      {/* Recording controls - always visible at top */}
-      <RecordingControls onPause={pauseRecording} onResume={resumeRecording} onStop={handleStop} />
+      {/* Recording controls - visible when recording */}
+      {!isProcessing && (
+        <RecordingControls onPause={pauseRecording} onResume={resumeRecording} onStop={handleStop} />
+      )}
 
       {/* Error banner */}
       {error && (
         <div className="flex items-center gap-3 rounded-lg bg-red-50 px-4 py-3 ring-1 ring-red-200/60">
           <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-red-800">Kayit baslatılamadı</p>
+            <p className="text-sm font-medium text-red-800">Kayıt başlatılamadı</p>
             <p className="text-sm text-red-600">{error}</p>
           </div>
           <button
@@ -63,19 +112,60 @@ export function LiveSessionPage(): React.JSX.Element {
       )}
 
       {/* Info banner while recording */}
-      {!error && (recordingState === 'recording' || recordingState === 'paused') && (
+      {!error && !isProcessing && (recordingState === 'recording' || recordingState === 'paused') && (
         <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 ring-1 ring-blue-200/60">
           <Info className="h-4 w-4 text-blue-600 shrink-0" />
           <p className="text-sm text-blue-700">
-            Kaydi durdurunca isleme baslanacak
+            Kaydı durdurunca işleme başlanacak
           </p>
         </div>
       )}
 
-      {/* Transcript view - scrollable, takes remaining space */}
-      <div className="flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60">
-        <TranscriptView segments={segments} />
-      </div>
+      {/* Processing overlay */}
+      {isProcessing && (
+        <div className="flex flex-col items-center justify-center gap-6 py-12">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+          <div className="text-center space-y-1">
+            <h2 className="text-lg font-bold text-slate-800">İşleniyor</h2>
+            <p className="text-sm font-medium text-slate-600">
+              {stageLabelMap[processingStage] || processingMessage || 'Hazırlanıyor...'}
+            </p>
+          </div>
+
+          {/* Stage indicators */}
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalStages }).map((_, i) => (
+              <div
+                key={i}
+                className={`h-2 w-10 rounded-full transition-colors duration-300 ${
+                  i <= stageIndex ? 'bg-blue-600' : 'bg-slate-200'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-xs text-slate-400">
+            Aşama {Math.min(stageIndex + 1, totalStages)}/{totalStages}
+          </p>
+
+          {/* Progress bar */}
+          <div className="w-full max-w-sm space-y-2">
+            <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-blue-600 transition-all duration-500 ease-out"
+                style={{ width: `${displayProgress}%` }}
+              />
+            </div>
+            <p className="text-sm font-medium text-slate-500 text-center">%{displayProgress}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Transcript view - visible when recording (not during processing) */}
+      {!isProcessing && (
+        <div className="flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60">
+          <TranscriptView segments={segments} />
+        </div>
+      )}
     </div>
   )
 }

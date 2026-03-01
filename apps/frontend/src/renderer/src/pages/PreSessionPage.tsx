@@ -6,9 +6,9 @@ import { useCreateSession } from '../hooks/useSession'
 import type { VisitType } from '../types/session'
 
 const visitTypeOptions: { value: VisitType; label: string }[] = [
-  { value: 'ilk_muayene', label: 'Ilk Muayene' },
+  { value: 'ilk_muayene', label: 'İlk Muayene' },
   { value: 'kontrol', label: 'Kontrol' },
-  { value: 'konsultasyon', label: 'Konsultasyon' },
+  { value: 'konsultasyon', label: 'Konsültasyon' },
   { value: 'acil', label: 'Acil' },
 ]
 
@@ -54,8 +54,8 @@ export function PreSessionPage(): React.JSX.Element {
             <Mic className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Yeni Gorusme Ayarlari</h1>
-            <p className="text-sm text-slate-500">Kayda baslamadan once bilgileri doldurun</p>
+            <h1 className="text-xl font-bold text-slate-800">Yeni Görüşme Ayarları</h1>
+            <p className="text-sm text-slate-500">Kayda başlamadan önce bilgileri doldurun</p>
           </div>
         </div>
 
@@ -69,7 +69,7 @@ export function PreSessionPage(): React.JSX.Element {
               type="text"
               value={patientId}
               onChange={(e) => setPatientId(e.target.value)}
-              placeholder="Hasta numarasi"
+              placeholder="Hasta numarası"
               className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
@@ -97,7 +97,7 @@ export function PreSessionPage(): React.JSX.Element {
               htmlFor="doctorName"
               className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              Doktor Adi
+              Doktor Adı
             </label>
             <input
               id="doctorName"
@@ -114,13 +114,13 @@ export function PreSessionPage(): React.JSX.Element {
               htmlFor="preDiagnosis"
               className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              On Tani
+              Ön Tanı
             </label>
             <textarea
               id="preDiagnosis"
               value={preDiagnosis}
               onChange={(e) => setPreDiagnosis(e.target.value)}
-              placeholder="On tani notu..."
+              placeholder="Ön tanı notu..."
               rows={3}
               className="w-full resize-none rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
@@ -149,7 +149,7 @@ export function PreSessionPage(): React.JSX.Element {
                 className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-sm text-slate-700 leading-relaxed">
-                Hasta KVKK aydinlatma metnini okumus ve ses kaydina onay vermistir
+                Hasta KVKK aydınlatma metnini okumuş ve ses kaydına onay vermiştir
               </span>
             </label>
           </div>
@@ -167,7 +167,7 @@ export function PreSessionPage(): React.JSX.Element {
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {createSession.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Kaydi Baslat
+            Kaydı Başlat
           </button>
         </form>
       </div>

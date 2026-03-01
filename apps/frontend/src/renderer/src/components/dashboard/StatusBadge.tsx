@@ -3,27 +3,27 @@ import type { SessionStatus } from '../../types/session'
 
 const statusConfig: Record<SessionStatus, { label: string; className: string }> = {
   NOT_STARTED: {
-    label: 'Baslamadi',
+    label: 'Başlamadı',
     className: 'bg-slate-100 text-slate-700 ring-slate-200',
   },
   RECORDING: {
-    label: 'Kayit Yapiliyor',
+    label: 'Kayıt Yapılıyor',
     className: 'bg-red-50 text-red-700 ring-red-200',
   },
   PROCESSING: {
-    label: 'Isleniyor',
+    label: 'İşleniyor',
     className: 'bg-amber-50 text-amber-700 ring-amber-200',
   },
   AWAITING_REVIEW: {
-    label: 'Inceleme Bekliyor',
+    label: 'İnceleme Bekliyor',
     className: 'bg-yellow-50 text-yellow-700 ring-yellow-200',
   },
   COMPLETED: {
-    label: 'Tamamlandi',
+    label: 'Tamamlandı',
     className: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   },
   ARCHIVED: {
-    label: 'Arsivlendi',
+    label: 'Arşivlendi',
     className: 'bg-gray-100 text-gray-600 ring-gray-200',
   },
 }

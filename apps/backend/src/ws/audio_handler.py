@@ -4,7 +4,9 @@ import asyncio
 import json
 import logging
 import os
+import subprocess
 import tempfile
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -29,6 +31,31 @@ FFMPEG_PATH = os.path.join(FFMPEG_DIR, "ffmpeg.exe")
 # Project data directory for recordings
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
 RECORDINGS_DIR = _PROJECT_ROOT / "data" / "recordings"
+
+# ---------------------------------------------------------------------------
+# In-memory registry of active WebSocket connections per session.
+# Maps session_id -> WebSocket.  Only one active connection is allowed per
+# session at any time to prevent race conditions in audio processing.
+# ---------------------------------------------------------------------------
+_active_connections: dict[int, WebSocket] = {}
+
+
+def is_session_connected(session_id: int) -> bool:
+    """Return True if *session_id* already has an active WebSocket."""
+    return session_id in _active_connections
+
+
+def register_connection(session_id: int, ws: WebSocket) -> None:
+    """Register *ws* as the active connection for *session_id*."""
+    _active_connections[session_id] = ws
+    logger.info("Registered active WS connection for session %d", session_id)
+
+
+def unregister_connection(session_id: int) -> None:
+    """Remove the active-connection entry for *session_id* (idempotent)."""
+    removed = _active_connections.pop(session_id, None)
+    if removed is not None:
+        logger.info("Unregistered active WS connection for session %d", session_id)
 
 
 class AudioHandler:
@@ -139,8 +166,10 @@ class AudioHandler:
             await self._send_result(segments, asr_result)
 
         except Exception as e:
-            logger.error("Processing failed for session %d: %s", self.session_id, str(e))
-            await self._send_error(f"Isleme hatasi: {str(e)[:200]}")
+            tb = traceback.format_exc()
+            logger.error("Processing failed for session %d: %s\n%s", self.session_id, repr(e), tb)
+            error_detail = repr(e) if not str(e) else str(e)
+            await self._send_error(f"Isleme hatasi: {error_detail[:200]}")
             await self._reset_session_status("NOT_STARTED")
             raise
         finally:
@@ -177,7 +206,12 @@ class AudioHandler:
             logger.error("Failed to reset session %d status: %s", self.session_id, str(e))
 
     async def _convert_to_wav(self, input_path: str, output_path: str) -> None:
-        """Convert webm/opus to 16kHz mono WAV using FFmpeg."""
+        """Convert webm/opus to 16kHz mono WAV using FFmpeg.
+
+        Uses subprocess.run in a thread instead of asyncio.create_subprocess_exec
+        because the latter raises NotImplementedError on Windows with uvicorn's
+        event loop policy.
+        """
         cmd = [
             FFMPEG_PATH,
             "-y",
@@ -188,15 +222,12 @@ class AudioHandler:
             output_path,
         ]
 
-        process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+        result = await asyncio.to_thread(
+            subprocess.run, cmd, capture_output=True, timeout=60
         )
-        _, stderr = await process.communicate()
 
-        if process.returncode != 0:
-            error_msg = stderr.decode("utf-8", errors="replace")
+        if result.returncode != 0:
+            error_msg = result.stderr.decode("utf-8", errors="replace")
             raise RuntimeError(f"FFmpeg donusumu basarisiz: {error_msg[:200]}")
 
     async def _save_segments(self, asr_result: dict[str, Any]) -> list[dict]:

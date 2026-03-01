@@ -39,7 +39,7 @@ export function RecordingControls({
             }`}
           />
           <span className="text-sm font-medium text-slate-700">
-            {isRecording ? 'Kayit yapiliyor' : isPaused ? 'Duraklatildi' : 'Bekleniyor'}
+            {isRecording ? 'Kayıt yapılıyor' : isPaused ? 'Duraklatıldı' : 'Bekleniyor'}
           </span>
         </div>
         <span className="font-mono text-lg font-semibold text-slate-800 tabular-nums">
@@ -73,7 +73,7 @@ export function RecordingControls({
           onClick={onStop}
           disabled={recordingState === 'idle'}
           className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-          title="Kaydi durdur"
+          title="Kaydı durdur"
         >
           <Square className="h-4 w-4" />
         </button>

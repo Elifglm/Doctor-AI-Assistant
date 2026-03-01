@@ -15,8 +15,8 @@ import { cn } from '../../lib/utils'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Ana Sayfa' },
-  { path: '/session/new', icon: Mic, label: 'Yeni Gorusme' },
-  { path: '/history', icon: History, label: 'Gecmis' },
+  { path: '/session/new', icon: Mic, label: 'Yeni Görüşme' },
+  { path: '/history', icon: History, label: 'Geçmiş' },
   { path: '/settings', icon: Settings, label: 'Ayarlar' },
 ]
 
@@ -32,7 +32,7 @@ export function Sidebar(): React.JSX.Element {
       if (recordingState !== 'idle') {
         e.preventDefault()
         const confirmed = window.confirm(
-          'Aktif bir kayit var. Sayfadan ayrilmak istediginize emin misiniz? Kayit durdurulacak.'
+          'Aktif bir kayıt var. Sayfadan ayrılmak istediğinize emin misiniz? Kayıt durdurulacak.'
         )
         if (confirmed) {
           useSessionStore.getState().reset()
@@ -80,11 +80,19 @@ export function Sidebar(): React.JSX.Element {
       </nav>
 
       <button
-        onClick={logout}
+        onClick={() => {
+          if (recordingState !== 'idle') {
+            const confirmed = window.confirm(
+              'Aktif bir kayıt var. Çıkış yapmak istediğinize emin misiniz? Kayıt durdurulacak.'
+            )
+            if (!confirmed) return
+          }
+          logout()
+        }}
         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-400 hover:text-white hover:bg-slate-700/50 border-t border-slate-700"
       >
         <LogOut className="h-5 w-5 shrink-0" />
-        {sidebarOpen && <span>Cikis Yap</span>}
+        {sidebarOpen && <span>Çıkış Yap</span>}
       </button>
     </aside>
   )

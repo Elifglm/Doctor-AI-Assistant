@@ -3,7 +3,7 @@ import type { ReportConfidence } from '../../types/report'
 
 const confidenceConfig: Record<ReportConfidence, { label: string; className: string }> = {
   high: {
-    label: 'Yuksek',
+    label: 'Yüksek',
     className: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   },
   medium: {
@@ -11,7 +11,7 @@ const confidenceConfig: Record<ReportConfidence, { label: string; className: str
     className: 'bg-amber-50 text-amber-700 ring-amber-200',
   },
   low: {
-    label: 'Dusuk',
+    label: 'Düşük',
     className: 'bg-gray-100 text-gray-600 ring-gray-200',
   },
 }

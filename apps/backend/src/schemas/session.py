@@ -5,19 +5,19 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from apps.backend.src.schemas.transcription import TranscriptionSegment
 from apps.backend.src.schemas.report import ReportResponse
 
 
 class CreateSessionRequest(BaseModel):
-    patient_id: str = ""
-    patient_name: str = ""
-    doctor_name: str
+    patient_id: str = Field(default="", max_length=100)
+    patient_name: str = Field(default="", max_length=200)
+    doctor_name: str = Field(max_length=200)
     visit_type: str = "ilk_muayene"
-    pre_diagnosis: str = ""
-    location: str = ""
+    pre_diagnosis: str = Field(default="", max_length=5000)
+    location: str = Field(default="", max_length=200)
     kvkk_consent: bool
 
 

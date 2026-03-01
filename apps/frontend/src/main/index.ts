@@ -17,11 +17,16 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     }
   })
 
-  // Grant microphone permission for audio recording
+  // S6: Microphone permission is auto-granted intentionally.
+  // This is a medical recording application where audio capture is a core feature.
+  // The doctor explicitly starts each recording via the UI, and KVKK patient consent
+  // is required before any session begins.  Blocking the browser-style permission
+  // dialog avoids confusing clinical users.  The renderer-side UI shows a visible
+  // microphone-active indicator whenever recording is in progress.
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
     const allowed = ['media', 'mediaKeySystem']
     callback(allowed.includes(permission))

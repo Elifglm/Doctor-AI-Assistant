@@ -3,9 +3,9 @@ import { StatusBadge } from './StatusBadge'
 import type { Session, VisitType } from '../../types/session'
 
 const visitTypeLabels: Record<VisitType, string> = {
-  ilk_muayene: 'Ilk Muayene',
+  ilk_muayene: 'İlk Muayene',
   kontrol: 'Kontrol',
-  konsultasyon: 'Konsultasyon',
+  konsultasyon: 'Konsültasyon',
   acil: 'Acil',
 }
 

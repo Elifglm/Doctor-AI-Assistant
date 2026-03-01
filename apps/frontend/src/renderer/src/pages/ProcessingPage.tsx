@@ -3,22 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useTranscription } from '../hooks/useTranscription'
 
-const stageLabels: Record<string, string> = {
-  validating: 'Dosya dogrulaniyor...',
-  noise_suppression: 'Gurultu bastirma...',
-  transcription: 'Transkripsiyon...',
-  diarization: 'Konusmaci ayristirma...',
-  saving: 'Sonuclar kaydediliyor...',
+const stageLabelMap: Record<string, string> = {
+  'Stage 0/4': 'Dosya doğrulanıyor...',
+  'Stage 1/4': 'Gürültü bastırma...',
+  'Stage 2/4': 'Transkripsiyon...',
+  'Stage 3/4': 'Konuşmacı ayrıştırma...',
+  'Stage 4/4': 'Sonuçlar kaydediliyor...',
 }
 
 function getStageIndex(stage: string): number {
-  const stageOrder = ['validating', 'noise_suppression', 'transcription', 'diarization', 'saving']
-  const idx = stageOrder.indexOf(stage)
+  const stages = ['Stage 0/4', 'Stage 1/4', 'Stage 2/4', 'Stage 3/4', 'Stage 4/4']
+  const idx = stages.indexOf(stage)
   return idx >= 0 ? idx : 0
-}
-
-function getStageLabel(stage: string): string {
-  return stageLabels[stage] || stage || 'Hazirlaniyor...'
 }
 
 export function ProcessingPage(): React.JSX.Element {
@@ -33,7 +29,7 @@ export function ProcessingPage(): React.JSX.Element {
     if (processingProgress >= 1.0 && hasResults && sessionId) {
       const timeout = setTimeout(() => {
         navigate(`/session/${sessionId}/review`)
-      }, 500) // Small delay for UX
+      }, 500)
       return (): void => {
         clearTimeout(timeout)
       }
@@ -43,28 +39,23 @@ export function ProcessingPage(): React.JSX.Element {
 
   const stageIndex = getStageIndex(processingStage)
   const totalStages = 5
-  const stageProgressPercent = Math.round((stageIndex / (totalStages - 1)) * 100)
-  // Use the finer progress from server if available, otherwise use stage-based progress
   const displayProgress =
-    processingProgress > 0 ? Math.round(processingProgress * 100) : stageProgressPercent
+    processingProgress > 0 ? Math.round(processingProgress * 100) : Math.round((stageIndex / (totalStages - 1)) * 100)
 
   return (
     <div className="flex h-full items-center justify-center">
       <div className="w-full max-w-md space-y-8 text-center">
-        {/* Spinner */}
         <div className="flex justify-center">
-          <div className="relative">
-            <Loader2 className="h-16 w-16 animate-spin text-blue-600" />
-          </div>
+          <Loader2 className="h-16 w-16 animate-spin text-blue-600" />
         </div>
 
-        {/* Stage title */}
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-slate-800">Isleniyor</h2>
-          <p className="text-base font-medium text-slate-600">{getStageLabel(processingStage)}</p>
+          <h2 className="text-xl font-bold text-slate-800">İşleniyor</h2>
+          <p className="text-base font-medium text-slate-600">
+            {stageLabelMap[processingStage] || processingMessage || 'Hazırlanıyor...'}
+          </p>
         </div>
 
-        {/* Stage indicators */}
         <div className="flex items-center justify-center gap-1">
           {Array.from({ length: totalStages }).map((_, i) => (
             <div
@@ -76,10 +67,9 @@ export function ProcessingPage(): React.JSX.Element {
           ))}
         </div>
         <p className="text-xs text-slate-400">
-          Asama {Math.min(stageIndex + 1, totalStages)}/{totalStages}
+          Aşama {Math.min(stageIndex + 1, totalStages)}/{totalStages}
         </p>
 
-        {/* Progress bar */}
         <div className="space-y-2">
           <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200">
             <div
@@ -90,7 +80,6 @@ export function ProcessingPage(): React.JSX.Element {
           <p className="text-sm font-medium text-slate-500">%{displayProgress}</p>
         </div>
 
-        {/* Processing message */}
         {processingMessage && (
           <p className="text-sm text-slate-400">{processingMessage}</p>
         )}

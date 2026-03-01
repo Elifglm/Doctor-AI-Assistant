@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sse_starlette.sse import EventSourceResponse
 
 from apps.backend.src.db.database import get_db
+from apps.backend.src.db.models import Report as ReportModel, TranscriptionSegment
 from apps.backend.src.dependencies import get_audit_service, get_current_user
 from apps.backend.src.schemas.auth import UserInfo
 from apps.backend.src.schemas.report import (
@@ -20,6 +23,8 @@ from apps.backend.src.schemas.report import (
 from apps.backend.src.services.audit_service import AuditService
 from apps.backend.src.services.report_service import ReportService
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
 
@@ -27,7 +32,7 @@ router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _to_response(report) -> ReportResponse:
+def _to_response(report: ReportModel) -> ReportResponse:
     """Convert an ORM Report to a ReportResponse, parsing content_json."""
     content = ReportContent.model_validate(
         json.loads(report.content_json) if report.content_json else {
@@ -60,7 +65,56 @@ async def generate_report(
 ) -> ReportResponse:
     """Generate a new report for a clinical session."""
     svc = ReportService(db)
-    report = await svc.generate(body.session_id, method=body.method)
+
+    if body.method == "ai_generated":
+        # Fetch transcript segments for the session
+        stmt = (
+            select(TranscriptionSegment)
+            .where(TranscriptionSegment.session_id == body.session_id)
+            .order_by(TranscriptionSegment.segment_index.asc())
+        )
+        result = await db.execute(stmt)
+        db_segments = list(result.scalars().all())
+
+        if not db_segments:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Bu oturum icin transkript bulunamadi. Once kayit yapilmalidir.",
+            )
+
+        segments_data = [
+            {
+                "text": seg.text,
+                "speaker": seg.speaker,
+                "speaker_label": seg.speaker_label,
+                "start_time": seg.start_time,
+                "end_time": seg.end_time,
+            }
+            for seg in db_segments
+        ]
+
+        # Run the AI pipeline
+        report_generator = getattr(request.app.state, "report_generator", None)
+        if report_generator is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="LLM pipeline hazir degil. Lutfen daha sonra tekrar deneyin.",
+            )
+
+        try:
+            content = await report_generator.generate_report(segments_data)
+        except Exception:
+            logger.exception("AI report generation failed")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Rapor olusturma sirasinda hata olustu.",
+            )
+
+        report = await svc.generate_with_content(
+            body.session_id, content, method="ai_generated"
+        )
+    else:
+        report = await svc.generate(body.session_id, method=body.method)
 
     await audit.log(
         action="CREATE",
@@ -170,18 +224,70 @@ async def get_report_versions(
 
 
 # ---------------------------------------------------------------------------
-# GET  /api/v1/reports/stream/{report_id}  -- SSE placeholder
+# GET  /api/v1/reports/stream/{session_id}  -- SSE streaming AI generation
 # ---------------------------------------------------------------------------
-@router.get("/stream/{report_id}")
-async def stream_report(report_id: int):
-    """SSE placeholder for future LLM report generation streaming."""
+@router.get("/stream/{session_id}")
+async def stream_report_generation(
+    session_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: UserInfo = Depends(get_current_user),
+    audit: AuditService = Depends(get_audit_service),
+):
+    """SSE endpoint for streaming AI report generation."""
+    report_generator = getattr(request.app.state, "report_generator", None)
+    if report_generator is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="LLM pipeline hazir degil.",
+        )
+
+    # Fetch transcript segments
+    stmt = (
+        select(TranscriptionSegment)
+        .where(TranscriptionSegment.session_id == session_id)
+        .order_by(TranscriptionSegment.segment_index.asc())
+    )
+    result = await db.execute(stmt)
+    db_segments = list(result.scalars().all())
+
+    if not db_segments:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bu oturum icin transkript bulunamadi.",
+        )
+
+    segments_data = [
+        {
+            "text": seg.text,
+            "speaker": seg.speaker,
+            "speaker_label": seg.speaker_label,
+            "start_time": seg.start_time,
+            "end_time": seg.end_time,
+        }
+        for seg in db_segments
+    ]
+
+    await audit.log(
+        action="CREATE",
+        resource_type="report_stream",
+        resource_id=str(session_id),
+        user_id=user.username,
+        details="method=ai_generated_stream",
+        ip_address=request.client.host if request.client else None,
+    )
 
     async def event_generator():
-        yield f"data: {json.dumps({'type': 'info', 'message': 'LLM entegrasyonu henuz aktif degil'})}\n\n"
-        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        try:
+            async for event in report_generator.generate_report_stream(segments_data):
+                event_type = event.get("event", "message")
+                event_data = json.dumps(event.get("data", {}), ensure_ascii=False)
+                yield {"event": event_type, "data": event_data}
+        except Exception:
+            logger.exception("SSE stream error for session %d", session_id)
+            yield {
+                "event": "error",
+                "data": json.dumps({"message": "Rapor olusturma sirasinda hata olustu."}),
+            }
 
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
-    )
+    return EventSourceResponse(event_generator())

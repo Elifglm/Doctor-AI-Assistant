@@ -38,12 +38,37 @@ class OutputSettings(BaseModel):
     save_txt: bool = True
 
 
+class LLMSettings(BaseModel):
+    ollama_url: str = "http://localhost:11434"
+    model_name: str = "qwen3:14b"
+    fallback_model: str = "qwen3:8b"
+    temperature: float = 0.3
+    top_p: float = 0.9
+    max_tokens: int = 2048
+    timeout_seconds: int = 300
+
+
+class NERSettings(BaseModel):
+    model_name: str = "urchade/gliner_multi-v2.1"
+    threshold: float = 0.5
+    device: str = "cpu"
+
+
+class RAGSettings(BaseModel):
+    persist_dir: str = "data/rag/chroma_db"
+    collection_name: str = "medical_knowledge"
+    n_results: int = 5
+
+
 class AppSettings(BaseSettings):
     audio: AudioSettings = AudioSettings()
     whisper: WhisperSettings = WhisperSettings()
     diarization: DiarizationSettings = DiarizationSettings()
     deepfilter: DeepFilterSettings = DeepFilterSettings()
     output: OutputSettings = OutputSettings()
+    llm: LLMSettings = LLMSettings()
+    ner: NERSettings = NERSettings()
+    rag: RAGSettings = RAGSettings()
     hf_token: str = Field(default="", alias="HF_TOKEN")
     log_level: str = "INFO"
 

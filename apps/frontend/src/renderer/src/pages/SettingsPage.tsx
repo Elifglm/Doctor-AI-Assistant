@@ -9,12 +9,19 @@ import {
   AlertCircle,
   Sun,
   Moon,
+  BrainCircuit,
+  CheckCircle2,
+  XCircle,
+  Loader2,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
 import { useUIStore } from '../stores/uiStore'
+import { apiClient } from '../services/apiClient'
+import type { HealthResponse } from '../types/api'
 import { cn } from '../lib/utils'
 
-type TabKey = 'profil' | 'ses' | 'sablonlar' | 'goruntu' | 'gizlilik'
+type TabKey = 'profil' | 'ses' | 'llm' | 'sablonlar' | 'goruntu' | 'gizlilik'
 
 interface TabItem {
   key: TabKey
@@ -25,8 +32,9 @@ interface TabItem {
 const tabs: TabItem[] = [
   { key: 'profil', label: 'Profil', icon: User },
   { key: 'ses', label: 'Ses', icon: Mic },
-  { key: 'sablonlar', label: 'Sablonlar', icon: FileText },
-  { key: 'goruntu', label: 'Goruntu', icon: Monitor },
+  { key: 'llm', label: 'LLM', icon: BrainCircuit },
+  { key: 'sablonlar', label: 'Şablonlar', icon: FileText },
+  { key: 'goruntu', label: 'Görüntü', icon: Monitor },
   { key: 'gizlilik', label: 'Gizlilik', icon: Shield },
 ]
 
@@ -45,7 +53,7 @@ function ProfilTab(): React.JSX.Element {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">
-              Gorunen Ad
+              Görünen Ad
             </label>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
               {user?.display_name ?? 'Bilinmiyor'}
@@ -53,7 +61,7 @@ function ProfilTab(): React.JSX.Element {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">
-              Kullanici Adi
+              Kullanıcı Adı
             </label>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
               {user?.username ?? 'Bilinmiyor'}
@@ -102,20 +110,20 @@ function SesTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Ses Ayarlari</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Ses Ayarları</h3>
         <div className="space-y-4">
           <div>
             <label
               htmlFor="micSelect"
               className="block text-sm font-medium text-slate-600 mb-1"
             >
-              Mikrofon Secimi
+              Mikrofon Seçimi
             </label>
             {permissionError ? (
               <div className="flex items-center gap-2 rounded-lg bg-amber-50 p-3 ring-1 ring-amber-200">
                 <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
                 <p className="text-sm text-amber-700">
-                  Mikrofon erisimi reddedildi. Lutfen tarayici ayarlarindan izin verin.
+                  Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından izin verin.
                 </p>
               </div>
             ) : (
@@ -131,15 +139,173 @@ function SesTab(): React.JSX.Element {
                   </option>
                 ))}
                 {devices.length === 0 && (
-                  <option value="">Mikrofon bulunamadi</option>
+                  <option value="">Mikrofon bulunamadı</option>
                 )}
               </select>
             )}
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
             <p className="text-sm text-slate-600">
-              Ses kalitesi: Mono kanal, 16kHz ornekleme orani. Tibbi konusmalar icin optimize
-              edilmistir.
+              Ses kalitesi: Mono kanal, 16kHz örnekleme oranı. Tıbbi konuşmalar için optimize
+              edilmiştir.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LLMTab(): React.JSX.Element {
+  const { data: health, isLoading, refetch } = useQuery<HealthResponse>({
+    queryKey: ['health'],
+    queryFn: () => apiClient.get<HealthResponse>('/api/v1/health'),
+    refetchInterval: 10000,
+  })
+
+  const [isTesting, setIsTesting] = useState(false)
+
+  const handleTestConnection = useCallback(async () => {
+    setIsTesting(true)
+    try {
+      await refetch()
+    } finally {
+      setIsTesting(false)
+    }
+  }, [refetch])
+
+  const ollamaConnected = health?.ollama_status === 'connected'
+  const modelLoaded = health?.ollama_model_loaded ?? false
+  const ragDocs = health?.rag_doc_count ?? 0
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">LLM Ayarları</h3>
+
+        {/* Connection status */}
+        <div className="space-y-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <h4 className="text-sm font-semibold text-slate-700">Ollama Durumu</h4>
+
+            <div className="space-y-2">
+              {/* Ollama connection */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Ollama Bağlantısı</span>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                ) : ollamaConnected ? (
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <span className="text-sm text-emerald-700">Bağlı</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    <span className="text-sm text-red-700">Bağlı Değil</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Model loaded */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Model Yüklü</span>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                ) : modelLoaded ? (
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <span className="text-sm text-emerald-700">Evet</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <XCircle className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm text-amber-700">Hayır</span>
+                  </div>
+                )}
+              </div>
+
+              {/* RAG documents */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">RAG Belge Sayısı</span>
+                <span className="text-sm text-slate-700 font-medium">{ragDocs}</span>
+              </div>
+
+              {/* GPU */}
+              {health?.gpu_available && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">GPU</span>
+                  <span className="text-sm text-slate-700">{health.gpu_name}</span>
+                </div>
+              )}
+              {health?.gpu_memory_used_mb != null && health?.gpu_memory_total_mb != null && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">GPU Bellek</span>
+                  <span className="text-sm text-slate-700">
+                    {health.gpu_memory_used_mb} / {health.gpu_memory_total_mb} MB
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Test button */}
+          <button
+            type="button"
+            onClick={() => void handleTestConnection()}
+            disabled={isTesting}
+            className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+          >
+            {isTesting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <BrainCircuit className="h-4 w-4" />
+            )}
+            Bağlantı Testi
+          </button>
+
+          {/* Help text */}
+          {!ollamaConnected && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <h4 className="text-sm font-semibold text-amber-800 mb-1">
+                Ollama Bağlantısı Kurulamadı
+              </h4>
+              <p className="text-sm text-amber-700">
+                Ollama&apos;nın çalıştığından emin olun. Terminal&apos;de{' '}
+                <code className="rounded bg-amber-100 px-1 py-0.5 text-xs font-mono">
+                  ollama serve
+                </code>{' '}
+                komutuyla başlatabilirsiniz.
+              </p>
+            </div>
+          )}
+
+          {ollamaConnected && !modelLoaded && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <h4 className="text-sm font-semibold text-amber-800 mb-1">
+                Model Yüklenmemiş
+              </h4>
+              <p className="text-sm text-amber-700">
+                Terminal&apos;de{' '}
+                <code className="rounded bg-amber-100 px-1 py-0.5 text-xs font-mono">
+                  ollama pull qwen3:14b
+                </code>{' '}
+                komutuyla modeli indirin.
+              </p>
+            </div>
+          )}
+
+          {/* Model info */}
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
+            <h4 className="text-sm font-semibold text-slate-700">Model Bilgisi</h4>
+            <p className="text-sm text-slate-600">
+              <strong>Birincil:</strong> Qwen3 14B (~12GB VRAM, Türkçe destekli)
+            </p>
+            <p className="text-sm text-slate-600">
+              <strong>Yedek:</strong> Qwen3 8B (~6GB VRAM, daha hızlı)
+            </p>
+            <p className="text-sm text-slate-500 text-xs mt-2">
+              Tüm işlem yerel olarak yapılır. Veriler dışarıya gönderilmez (KVKK uyumlu).
             </p>
           </div>
         </div>
@@ -152,14 +318,14 @@ function SablonlarTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Rapor Sablonlari</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Rapor Şablonları</h3>
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-12">
           <FileText className="h-10 w-10 text-slate-300 mb-3" />
           <p className="text-sm text-slate-500 text-center">
-            Rapor sablonlari yakin zamanda eklenecek
+            Rapor şablonları yakın zamanda eklenecek
           </p>
           <p className="text-xs text-slate-400 mt-1 text-center">
-            Ozel anamnez sablonlari tanimlayabileceksiniz
+            Özel anamnez şablonları tanımlayabileceksiniz
           </p>
         </div>
       </div>
@@ -176,7 +342,7 @@ function GoruntuTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Goruntu Ayarlari</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Görüntü Ayarları</h3>
         <div className="space-y-6">
           {/* Theme toggle */}
           <div>
@@ -193,7 +359,7 @@ function GoruntuTab(): React.JSX.Element {
                 )}
               >
                 <Sun className="h-4 w-4" />
-                Acik
+                Açık
               </button>
               <button
                 type="button"
@@ -214,7 +380,7 @@ function GoruntuTab(): React.JSX.Element {
           {/* Font size slider */}
           <div>
             <label htmlFor="fontSizeSlider" className="block text-sm font-medium text-slate-600 mb-2">
-              Yazi Boyutu: {fontSize}px
+              Yazı Boyutu: {fontSize}px
             </label>
             <input
               id="fontSizeSlider"
@@ -235,14 +401,14 @@ function GoruntuTab(): React.JSX.Element {
           {/* Preview */}
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-2">
-              Onizleme
+              Önizleme
             </label>
             <div
               className="rounded-lg border border-slate-200 bg-white p-4"
               style={{ fontSize: `${fontSize}px` }}
             >
               <p className="text-slate-700">
-                Bu bir onizleme metnidir. Yazi boyutu degistikce bu metin de degisecektir.
+                Bu bir önizleme metnidir. Yazı boyutu değiştikçe bu metin de değişecektir.
               </p>
             </div>
           </div>
@@ -252,66 +418,126 @@ function GoruntuTab(): React.JSX.Element {
   )
 }
 
+interface PurgeResponse {
+  message: string
+  deleted_sessions: number
+  deleted_segments: number
+  deleted_reports: number
+  deleted_audit_logs: number
+  total_deleted: number
+}
+
 function GizlilikTab(): React.JSX.Element {
   const [showConfirmation, setShowConfirmation] = useState(false)
+  const [purging, setPurging] = useState(false)
+  const [purgeResult, setPurgeResult] = useState<string | null>(null)
+  const [purgeError, setPurgeError] = useState<string | null>(null)
+
+  const handlePurge = useCallback(async () => {
+    setPurging(true)
+    setPurgeError(null)
+    setPurgeResult(null)
+    try {
+      const result = await apiClient.delete<PurgeResponse>('/api/v1/data/purge')
+      setPurgeResult(
+        `${result.total_deleted} kayıt silindi (${result.deleted_sessions} görüşme, ` +
+        `${result.deleted_segments} segment, ${result.deleted_reports} rapor, ` +
+        `${result.deleted_audit_logs} denetim kaydı).`
+      )
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setPurgeError(err.message)
+      } else {
+        setPurgeError('Veriler silinirken bir hata oluştu')
+      }
+    } finally {
+      setPurging(false)
+      setShowConfirmation(false)
+    }
+  }, [])
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Gizlilik ve Guvenlik</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Gizlilik ve Güvenlik</h3>
         <div className="space-y-4">
           {/* KVKK info */}
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
-            <h4 className="text-sm font-semibold text-slate-700">KVKK Uyumlulugu</h4>
+            <h4 className="text-sm font-semibold text-slate-700">KVKK Uyumluluğu</h4>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Bu uygulama, 6698 sayili Kisisel Verilerin Korunmasi Kanunu (KVKK) kapsaminda
-              gelistirilmistir. Hasta ses kayitlari ve kisisel saglik verileri, ilgili
-              mevzuat dogrultusunda islenmekte ve saklanmaktadir.
+              Bu uygulama, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında
+              geliştirilmiştir. Hasta ses kayıtları ve kişisel sağlık verileri, ilgili
+              mevzuat doğrultusunda işlenmekte ve saklanmaktadır.
             </p>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Verileriniz sifrelenmis baglanti uzerinden iletilmekte ve guvenli sunucularda
-              depolanmaktadir. Her kayit islemi oncesinde hasta onaminin alinmasi
+              Verileriniz şifrelenmiş bağlantı üzerinden iletilmekte ve güvenli sunucularda
+              depolanmaktadır. Her kayıt işlemi öncesinde hasta onamının alınması
               zorunludur.
+            </p>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              LLM (yapay zeka) işlemleri tamamen yerel olarak gerçekleştirilmektedir.
+              Hasta verileri hiçbir dış sunucuya gönderilmez.
             </p>
           </div>
 
           {/* Delete all data */}
           <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-            <h4 className="text-sm font-semibold text-red-800 mb-2">Tehlikeli Bolge</h4>
+            <h4 className="text-sm font-semibold text-red-800 mb-2">Tehlikeli Bölge</h4>
             {!showConfirmation ? (
               <button
                 type="button"
                 onClick={() => setShowConfirmation(true)}
-                className="flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+                disabled={purging}
+                className="flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"
               >
-                <Trash2 className="h-4 w-4" />
-                Tum verileri sil
+                {purging ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Tüm verileri sil
               </button>
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-red-700">
-                  Bu islem geri alinamaz. Tum oturum verileriniz, raporlariniz ve kayitlariniz
-                  kalici olarak silinecektir. Devam etmek istediginizden emin misiniz?
+                  Bu işlem geri alınamaz. Tüm görüşme verileriniz, raporlarınız ve kayıtlarınız
+                  kalıcı olarak silinecektir. Devam etmek istediğinizden emin misiniz?
                 </p>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setShowConfirmation(false)}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                    disabled={purging}
+                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
                   >
-                    Iptal
+                    İptal
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      // Placeholder - actual deletion not implemented
-                      setShowConfirmation(false)
-                    }}
-                    className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                    onClick={() => void handlePurge()}
+                    disabled={purging}
+                    className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                   >
-                    Evet, tum verileri sil
+                    {purging && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Evet, tüm verileri sil
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Success message */}
+            {purgeResult && (
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 ring-1 ring-emerald-200">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <p className="text-sm text-emerald-700">{purgeResult}</p>
+              </div>
+            )}
+
+            {/* Error message */}
+            {purgeError && (
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 p-3 ring-1 ring-red-200">
+                <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+                <p className="text-sm text-red-700">{purgeError}</p>
               </div>
             )}
           </div>
@@ -324,6 +550,7 @@ function GizlilikTab(): React.JSX.Element {
 const tabComponents: Record<TabKey, React.ComponentType> = {
   profil: ProfilTab,
   ses: SesTab,
+  llm: LLMTab,
   sablonlar: SablonlarTab,
   goruntu: GoruntuTab,
   gizlilik: GizlilikTab,
@@ -338,7 +565,7 @@ export function SettingsPage(): React.JSX.Element {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Ayarlar</h1>
-        <p className="text-sm text-slate-500 mt-1">Uygulama tercihlerinizi yonetin</p>
+        <p className="text-sm text-slate-500 mt-1">Uygulama tercihlerinizi yönetin</p>
       </div>
 
       <div className="flex gap-6">
@@ -366,7 +593,21 @@ export function SettingsPage(): React.JSX.Element {
 
         {/* Tab content */}
         <div className="flex-1 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200/60">
-          <ActiveTabComponent />
+          <div
+            key={activeTab}
+            className="animate-fade-in"
+            style={{
+              animation: 'fadeIn 150ms ease-in-out',
+            }}
+          >
+            <ActiveTabComponent />
+          </div>
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
         </div>
       </div>
     </div>

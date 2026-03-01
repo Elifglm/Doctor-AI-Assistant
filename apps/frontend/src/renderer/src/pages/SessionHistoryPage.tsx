@@ -15,16 +15,16 @@ import { StatusBadge } from '../components/dashboard/StatusBadge'
 import type { Session, SessionListResponse, SessionStatus, VisitType } from '../types/session'
 
 const statusFilterOptions: { value: string; label: string }[] = [
-  { value: '', label: 'Tumu' },
+  { value: '', label: 'Tümü' },
   { value: 'AWAITING_REVIEW', label: 'Bekleyen' },
   { value: 'COMPLETED', label: 'Tamamlanan' },
-  { value: 'ARCHIVED', label: 'Arsivlenen' },
+  { value: 'ARCHIVED', label: 'Arşivlenen' },
 ]
 
 const visitTypeLabels: Record<VisitType, string> = {
-  ilk_muayene: 'Ilk Muayene',
+  ilk_muayene: 'İlk Muayene',
   kontrol: 'Kontrol',
-  konsultasyon: 'Konsultasyon',
+  konsultasyon: 'Konsültasyon',
   acil: 'Acil',
 }
 
@@ -91,8 +91,8 @@ export function SessionHistoryPage(): React.JSX.Element {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Gorusme Gecmisi</h1>
-        <p className="text-sm text-slate-500 mt-1">Tum gorusmeleri goruntuleyip yonetin</p>
+        <h1 className="text-2xl font-bold text-slate-800">Görüşme Geçmişi</h1>
+        <p className="text-sm text-slate-500 mt-1">Tüm görüşmeleri görüntüleyip yönetin</p>
       </div>
 
       {/* Filter bar */}
@@ -141,7 +141,7 @@ export function SessionHistoryPage(): React.JSX.Element {
                 setSearch(e.target.value)
                 setPage(1)
               }}
-              placeholder="Doktor adi veya hasta ID ara..."
+              placeholder="Doktor adı veya hasta ID ara..."
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
@@ -153,7 +153,7 @@ export function SessionHistoryPage(): React.JSX.Element {
               className="mb-1.5 block text-xs font-medium text-slate-600"
             >
               <Calendar className="inline h-3.5 w-3.5 mr-1" />
-              Baslangic
+              Başlangıç
             </label>
             <input
               id="fromDate"
@@ -174,7 +174,7 @@ export function SessionHistoryPage(): React.JSX.Element {
               className="mb-1.5 block text-xs font-medium text-slate-600"
             >
               <Calendar className="inline h-3.5 w-3.5 mr-1" />
-              Bitis
+              Bitiş
             </label>
             <input
               id="toDate"
@@ -207,7 +207,7 @@ export function SessionHistoryPage(): React.JSX.Element {
             Durum
           </span>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Sure
+            Süre
           </span>
         </div>
 
@@ -216,7 +216,7 @@ export function SessionHistoryPage(): React.JSX.Element {
           <div className="flex items-center justify-center p-12">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-              <p className="text-sm text-slate-500">Gorusmeler yukleniyor...</p>
+              <p className="text-sm text-slate-500">Görüşmeler yükleniyor...</p>
             </div>
           </div>
         )}
@@ -226,7 +226,7 @@ export function SessionHistoryPage(): React.JSX.Element {
           <div className="flex items-center gap-3 p-6">
             <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
             <p className="text-sm text-red-700">
-              Gorusmeler yuklenirken hata olustu:{' '}
+              Görüşmeler yüklenirken hata oluştu:{' '}
               {error instanceof Error ? error.message : 'Bilinmeyen hata'}
             </p>
           </div>
@@ -235,8 +235,8 @@ export function SessionHistoryPage(): React.JSX.Element {
         {/* Empty state */}
         {!isLoading && !error && sessions.length === 0 && (
           <div className="flex flex-col items-center justify-center p-12">
-            <p className="text-sm text-slate-500">Gorusme bulunamadi</p>
-            <p className="text-xs text-slate-400 mt-1">Filtrelerinizi degistirmeyi deneyin</p>
+            <p className="text-sm text-slate-500">Görüşme bulunamadı</p>
+            <p className="text-xs text-slate-400 mt-1">Filtrelerinizi değiştirmeyi deneyin</p>
           </div>
         )}
 
@@ -267,32 +267,34 @@ export function SessionHistoryPage(): React.JSX.Element {
           ))}
       </div>
 
-      {/* Pagination */}
-      {!isLoading && !error && totalPages > 1 && (
+      {/* Pagination info + controls */}
+      {!isLoading && !error && (data?.total ?? 0) > 0 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-slate-500">
-            Toplam {data?.total ?? 0} gorusme, Sayfa {page}/{totalPages}
+            Toplam {data?.total ?? 0} görüşme{totalPages > 1 ? `, Sayfa ${page}/${totalPages}` : ''}
           </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Onceki
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Sonraki
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Önceki
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Sonraki
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

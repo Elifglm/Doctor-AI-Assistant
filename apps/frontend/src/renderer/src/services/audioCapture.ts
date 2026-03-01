@@ -5,9 +5,14 @@ export class AudioCapture {
   private audioContext: AudioContext | null = null
   private onChunk: ((data: Blob) => void) | null = null
   private onLevel: ((level: number) => void) | null = null
+  private onError: ((error: string) => void) | null = null
   private animFrameId: number | null = null
 
-  async start(onChunk: (data: Blob) => void, onLevel?: (level: number) => void): Promise<void> {
+  async start(
+    onChunk: (data: Blob) => void,
+    onLevel?: (level: number) => void,
+    onError?: (error: string) => void
+  ): Promise<void> {
     // Stop any existing recording first
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.stop()
@@ -15,6 +20,7 @@ export class AudioCapture {
 
     this.onChunk = onChunk
     this.onLevel = onLevel || null
+    this.onError = onError || null
 
     // Check if getUserMedia is available
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -67,6 +73,11 @@ export class AudioCapture {
 
     this.mediaRecorder.onerror = (event) => {
       console.error('MediaRecorder error:', event)
+      if (this.onError) {
+        const errorEvent = event as MediaRecorderErrorEvent
+        const message = errorEvent.error?.message || 'Ses kaydı sırasında beklenmeyen bir hata oluştu.'
+        this.onError(message)
+      }
     }
 
     this.mediaRecorder.start(250) // 250ms chunks
@@ -120,5 +131,6 @@ export class AudioCapture {
     this.mediaRecorder = null
     this.onChunk = null
     this.onLevel = null
+    this.onError = null
   }
 }

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1", tags=["health"])
@@ -18,12 +18,15 @@ class HealthResponse(BaseModel):
     gpu_memory_total_mb: Optional[float] = None
     db_connected: bool
     asr_pipeline_ready: bool
+    ollama_status: str  # "connected" | "disconnected" | "unknown"
+    ollama_model_loaded: bool
+    rag_doc_count: int
     version: str
 
 
 @router.get("/health", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
-    """Return system health: GPU, DB, pipeline status."""
+async def health_check(request: Request) -> HealthResponse:
+    """Return system health: GPU, DB, pipeline, Ollama status."""
 
     # --- GPU ---
     gpu_available = False
@@ -56,11 +59,32 @@ async def health_check() -> HealthResponse:
     # --- Pipeline ---
     asr_pipeline_ready = False
     try:
-        # Just check the module is importable -- don't instantiate
         import importlib
 
         importlib.import_module("src.pipeline")
         asr_pipeline_ready = True
+    except Exception:
+        pass
+
+    # --- Ollama ---
+    ollama_status = "unknown"
+    ollama_model_loaded = False
+    try:
+        llm_service = getattr(request.app.state, "llm_service", None)
+        if llm_service is not None:
+            healthy = await llm_service.check_health()
+            ollama_status = "connected" if healthy else "disconnected"
+            if healthy:
+                ollama_model_loaded = await llm_service.is_model_loaded()
+    except Exception:
+        ollama_status = "disconnected"
+
+    # --- RAG ---
+    rag_doc_count = 0
+    try:
+        rag_service = getattr(request.app.state, "rag_service", None)
+        if rag_service is not None:
+            rag_doc_count = rag_service.doc_count
     except Exception:
         pass
 
@@ -80,5 +104,8 @@ async def health_check() -> HealthResponse:
         gpu_memory_total_mb=gpu_memory_total_mb,
         db_connected=db_connected,
         asr_pipeline_ready=asr_pipeline_ready,
+        ollama_status=ollama_status,
+        ollama_model_loaded=ollama_model_loaded,
+        rag_doc_count=rag_doc_count,
         version="1.0.0",
     )

@@ -35,13 +35,13 @@ export function StatsBar({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <StatCard
-        label="Bugunun Gorusmeleri"
+        label="Bugünün Görüşmeleri"
         value={todayCount}
         icon={<Calendar className="h-6 w-6 text-blue-600" />}
         colorClass="bg-blue-50"
       />
       <StatCard
-        label="Bekleyen Inceleme"
+        label="Bekleyen İnceleme"
         value={pendingCount}
         icon={<Clock className="h-6 w-6 text-amber-600" />}
         colorClass="bg-amber-50"

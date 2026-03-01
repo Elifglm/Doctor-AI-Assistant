@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-type RecordingState = 'idle' | 'recording' | 'paused'
+type RecordingState = 'idle' | 'recording' | 'paused' | 'processing'
 
 interface SessionState {
   currentSessionId: number | null

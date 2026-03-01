@@ -10,6 +10,15 @@ import { ReportReviewPage } from './pages/ReportReviewPage'
 import { SessionHistoryPage } from './pages/SessionHistoryPage'
 import { SettingsPage } from './pages/SettingsPage'
 
+// TODO [S7 - Deferred to Production]: Role-based UI access controls.
+// Currently this prototype only has a single "admin" user with the "doctor" role.
+// For production deployment, implement role-based route guards here:
+//   - "doctor" role: full access to sessions, recordings, reports
+//   - "nurse" role: read-only access to session history, no report approval
+//   - "admin" role: access to settings, user management, data purge
+// The backend already returns `user.role` in the JWT payload.
+// Use a <ProtectedRoute requiredRole="..."> wrapper component around each <Route>.
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

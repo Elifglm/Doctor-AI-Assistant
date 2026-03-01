@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Save, CheckCheck, Loader2 } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ReportSectionCard } from './ReportSection'
@@ -13,6 +13,11 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   const queryClient = useQueryClient()
   const [sections, setSections] = useState<ReportSection[]>(report.content.sections)
 
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [showError, setShowError] = useState(false)
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const approvedCount = sections.filter((s) => s.status === 'approved').length
   const totalCount = sections.length
 
@@ -21,8 +26,30 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
       apiClient.put<Report>(`/api/v1/reports/${report.id}`, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['session'] })
+      setShowSuccess(true)
+      setShowError(false)
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+      successTimerRef.current = setTimeout(() => {
+        setShowSuccess(false)
+      }, 3000)
+    },
+    onError: () => {
+      setShowError(true)
+      setShowSuccess(false)
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+      errorTimerRef.current = setTimeout(() => {
+        setShowError(false)
+      }, 5000)
     },
   })
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+    }
+  }, [])
 
   const handleContentChange = useCallback((key: string, content: string) => {
     setSections((prev) =>
@@ -66,9 +93,9 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   return (
     <div className="flex flex-col h-full">
       <div className="border-b border-slate-200 bg-white px-4 py-3">
-        <h2 className="text-lg font-bold text-slate-800">Anamnez Raporu</h2>
+        <h2 className="text-lg font-semibold text-slate-800">Anamnez Raporu</h2>
         <p className="text-xs text-slate-500 mt-0.5">
-          {approvedCount}/{totalCount} bolum onaylandi
+          {approvedCount}/{totalCount} bölüm onaylandı
         </p>
       </div>
 
@@ -88,14 +115,14 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
           <div className="flex items-center gap-1">
             <div className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="text-xs text-slate-600">
-              {approvedCount}/{totalCount} bolum onaylandi
+              {approvedCount}/{totalCount} bölüm onaylandı
             </span>
           </div>
-          {saveMutation.isSuccess && (
-            <span className="text-xs text-emerald-600">Kaydedildi</span>
+          {showSuccess && (
+            <span className="text-xs text-emerald-600 transition-opacity duration-200">Kaydedildi</span>
           )}
-          {saveMutation.isError && (
-            <span className="text-xs text-red-600">Kaydetme hatasi</span>
+          {showError && (
+            <span className="text-xs text-red-600 transition-opacity duration-200">Kaydetme hatası</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -110,7 +137,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Taslak Kaydet
+            Taslağı Kaydet
           </button>
           <button
             type="button"
@@ -123,7 +150,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             ) : (
               <CheckCheck className="h-4 w-4" />
             )}
-            Tumunu Onayla
+            Tümünü Onayla
           </button>
         </div>
       </div>

@@ -9,6 +9,8 @@ export function useRecording(sessionId: number | null) {
   const audioCapture = useRef<AudioCapture | null>(null)
   const wsClient = useRef<WSClient | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const elapsedTimeOffset = useRef(0)
+  const callGeneration = useRef(0)
   const [error, setError] = useState<string | null>(null)
 
   const { setRecordingState, setElapsedTime, setAudioLevel, recordingState } = useSessionStore()
@@ -28,6 +30,15 @@ export function useRecording(sessionId: number | null) {
 
   const startRecording = useCallback(async () => {
     if (!sessionId) return
+
+    // Prevent connecting if this hook already has an active WS connection
+    if (wsClient.current?.isConnected) {
+      setError('Bu görüşme için zaten aktif bir kayıt bağlantısı mevcut.')
+      return
+    }
+
+    // Increment generation — any previous async call becomes stale
+    const thisCall = ++callGeneration.current
 
     // Always clean up previous resources before starting
     cleanup()
@@ -67,15 +78,33 @@ export function useRecording(sessionId: number | null) {
           is_edited: false,
         }))
         setSegments(segments)
+        setRecordingState('idle')
+        // Close WS now that we have results
+        wsClient.current?.close()
+        wsClient.current = null
       })
 
       wsClient.current.on('error', (data) => {
         const msg = data as WSError
         console.error('WS error:', msg.message)
         setError(msg.message)
+        setRecordingState('idle')
+        cleanup()
+      })
+
+      wsClient.current.on('close', () => {
+        // If we're still processing when WS closes, it means something went wrong
+        if (useSessionStore.getState().recordingState === 'processing') {
+          console.warn('WS closed while still processing')
+          setError('Bağlantı kesildi. İşlem tamamlanamadı.')
+          setRecordingState('idle')
+        }
       })
 
       await wsClient.current.connect()
+
+      // If this call was superseded while connecting, bail out
+      if (thisCall !== callGeneration.current) return
 
       // Start audio capture
       audioCapture.current = new AudioCapture()
@@ -85,31 +114,43 @@ export function useRecording(sessionId: number | null) {
         },
         (level) => {
           setAudioLevel(level)
+        },
+        (errorMsg) => {
+          setError(errorMsg)
+          setRecordingState('idle')
+          cleanup()
         }
       )
+
+      // Check again after audio setup
+      if (thisCall !== callGeneration.current) return
 
       setRecordingState('recording')
 
       // Start timer from zero
+      elapsedTimeOffset.current = 0
       const startTime = Date.now()
       timerRef.current = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
       }, 1000)
     } catch (err: unknown) {
+      // Ignore errors from stale (superseded) calls
+      if (thisCall !== callGeneration.current) return
+
       console.error('Recording start failed:', err)
       let message: string
       if (err instanceof DOMException && err.name === 'NotAllowedError') {
-        message = 'Mikrofon erisimi reddedildi. Lutfen mikrofon iznini kontrol edin.'
+        message = 'Mikrofon erişimi reddedildi. Lütfen mikrofon iznini kontrol edin.'
       } else if (err instanceof DOMException && err.name === 'NotFoundError') {
-        message = 'Mikrofon bulunamadi. Lutfen bir mikrofon baglayip tekrar deneyin.'
+        message = 'Mikrofon bulunamadı. Lütfen bir mikrofon bağlayıp tekrar deneyin.'
       } else if (err instanceof DOMException && err.name === 'NotSupportedError') {
-        message = 'Ses kayit formati desteklenmiyor.'
+        message = 'Ses kayıt formatı desteklenmiyor.'
       } else if (err instanceof Error) {
         message = err.message
       } else if (err && typeof err === 'object' && 'message' in err) {
         message = String((err as { message: unknown }).message)
       } else {
-        message = `Kayit baslatilirken beklenmeyen hata: ${String(err)}`
+        message = `Kayıt başlatılırken beklenmeyen hata: ${String(err)}`
       }
       setError(message)
       setRecordingState('idle')
@@ -118,6 +159,12 @@ export function useRecording(sessionId: number | null) {
   }, [sessionId, cleanup, resetTranscription, setProcessing, setSegments, setRecordingState, setElapsedTime, setAudioLevel])
 
   const pauseRecording = useCallback(() => {
+    // Save current elapsed time and stop the timer
+    elapsedTimeOffset.current = useSessionStore.getState().elapsedTime
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
     audioCapture.current?.pause()
     setRecordingState('paused')
   }, [setRecordingState])
@@ -125,7 +172,14 @@ export function useRecording(sessionId: number | null) {
   const resumeRecording = useCallback(() => {
     audioCapture.current?.resume()
     setRecordingState('recording')
-  }, [setRecordingState])
+
+    // Restart timer continuing from the saved offset
+    const saved = elapsedTimeOffset.current
+    const resumeTime = Date.now()
+    timerRef.current = setInterval(() => {
+      setElapsedTime(saved + Math.floor((Date.now() - resumeTime) / 1000))
+    }, 1000)
+  }, [setRecordingState, setElapsedTime])
 
   const stopRecording = useCallback(() => {
     // Stop timer
@@ -134,14 +188,14 @@ export function useRecording(sessionId: number | null) {
       timerRef.current = null
     }
 
-    // Stop audio capture
+    // Stop audio capture but keep WS open for progress/result messages
     audioCapture.current?.stop()
     audioCapture.current = null
 
     // Send stop signal to backend
     wsClient.current?.sendJSON({ type: 'stop' })
 
-    setRecordingState('idle')
+    setRecordingState('processing')
     setAudioLevel(0)
   }, [setRecordingState, setAudioLevel])
 

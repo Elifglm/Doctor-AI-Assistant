@@ -7,6 +7,8 @@ import {
   AlertCircle,
   FileText,
   GripVertical,
+  Sparkles,
+  AlertTriangle,
 } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 import { ReportEditor } from '../components/report/ReportEditor'
@@ -35,6 +37,17 @@ export function ReportReviewPage(): React.JSX.Element {
   const generateReport = useMutation({
     mutationFn: () =>
       apiClient.post<Report>('/api/v1/reports', { session_id: sessionId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    },
+  })
+
+  const generateAIReport = useMutation({
+    mutationFn: () =>
+      apiClient.post<Report>('/api/v1/reports', {
+        session_id: sessionId,
+        method: 'ai_generated',
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
     },
@@ -72,7 +85,7 @@ export function ReportReviewPage(): React.JSX.Element {
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-sm text-slate-500">Oturum yukleniyor...</p>
+          <p className="text-sm text-slate-500">Görüşme yükleniyor...</p>
         </div>
       </div>
     )
@@ -84,7 +97,7 @@ export function ReportReviewPage(): React.JSX.Element {
         <div className="flex items-center gap-3 rounded-xl bg-red-50 p-6 ring-1 ring-red-200">
           <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-red-800">Oturum yuklenemedi</p>
+            <p className="text-sm font-medium text-red-800">Görüşme yüklenemedi</p>
             <p className="text-sm text-red-600 mt-1">
               {error instanceof Error ? error.message : 'Bilinmeyen hata'}
             </p>
@@ -94,7 +107,8 @@ export function ReportReviewPage(): React.JSX.Element {
     )
   }
 
-  const report = session.reports?.[0] ?? null
+  const reports = session.reports ?? []
+  const report = reports.length > 0 ? reports[reports.length - 1] : null
   const segments = session.segments ?? []
 
   return (
@@ -109,13 +123,29 @@ export function ReportReviewPage(): React.JSX.Element {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-sm font-semibold text-slate-800">
-            Rapor Inceleme - {session.doctor_name}
+          <h1 className="text-sm font-bold text-slate-800">
+            Rapor İnceleme - {session.doctor_name}
           </h1>
           <p className="text-xs text-slate-500">
-            Hasta: {session.patient_name || session.patient_id || 'Belirtilmemis'}
+            Hasta: {session.patient_name || session.patient_id || 'Belirtilmemiş'}
           </p>
         </div>
+        {/* AI generate button - always visible when segments exist */}
+        {segments.length > 0 && (
+          <button
+            type="button"
+            onClick={() => generateAIReport.mutate()}
+            disabled={generateAIReport.isPending}
+            className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-violet-700 disabled:opacity-50"
+          >
+            {generateAIReport.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {report ? 'AI ile Yeniden Oluştur' : 'AI ile Oluştur'}
+          </button>
+        )}
       </div>
 
       {/* Split panel */}
@@ -129,14 +159,14 @@ export function ReportReviewPage(): React.JSX.Element {
           style={{ width: `${dividerPosition}%` }}
         >
           <div className="border-b border-slate-200 bg-white px-4 py-3 shrink-0">
-            <h2 className="text-lg font-bold text-slate-800">Transkript</h2>
+            <h2 className="text-lg font-semibold text-slate-800">Transkript</h2>
             <p className="text-xs text-slate-500 mt-0.5">{segments.length} segment</p>
           </div>
 
           <div className="flex-1 overflow-auto">
             {segments.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <p className="text-sm text-slate-500">Transkript bulunamadi</p>
+                <p className="text-sm text-slate-500">Transkript bulunamadı</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
@@ -184,30 +214,57 @@ export function ReportReviewPage(): React.JSX.Element {
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium text-slate-700">
-                  Henuz rapor olusturulmamis
+                  Henüz rapor oluşturulmamış
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  Transkriptten otomatik rapor olusturun
+                  Transkriptten otomatik veya boş rapor oluşturun
                 </p>
               </div>
+
+              {/* AI Generate button */}
+              <button
+                type="button"
+                onClick={() => generateAIReport.mutate()}
+                disabled={generateAIReport.isPending || segments.length === 0}
+                className="flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-700 disabled:opacity-50"
+              >
+                {generateAIReport.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                AI ile Oluştur
+              </button>
+
+              {segments.length === 0 && (
+                <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-2 ring-1 ring-amber-200">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                  <p className="text-xs text-amber-700">
+                    AI rapor oluşturmak için transkript gereklidir
+                  </p>
+                </div>
+              )}
+
+              {/* Manual (empty) generate button */}
               <button
                 type="button"
                 onClick={() => generateReport.mutate()}
                 disabled={generateReport.isPending}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
               >
                 {generateReport.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
-                Rapor Olustur
+                Boş Şablon Oluştur
               </button>
-              {generateReport.isError && (
+
+              {(generateReport.isError || generateAIReport.isError) && (
                 <div className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 ring-1 ring-red-200">
                   <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
                   <p className="text-xs text-red-700">
-                    {generateReport.error instanceof Error
-                      ? generateReport.error.message
-                      : 'Rapor olusturulamadi'}
+                    {(generateAIReport.error ?? generateReport.error) instanceof Error
+                      ? ((generateAIReport.error ?? generateReport.error) as Error).message
+                      : 'Rapor oluşturulamadı'}
                   </p>
                 </div>
               )}

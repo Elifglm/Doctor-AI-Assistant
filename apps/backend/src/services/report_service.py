@@ -39,8 +39,6 @@ class ReportService:
         """Generate a new report for a session.
 
         For 'manual' method: creates an empty 12-section anamnesis template.
-        For 'ai_generated': placeholder (returns the same template; future LLM
-        integration will populate sections from the transcript).
         """
         content = {
             "sections": list(_ANAMNESIS_SECTIONS),  # shallow copy
@@ -49,6 +47,25 @@ class ReportService:
         }
 
         # Determine the next version number for this session
+        latest_version = await self._latest_version(session_id)
+        next_version = latest_version + 1
+
+        report = Report(
+            session_id=session_id,
+            version=next_version,
+            status="DRAFT",
+            content_json=json.dumps(content, ensure_ascii=False),
+            generation_method=method,
+        )
+        self.db.add(report)
+        await self.db.flush()
+        await self.db.refresh(report)
+        return report
+
+    async def generate_with_content(
+        self, session_id: int, content: dict, method: str = "ai_generated"
+    ) -> Report:
+        """Generate a new report with pre-populated AI content."""
         latest_version = await self._latest_version(session_id)
         next_version = latest_version + 1
 

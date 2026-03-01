@@ -11,5 +11,8 @@ export interface HealthResponse {
   gpu_memory_total_mb?: number
   db_connected: boolean
   asr_pipeline_ready: boolean
+  ollama_status: 'connected' | 'disconnected' | 'unknown'
+  ollama_model_loaded: boolean
+  rag_doc_count: number
   version: string
 }
