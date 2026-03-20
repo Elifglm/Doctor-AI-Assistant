@@ -12,20 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.backend.src.db.models import Report
 from apps.backend.src.schemas.report import UpdateReportRequest
 
-# 12-section Turkish anamnesis template
+# Build empty HBYS anamnesis template from the single source of truth
+from apps.backend.src.prompts.section_prompts import ANAMNESIS_SECTIONS as _SECTIONS_DEF
+
 _ANAMNESIS_SECTIONS = [
-    {"key": "chief_complaint", "title": "Basvuru Sikayeti", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "history_present", "title": "Simdiki Hastalik Hikayesi", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "past_medical", "title": "Gecmis Tibbi Ozgecmis", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "medications", "title": "Kullanilan Ilaclar", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "allergies", "title": "Alerjiler", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "family_history", "title": "Aile Oykusu", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "social_history", "title": "Sosyal Oyku", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "review_systems", "title": "Sistemlerin Gozden Gecirilmesi", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "physical_exam", "title": "Fizik Muayene", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "assessment", "title": "Degerlendirme", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "plan", "title": "Tedavi Plani", "content": "", "status": "draft", "confidence": "low"},
-    {"key": "notes", "title": "Ek Notlar", "content": "", "status": "draft", "confidence": "low"},
+    {"key": k, "title": v["title"], "content": "", "status": "draft", "confidence": "low"}
+    for k, v in _SECTIONS_DEF.items()
 ]
 
 
@@ -43,7 +35,7 @@ class ReportService:
         content = {
             "sections": list(_ANAMNESIS_SECTIONS),  # shallow copy
             "approved_sections": 0,
-            "total_sections": 12,
+            "total_sections": len(_ANAMNESIS_SECTIONS),
         }
 
         # Determine the next version number for this session

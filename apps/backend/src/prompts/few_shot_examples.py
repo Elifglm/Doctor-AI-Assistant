@@ -1,10 +1,10 @@
-"""Few-shot examples for anamnesis report generation.
+"""Few-shot examples for HBYS-format anamnesis report generation.
 
-These examples help the LLM understand the expected output format and style.
+These examples help the LLM understand the expected HBYS output format.
 They can be prepended to the system prompt for better quality.
 """
 
-# Example 1: Basic outpatient visit
+# Example 1: Basic outpatient visit — hypertension
 EXAMPLE_TRANSCRIPT_1 = """\
 Doktor: Hosgeldiniz, nasilsiniz?
 Hasta: Merhaba doktor bey. Son bir haftadir basim cok agriyor, ozellikle sabah kaldigimda.
@@ -27,29 +27,38 @@ Doktor: Bir hafta sonra kontrole gelin, tahlil sonuclariyla birlikte.
 """
 
 EXAMPLE_SECTIONS_1 = {
-    "chief_complaint": "Bir haftadir devam eden bas agrisi, ozellikle sabahlari.",
-    "history_present": (
-        "Hasta bir haftadir devam eden bas agrisindan yakinmaktadir. "
-        "Agri ozellikle ense bolgesinde ve sakaklarda yogunlasmaktadir. "
-        "Sabah kaldiginda daha belirgin olmaktadir. Hafif bulanti eslik "
-        "etmektedir, kusma yok. Eczanede olculen tansiyon degeri 150/95 mmHg."
+    "hastanin_yakinmasi": "BAS AGRISI",
+    "hastanin_oykusu": (
+        "1 HAFTADIR BAS AGRISI MEVCUT ---- ENSE BOLGESINDE VE SAKAKLARDA "
+        "YOGUNLASIYOR ---- SABAHLARI BELIRGIN ---- HAFIF BULANTI ESLIK "
+        "EDIYOR KUSMA YOK ---- ECZANEDE TANSIYON 150/95 OLCULMUS"
     ),
-    "past_medical": "Belirtilmedi",
-    "medications": "Hicbir ilac kullanmiyor.",
-    "allergies": "Belirtilmedi",
-    "family_history": "Anne: hipertansiyon. Baba: diabetes mellitus.",
-    "social_history": "Sigara: gunde 1 paket, 10 yildir.",
-    "review_systems": "Bas agrisi ve hafif bulanti mevcut. Kusma yok.",
-    "physical_exam": "Tansiyon: 155/98 mmHg.",
-    "assessment": "Hipertansiyon (yeni tani).",
-    "plan": (
-        "1. Amlodipin 5 mg, gunde 1 kez baslandi.\n"
-        "2. Kan tahlili istendi.\n"
-        "3. EKG istendi.\n"
-        "4. Goz dibi muayenesi istendi.\n"
-        "5. Bir hafta sonra kontrol randevusu."
+    "oz_gecmisi_soy_gecmisi": "BILINEN KRONIK HASTALIK YOK ---- ILAC KULLANMIYOR",
+    "soy_gecmisi": "ANNE HT ---- BABA DM",
+    "sigara": "KULLANIYOR (1 PAKET/GUN, 10 YILDIR)",
+    "alkol": "BELIRTILMEDI",
+    "alerji": "",
+    "muayene_bulgulari": "BELIRTILMEDI",
+    "sistolik": "155",
+    "diyastolik": "98",
+    "so2": "",
+    "nabiz": "",
+    "ates": "",
+    "tedavi": (
+        "AMLODIPIN 5 MG 1X1 BASLANDI ---- KAN TAHLILI ISTENDI "
+        "---- EKG ISTENDI ---- GOZ DIBI MUAYENESI ISTENDI"
     ),
-    "notes": "Belirtilmedi",
+    "oneri": "",
+    "uyari": "",
+    "kontrol_zamani": "1 HAFTA SONRA KONTROL",
+    "agri_skalasi": "",
+    "kilo": "",
+    "boy": "",
+    "sikayet_baslangic_tarihi": "1 HAFTA ONCE",
+    "konsultasyon_muayene": "GOZ DIBI MUAYENESI ISTENDI",
+    "konsultasyon_sonuc": "",
+    "konsultasyon_oneri": "",
+    "icd10_list": "(I10) - Esansiyel (primer) hipertansiyon (On Tani)",
 }
 
 
@@ -60,5 +69,5 @@ def get_few_shot_prompt() -> str:
     )
     return (
         f"ORNEK TRANSKRIPT:\n{EXAMPLE_TRANSCRIPT_1}\n\n"
-        f"BEKLENEN RAPOR CIKTISI:\n{sections_text}"
+        f"BEKLENEN HBYS CIKTISI:\n{sections_text}"
     )

@@ -5,7 +5,12 @@ from __future__ import annotations
 import logging
 from typing import Any, AsyncIterator, Callable, Awaitable
 
-from apps.backend.src.prompts.section_prompts import ANAMNESIS_SECTIONS, build_section_prompt
+from apps.backend.src.prompts.section_prompts import (
+    ANAMNESIS_SECTIONS,
+    NUMERIC_FIELDS,
+    OPTIONAL_FIELDS,
+    build_section_prompt,
+)
 from apps.backend.src.prompts.system_prompt import SYSTEM_PROMPT
 from apps.backend.src.services.llm_service import LLMService
 from apps.backend.src.services.ner_service import MedicalEntity, NERService
@@ -13,7 +18,10 @@ from apps.backend.src.services.rag_service import RAGResult, RAGService
 
 logger = logging.getLogger(__name__)
 
-EMPTY_MARKERS = {"", "Belirtilmedi", "Belirtilmedi.", "Bilgi yok", "Bilgi yok."}
+EMPTY_MARKERS = {
+    "", "Belirtilmedi", "Belirtilmedi.", "Bilgi yok", "Bilgi yok.",
+    "BELIRTILMEDI", "BELIRTILMEDI.", "BILGI YOK", "BILGI YOK.",
+}
 
 ProgressCallback = Callable[[str, str, float], Awaitable[None]]
 
@@ -29,40 +37,35 @@ def _merge_segments(segments: list[dict[str, Any]]) -> str:
 
 
 def _score_confidence(
-    content: str, entities: list[MedicalEntity]
+    content: str, entities: list[MedicalEntity], section_key: str
 ) -> str:
     """Score confidence for a generated section."""
     stripped = content.strip()
-    if not entities and stripped in EMPTY_MARKERS:
+
+    # Numeric fields: if value present and looks numeric, high confidence
+    if section_key in NUMERIC_FIELDS:
+        if not stripped:
+            return "low"
+        try:
+            float(stripped.replace(",", "."))
+            return "high"
+        except ValueError:
+            return "low"
+
+    # Optional empty fields are acceptable
+    if not stripped and section_key in OPTIONAL_FIELDS:
+        return "medium"
+
+    if not stripped or stripped in EMPTY_MARKERS:
         return "low"
+
     if entities and any(e.text.lower() in content.lower() for e in entities):
         return "high"
     if entities:
         return "medium"
-    if stripped and stripped not in EMPTY_MARKERS:
+    if stripped not in EMPTY_MARKERS:
         return "medium"
     return "low"
-
-
-def _format_entities(entities: list[MedicalEntity]) -> str:
-    """Format entities for prompt injection."""
-    if not entities:
-        return "Tespit edilen tibbi bilgi yok."
-    lines: list[str] = []
-    for e in entities:
-        lines.append(f"- [{e.label}] {e.text} (guven: {e.score:.2f})")
-    return "\n".join(lines)
-
-
-def _format_rag_context(results: list[RAGResult]) -> str:
-    """Format RAG results for prompt injection."""
-    if not results:
-        return "Ek referans bilgisi yok."
-    lines: list[str] = []
-    for r in results:
-        source = r.metadata.get("source", "bilinmiyor")
-        lines.append(f"- [{source}] {r.content}")
-    return "\n".join(lines)
 
 
 class ReportGenerator:
@@ -77,6 +80,24 @@ class ReportGenerator:
         self.ner = ner
         self.rag = rag
         self.llm = llm
+
+    # ------------------------------------------------------------------
+    # RAG helper
+    # ------------------------------------------------------------------
+
+    async def _retrieve_rag(
+        self, query_text: str
+    ) -> list[RAGResult]:
+        """Retrieve diverse RAG results using query_diverse."""
+        if not self.rag.is_ready or self.rag.doc_count == 0:
+            return []
+        try:
+            return await self.rag.query_diverse(
+                query_text, n_results=50, top_k=5
+            )
+        except Exception:
+            logger.exception("RAG query_diverse failed")
+            return []
 
     # ------------------------------------------------------------------
     # Full pipeline (non-streaming)
@@ -120,20 +141,15 @@ class ReportGenerator:
             progress = 0.2 + (i / len(section_keys)) * 0.6
             await _progress(
                 "generating",
-                f"Bolum olusturuluyor: {meta['title']}",
+                f"Alan olusturuluyor: {meta['title']}",
                 progress,
             )
 
             section_entities = grouped.get(key, [])
 
-            # RAG retrieval
-            rag_results: list[RAGResult] = []
-            if self.rag.is_ready and self.rag.doc_count > 0:
-                query_text = f"{meta['title']} {' '.join(e.text for e in section_entities)}"
-                try:
-                    rag_results = await self.rag.query(query_text)
-                except Exception:
-                    logger.exception("RAG query failed for section %s", key)
+            # RAG retrieval with diversity
+            query_text = f"{meta['title']} {' '.join(e.text for e in section_entities)}"
+            rag_results = await self._retrieve_rag(query_text)
 
             # LLM generation
             prompt = build_section_prompt(
@@ -143,9 +159,9 @@ class ReportGenerator:
                 content = await self.llm.generate(prompt, SYSTEM_PROMPT)
             except Exception:
                 logger.exception("LLM generation failed for section %s", key)
-                content = "Belirtilmedi"
+                content = "BELIRTILMEDI"
 
-            confidence = _score_confidence(content, section_entities)
+            confidence = _score_confidence(content, section_entities, key)
 
             sections.append(
                 {
@@ -164,7 +180,6 @@ class ReportGenerator:
 
         await _progress("done", "Rapor hazir", 1.0)
 
-        approved_count = sum(1 for s in sections if s["confidence"] == "high")
         return {
             "sections": sections,
             "approved_sections": 0,
@@ -218,14 +233,9 @@ class ReportGenerator:
                 "data": {"section": key, "title": meta["title"], "progress": progress},
             }
 
-            # RAG
-            rag_results: list[RAGResult] = []
-            if self.rag.is_ready and self.rag.doc_count > 0:
-                query_text = f"{meta['title']} {' '.join(e.text for e in section_entities)}"
-                try:
-                    rag_results = await self.rag.query(query_text)
-                except Exception:
-                    pass
+            # RAG with diversity
+            query_text = f"{meta['title']} {' '.join(e.text for e in section_entities)}"
+            rag_results = await self._retrieve_rag(query_text)
 
             # LLM streaming
             prompt = build_section_prompt(key, full_text, section_entities, rag_results)
@@ -239,9 +249,9 @@ class ReportGenerator:
                     }
             except Exception:
                 logger.exception("LLM streaming failed for section %s", key)
-                accumulated = "Belirtilmedi"
+                accumulated = "BELIRTILMEDI"
 
-            confidence = _score_confidence(accumulated, section_entities)
+            confidence = _score_confidence(accumulated, section_entities, key)
             section_data = {
                 "key": key,
                 "title": meta["title"],
@@ -287,11 +297,17 @@ class ReportGenerator:
         transcript_lower = transcript.lower()
 
         for section in sections:
+            key = section.get("key", "")
             content = section.get("content", "").strip()
+
+            # Skip numeric fields — no hallucination check needed
+            if key in NUMERIC_FIELDS:
+                continue
 
             # Empty section check
             if not content or content in EMPTY_MARKERS:
-                section["confidence"] = "low"
+                if key not in OPTIONAL_FIELDS:
+                    section["confidence"] = "low"
                 continue
 
             # Check that key medical terms from the content appear in transcript
@@ -299,7 +315,8 @@ class ReportGenerator:
             words = content.split()
             medical_words = [
                 w for w in words
-                if len(w) > 4 and w[0].isupper() and w.lower() not in transcript_lower
+                if len(w) > 4 and w.lower() not in transcript_lower
+                and w not in {"----", "///", "MEVCUT", "DOĞAL", "BELIRTILMEDI"}
             ]
             if len(medical_words) > 3:
                 section["confidence"] = "low"

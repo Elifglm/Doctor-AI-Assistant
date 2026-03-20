@@ -57,7 +57,7 @@ class NERSettings(BaseModel):
 class RAGSettings(BaseModel):
     persist_dir: str = "data/rag/chroma_db"
     collection_name: str = "medical_knowledge"
-    n_results: int = 5
+    n_results: int = 50
 
 
 class AppSettings(BaseSettings):

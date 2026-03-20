@@ -35,21 +35,21 @@ class MedicalEntity:
         }
 
 
-# Label -> anamnesis section mapping
+# Label -> HBYS anamnesis field mapping
 _LABEL_SECTION_MAP: dict[str, list[str]] = {
-    "semptom": ["chief_complaint", "history_present"],
-    "hastalik": ["history_present", "past_medical", "assessment"],
-    "ilac": ["medications"],
-    "dozaj": ["medications"],
-    "alerji": ["allergies"],
-    "ameliyat": ["past_medical"],
-    "tibbi_test": ["review_systems", "assessment"],
-    "vucud_bolumu": ["physical_exam", "history_present"],
-    "sure": ["history_present"],
-    "aile_hastaligi": ["family_history"],
-    "sigara": ["social_history"],
-    "alkol": ["social_history"],
-    "meslek": ["social_history"],
+    "semptom": ["hastanin_yakinmasi", "hastanin_oykusu"],
+    "hastalik": ["hastanin_oykusu", "oz_gecmisi_soy_gecmisi", "icd10_list"],
+    "ilac": ["tedavi", "oz_gecmisi_soy_gecmisi"],
+    "dozaj": ["tedavi"],
+    "alerji": ["alerji"],
+    "ameliyat": ["oz_gecmisi_soy_gecmisi"],
+    "tibbi_test": ["tedavi", "muayene_bulgulari"],
+    "vucud_bolumu": ["muayene_bulgulari", "hastanin_oykusu"],
+    "sure": ["hastanin_oykusu", "sikayet_baslangic_tarihi"],
+    "aile_hastaligi": ["soy_gecmisi"],
+    "sigara": ["sigara"],
+    "alkol": ["alkol"],
+    "meslek": ["hastanin_oykusu"],
 }
 
 
