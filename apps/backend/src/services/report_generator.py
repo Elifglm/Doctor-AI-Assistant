@@ -12,7 +12,7 @@ from apps.backend.src.prompts.section_prompts import (
     build_section_prompt,
 )
 from apps.backend.src.prompts.system_prompt import SYSTEM_PROMPT
-from apps.backend.src.services.llm_service import LLMService
+from apps.backend.src.services.llm_base import LLMProvider
 from apps.backend.src.services.ner_service import MedicalEntity, NERService
 from apps.backend.src.services.rag_service import RAGResult, RAGService
 
@@ -75,7 +75,7 @@ class ReportGenerator:
         self,
         ner: NERService,
         rag: RAGService,
-        llm: LLMService,
+        llm: LLMProvider,
     ) -> None:
         self.ner = ner
         self.rag = rag

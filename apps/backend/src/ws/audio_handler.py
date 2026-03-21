@@ -20,13 +20,22 @@ from apps.backend.src.services.asr_service import asr_service
 
 logger = logging.getLogger(__name__)
 
-# FFmpeg path
-FFMPEG_DIR = (
-    r"C:\Users\Huckleberry\AppData\Local\Microsoft\WinGet\Packages"
-    r"\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe"
-    r"\ffmpeg-8.0.1-full_build\bin"
+# FFmpeg path — auto-detect from WinGet installation
+import glob as _glob
+
+FFMPEG_PATH = "ffmpeg"  # fallback: assume it's on PATH
+_ffmpeg_pattern = os.path.expandvars(
+    r"%LOCALAPPDATA%\Microsoft\WinGet\Packages"
+    r"\Gyan.FFmpeg_Microsoft.Winget.Source_*"
+    r"\ffmpeg-*-full_build\bin\ffmpeg.exe"
 )
-FFMPEG_PATH = os.path.join(FFMPEG_DIR, "ffmpeg.exe")
+_ffmpeg_matches = _glob.glob(_ffmpeg_pattern)
+if _ffmpeg_matches:
+    FFMPEG_PATH = _ffmpeg_matches[0]
+    # Also add the directory to PATH for subprocess calls
+    _ffmpeg_dir = os.path.dirname(FFMPEG_PATH)
+    if _ffmpeg_dir not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
 
 # Project data directory for recordings
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]

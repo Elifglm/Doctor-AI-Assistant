@@ -17,6 +17,9 @@ class WhisperSettings(BaseModel):
     language: str = "tr"
     batch_size: int = 16
     vad_method: str = "silero"  # Windows uyumlulugu icin kritik
+    fallback_device: str = "cpu"
+    fallback_compute_type: str = "int8"
+    auto_fallback: bool = True
 
 
 class DiarizationSettings(BaseModel):
@@ -39,13 +42,17 @@ class OutputSettings(BaseModel):
 
 
 class LLMSettings(BaseModel):
+    mode: str = "local"  # "local" (Ollama) | "api" (Gemini)
     ollama_url: str = "http://localhost:11434"
     model_name: str = "qwen3:14b"
     fallback_model: str = "qwen3:8b"
+    ollama_fallback_enabled: bool = True
     temperature: float = 0.3
     top_p: float = 0.9
     max_tokens: int = 2048
     timeout_seconds: int = 300
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
 
 
 class NERSettings(BaseModel):
@@ -75,5 +82,6 @@ class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_prefix="ASR_",
+        env_nested_delimiter="__",
         populate_by_name=True,
     )

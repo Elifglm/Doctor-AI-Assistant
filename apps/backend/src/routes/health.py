@@ -22,6 +22,9 @@ class HealthResponse(BaseModel):
     ollama_model_loaded: bool
     rag_doc_count: int
     version: str
+    llm_mode: str = "local"  # "local" | "api"
+    llm_provider: str = "ollama"  # "ollama" | "gemini"
+    llm_model_name: str = ""
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -66,15 +69,23 @@ async def health_check(request: Request) -> HealthResponse:
     except Exception:
         pass
 
-    # --- Ollama ---
+    # --- LLM provider ---
     ollama_status = "unknown"
     ollama_model_loaded = False
+    llm_mode = "local"
+    llm_provider = "ollama"
+    llm_model_name = ""
     try:
         llm_service = getattr(request.app.state, "llm_service", None)
         if llm_service is not None:
+            llm_provider = getattr(llm_service, "provider_name", "ollama")
+            llm_model_name = getattr(llm_service, "model_name", "")
+            app_settings = getattr(request.app.state, "app_settings", None)
+            if app_settings is not None:
+                llm_mode = app_settings.llm.mode
             healthy = await llm_service.check_health()
             ollama_status = "connected" if healthy else "disconnected"
-            if healthy:
+            if healthy and hasattr(llm_service, "is_model_loaded"):
                 ollama_model_loaded = await llm_service.is_model_loaded()
     except Exception:
         ollama_status = "disconnected"
@@ -108,4 +119,7 @@ async def health_check(request: Request) -> HealthResponse:
         ollama_model_loaded=ollama_model_loaded,
         rag_doc_count=rag_doc_count,
         version="1.0.0",
+        llm_mode=llm_mode,
+        llm_provider=llm_provider,
+        llm_model_name=llm_model_name,
     )
