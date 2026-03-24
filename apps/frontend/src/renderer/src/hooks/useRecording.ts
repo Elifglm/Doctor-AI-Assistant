@@ -14,7 +14,13 @@ export function useRecording(sessionId: number | null) {
   const [error, setError] = useState<string | null>(null)
 
   const { setRecordingState, setElapsedTime, setAudioLevel, recordingState } = useSessionStore()
-  const { setProcessing, setSegments, reset: resetTranscription } = useTranscriptionStore()
+  const {
+    setProcessing,
+    setSegments,
+    setAutoReportReady,
+    setReportFlowDone,
+    reset: resetTranscription,
+  } = useTranscriptionStore()
 
   // Shared cleanup - releases all recording resources
   const cleanup = useCallback(() => {
@@ -78,8 +84,40 @@ export function useRecording(sessionId: number | null) {
           is_edited: false,
         }))
         setSegments(segments)
+        // Do NOT close the WS yet — wait for report_ready or report_warning
+        // from the backend's auto-report generation step.
+        // A safety timeout ensures we don't hang forever if backend fails silently.
+        const reportTimeout = setTimeout(() => {
+          if (!useTranscriptionStore.getState().reportFlowDone) {
+            console.warn('Report generation timed out, proceeding without auto-report')
+            setReportFlowDone()
+            setRecordingState('idle')
+            wsClient.current?.close()
+            wsClient.current = null
+          }
+        }, 60_000)
+
+        // Store the timeout so report_ready/report_warning handlers can clear it
+        ;(wsClient.current as unknown as Record<string, unknown>).__reportTimeout = reportTimeout
+      })
+
+      wsClient.current.on('report_ready', (data) => {
+        const msg = data as { report_id: number; session_id: number }
+        setAutoReportReady(msg.report_id)
         setRecordingState('idle')
-        // Close WS now that we have results
+        // Clear the safety timeout
+        const timeout = (wsClient.current as unknown as Record<string, unknown>)?.__reportTimeout
+        if (timeout) clearTimeout(timeout as ReturnType<typeof setTimeout>)
+        wsClient.current?.close()
+        wsClient.current = null
+      })
+
+      wsClient.current.on('report_warning', () => {
+        // Auto-report failed but we can proceed without it
+        setReportFlowDone()
+        setRecordingState('idle')
+        const timeout = (wsClient.current as unknown as Record<string, unknown>)?.__reportTimeout
+        if (timeout) clearTimeout(timeout as ReturnType<typeof setTimeout>)
         wsClient.current?.close()
         wsClient.current = null
       })
@@ -93,11 +131,22 @@ export function useRecording(sessionId: number | null) {
       })
 
       wsClient.current.on('close', () => {
-        // If we're still processing when WS closes, it means something went wrong
+        // If we're still processing when WS closes, check if we have results
         if (useSessionStore.getState().recordingState === 'processing') {
-          console.warn('WS closed while still processing')
-          setError('Bağlantı kesildi. İşlem tamamlanamadı.')
-          setRecordingState('idle')
+          const store = useTranscriptionStore.getState()
+          if (store.segments.length > 0) {
+            // We have transcription results — mark report flow as done and proceed
+            console.warn('WS closed during report generation, proceeding with available data')
+            if (!store.reportFlowDone) {
+              setReportFlowDone()
+            }
+            setRecordingState('idle')
+          } else {
+            // No results at all — something went wrong
+            console.warn('WS closed while still processing with no results')
+            setError('Bağlantı kesildi. İşlem tamamlanamadı.')
+            setRecordingState('idle')
+          }
         }
       })
 
@@ -156,7 +205,7 @@ export function useRecording(sessionId: number | null) {
       setRecordingState('idle')
       cleanup()
     }
-  }, [sessionId, cleanup, resetTranscription, setProcessing, setSegments, setRecordingState, setElapsedTime, setAudioLevel])
+  }, [sessionId, cleanup, resetTranscription, setProcessing, setSegments, setAutoReportReady, setReportFlowDone, setRecordingState, setElapsedTime, setAudioLevel])
 
   const pauseRecording = useCallback(() => {
     // Save current elapsed time and stop the timer

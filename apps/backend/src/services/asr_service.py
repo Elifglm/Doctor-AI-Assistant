@@ -75,38 +75,20 @@ class ASRService:
         """Override diarizer for CPU mode.
 
         If HF token is available, use CPU device for diarization.
-        If HF token is missing, skip diarization entirely and assign
-        all segments to a default speaker.
+        If HF token is missing or lacks gated-repo permissions, skip
+        diarization entirely and assign all segments to a default speaker.
         """
         if self._pipeline is None:
             return
 
         diarizer = self._pipeline.diarizer
 
-        if diarizer.hf_token:
-            # HF token exists — use CPU device instead of hardcoded CUDA
-            def patched_load_model() -> None:
-                from whisperx.diarize import DiarizationPipeline
-                try:
-                    diarizer.pipeline = DiarizationPipeline(
-                        model_name="pyannote/speaker-diarization-3.1",
-                        token=diarizer.hf_token,
-                        device="cpu",
-                    )
-                    diarizer.gpu.register_model("pyannote", diarizer.pipeline)
-                    logger.info("Pyannote diarization pipeline yuklendi (CPU modu)")
-                except Exception as e:
-                    from src.exceptions import DiarizationError
-                    raise DiarizationError(
-                        f"Diarization pipeline yuklenemedi (CPU): {e}"
-                    ) from e
-
-            diarizer.load_model = patched_load_model
-        else:
-            # No HF token — skip diarization, assign default speaker
+        def _apply_skip_diarization(reason: str) -> None:
+            """Disable diarization and assign all segments to SPEAKER_00."""
             logger.warning(
-                "HF_TOKEN tanimli degil, konusmaci ayristirma atlanacak. "
-                "Tum segmentler 'Doktor' olarak isaretlenecek."
+                "%s -- konusmaci ayristirma atlanacak. "
+                "Tum segmentler 'Doktor' olarak isaretlenecek.",
+                reason,
             )
             diarizer.load_model = lambda: None
             diarizer.unload_model = lambda: None
@@ -123,6 +105,34 @@ class ASRService:
 
             diarizer.diarize = skip_diarize
             diarizer.assign_speakers = skip_assign
+
+        if diarizer.hf_token:
+            # HF token exists — try CPU device instead of hardcoded CUDA
+            def patched_load_model() -> None:
+                from whisperx.diarize import DiarizationPipeline
+                try:
+                    diarizer.pipeline = DiarizationPipeline(
+                        model_name="pyannote/speaker-diarization-3.1",
+                        token=diarizer.hf_token,
+                        device="cpu",
+                    )
+                    diarizer.gpu.register_model("pyannote", diarizer.pipeline)
+                    logger.info("Pyannote diarization pipeline yuklendi (CPU modu)")
+                except Exception as e:
+                    # Token may exist but lack gated-repo permissions (403),
+                    # or model download may fail. Fall back gracefully.
+                    logger.warning(
+                        "Diarization pipeline yuklenemedi (CPU): %s. "
+                        "Skip moduna geciliyor.",
+                        e,
+                    )
+                    _apply_skip_diarization(
+                        f"Pyannote model yuklenemedi: {e}"
+                    )
+
+            diarizer.load_model = patched_load_model
+        else:
+            _apply_skip_diarization("HF_TOKEN tanimli degil")
 
     async def process_audio(
         self,

@@ -49,10 +49,16 @@ class LLMSettings(BaseModel):
     ollama_fallback_enabled: bool = True
     temperature: float = 0.3
     top_p: float = 0.9
-    max_tokens: int = 2048
+    max_tokens: int = 8192
     timeout_seconds: int = 300
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+    cerebras_api_key: str = ""
+    cerebras_model: str = "llama3.1-8b"
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-haiku-4-5-20251001"
 
 
 class NERSettings(BaseModel):

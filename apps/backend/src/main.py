@@ -45,6 +45,7 @@ from apps.backend.src.db.database import init_db
 from apps.backend.src.routes import auth as auth_routes
 from apps.backend.src.routes import data as data_routes
 from apps.backend.src.routes import health as health_routes
+from apps.backend.src.routes import icd10 as icd10_routes
 from apps.backend.src.routes import reports as reports_routes
 from apps.backend.src.routes import sessions as sessions_routes
 from apps.backend.src.routes import settings as settings_routes
@@ -86,12 +87,33 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # NER is lazy-loaded on first use (heavy model ~500MB)
 
-    report_generator = ReportGenerator(ner_service, rag_service, llm_service)
+    # ---- ICD-10 services ----
+    from apps.backend.src.services.icd10_service import ICD10Service
+    from apps.backend.src.services.icd10_vector_service import ICD10VectorService
+    from apps.backend.src.services.icd10_suggestion_service import ICD10SuggestionService
+
+    icd10_service = ICD10Service()
+    icd10_vector_service = ICD10VectorService()
+    try:
+        await icd10_vector_service.initialize()
+    except Exception:
+        logger.warning("ICD-10 vector service initialization failed")
+
+    icd10_suggestion_service = ICD10SuggestionService(
+        llm=llm_service,
+        icd10_service=icd10_service,
+        vector_service=icd10_vector_service,
+        ner_service=ner_service,
+    )
+
+    report_generator = ReportGenerator(ner_service, rag_service, llm_service, icd10_suggestion_service)
 
     app.state.llm_service = llm_service
     app.state.ner_service = ner_service
     app.state.rag_service = rag_service
     app.state.report_generator = report_generator
+    app.state.icd10_service = icd10_service
+    app.state.icd10_suggestion_service = icd10_suggestion_service
     app.state.app_settings = app_settings
 
     yield
@@ -136,4 +158,5 @@ app.include_router(sessions_routes.router)
 app.include_router(transcription_routes.router)
 app.include_router(reports_routes.router)
 app.include_router(settings_routes.router)
+app.include_router(icd10_routes.router)
 app.include_router(data_routes.router)

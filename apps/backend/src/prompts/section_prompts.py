@@ -252,7 +252,7 @@ ANAMNESIS_SECTIONS: dict[str, dict[str, str]] = {
 OPTIONAL_FIELDS: set[str] = {
     "alerji", "uyari", "oneri", "agri_skalasi",
     "konsultasyon_muayene", "konsultasyon_sonuc", "konsultasyon_oneri",
-    "sikayet_baslangic_tarihi", "kontrol_zamani",
+    "sikayet_baslangic_tarihi", "kontrol_zamani", "icd10_list",
 }
 
 # Fields that expect only numeric values
@@ -296,15 +296,33 @@ def build_section_prompt(
 ) -> str:
     """Build the full prompt for a single HBYS report field."""
     meta = ANAMNESIS_SECTIONS[section_key]
+
+    # Determine empty-field behavior based on whether field is optional
+    if section_key in OPTIONAL_FIELDS or section_key in NUMERIC_FIELDS:
+        empty_instruction = (
+            "Bu alan opsiyoneldir. Transkriptte bilgi yoksa SADECE bos string don. "
+            "'BELIRTILMEDI' yazma, hicbir sey yazma."
+        )
+    else:
+        empty_instruction = (
+            "Transkriptte bu alan icin bilgi yoksa 'BELIRTILMEDI' yaz."
+        )
+
     return (
         f"<TRANSKRIPT>\n{transcript}\n</TRANSKRIPT>\n\n"
-        f"<TIBBI_BILGILER>\n{_format_entities(entities)}\n</TIBBI_BILGILER>\n\n"
+        f"<TIBBI_BILGILER>\n{_format_entities(entities)}\n"
+        f"UYARI: Yukaridaki tibbi bilgiler otomatik cikarilmistir. "
+        f"Her birini transkriptte dogrula. Transkriptte gecmeyeni KULLANMA.\n"
+        f"</TIBBI_BILGILER>\n\n"
         f"<REFERANS>\n"
-        f"Asagidaki referanslar benzer vakalarda bu alanin nasil dolduruldugunu gostermektedir. "
-        f"FORMAT olarak referanslari takip et ama ICERIK olarak sadece transkripti kullan.\n\n"
+        f"Asagidaki referanslar SADECE format ornegi icindir. "
+        f"Referanstaki hastaliklari, semptomlari veya bulgulari KOPYALAMA. "
+        f"ICERIK olarak sadece transkripti kullan.\n\n"
         f"{_format_rag_context(rag_context)}\n"
         f"</REFERANS>\n\n"
         f"GOREV: {meta['prompt']}\n\n"
+        f"{empty_instruction}\n\n"
         f"ALAN: {meta['title']}\n"
-        f"Sadece bu alanin icerigini yaz. Alan basligi ekleme."
+        f"Sadece bu alanin icerigini yaz. Alan basligi ekleme. "
+        f"Transkriptte gecmeyen hicbir tibbi terim ekleme."
     )

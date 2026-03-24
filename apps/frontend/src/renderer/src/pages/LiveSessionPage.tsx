@@ -20,7 +20,7 @@ const stageLabelMap: Record<string, string> = {
   'Stage 1/4': 'Gürültü bastırma...',
   'Stage 2/4': 'Transkripsiyon...',
   'Stage 3/4': 'Konuşmacı ayrıştırma...',
-  'Stage 4/4': 'Sonuçlar kaydediliyor...',
+  'Stage 4/4': 'Anamnez raporu oluşturuluyor...',
 }
 
 function getStageInfo(stage: string): { index: number; total: number } {
@@ -39,7 +39,7 @@ export function LiveSessionPage(): React.JSX.Element {
 
   const { startRecording, pauseRecording, resumeRecording, stopRecording, recordingState, error } =
     useRecording(sessionId)
-  const { segments, processingStage, processingMessage, processingProgress, hasResults } =
+  const { segments, processingStage, processingMessage, processingProgress, hasResults, reportFlowDone } =
     useTranscription()
   const recordingStateFromStore = useSessionStore((s) => s.recordingState)
 
@@ -56,9 +56,9 @@ export function LiveSessionPage(): React.JSX.Element {
     }
   }, [sessionId, startRecording])
 
-  // Navigate to review when results are ready
+  // Navigate to review when results are ready AND report flow is done
   useEffect(() => {
-    if (hasResults && sessionId && recordingStateFromStore === 'idle') {
+    if (hasResults && reportFlowDone && sessionId && recordingStateFromStore === 'idle') {
       const timeout = setTimeout(() => {
         navigate(`/session/${sessionId}/review`)
       }, 500)
@@ -67,7 +67,7 @@ export function LiveSessionPage(): React.JSX.Element {
       }
     }
     return undefined
-  }, [hasResults, sessionId, recordingStateFromStore, navigate])
+  }, [hasResults, reportFlowDone, sessionId, recordingStateFromStore, navigate])
 
   const handleStop = (): void => {
     stopRecording()

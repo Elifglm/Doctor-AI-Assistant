@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { ChevronDown, ChevronRight, Check, Pencil } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { ConfidenceBadge } from './ConfidenceBadge'
+import { ICD10Selector } from './ICD10Selector'
 import type { ReportSection as ReportSectionType } from '../../types/report'
 
 const statusConfig: Record<ReportSectionType['status'], { label: string; className: string }> = {
@@ -23,12 +24,14 @@ interface ReportSectionProps {
   section: ReportSectionType
   onContentChange: (key: string, content: string) => void
   onApprove: (key: string) => void
+  transcriptText?: string
 }
 
 export function ReportSectionCard({
   section,
   onContentChange,
   onApprove,
+  transcriptText,
 }: ReportSectionProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(true)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -77,17 +80,25 @@ export function ReportSectionCard({
 
       {isOpen && (
         <div className="border-t border-slate-100 px-4 py-3 space-y-3">
-          <textarea
-            ref={textareaRef}
-            value={section.content}
-            onChange={(e) => {
-              onContentChange(section.key, e.target.value)
-              resizeTextarea()
-            }}
-            rows={3}
-            className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            placeholder="Bu bölüm için içerik giriniz..."
-          />
+          {section.key === 'icd10_list' ? (
+            <ICD10Selector
+              value={section.content}
+              transcriptText={transcriptText}
+              onChange={(formatted) => onContentChange(section.key, formatted)}
+            />
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={section.content}
+              onChange={(e) => {
+                onContentChange(section.key, e.target.value)
+                resizeTextarea()
+              }}
+              rows={3}
+              className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              placeholder="Bu bölüm için içerik giriniz..."
+            />
+          )}
           <div className="flex justify-end">
             {section.status === 'approved' ? (
               <button

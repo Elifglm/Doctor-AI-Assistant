@@ -67,17 +67,19 @@ class GeminiLLMService:
         if self._client is None:
             raise RuntimeError("GeminiLLMService not initialized. Call initialize() first.")
 
+        from google.genai import types  # type: ignore[import-untyped]
+
         full_prompt = f"{system}\n\n{prompt}" if system else prompt
 
         try:
-            response = self._client.models.generate_content(
+            response = await self._client.aio.models.generate_content(
                 model=self._model_name,
                 contents=full_prompt,
-                config={
-                    "temperature": settings.llm.temperature,
-                    "top_p": settings.llm.top_p,
-                    "max_output_tokens": settings.llm.max_tokens,
-                },
+                config=types.GenerateContentConfig(
+                    temperature=settings.llm.temperature,
+                    top_p=settings.llm.top_p,
+                    max_output_tokens=settings.llm.max_tokens,
+                ),
             )
             return response.text
         except Exception:
@@ -91,19 +93,20 @@ class GeminiLLMService:
         if self._client is None:
             raise RuntimeError("GeminiLLMService not initialized. Call initialize() first.")
 
+        from google.genai import types  # type: ignore[import-untyped]
+
         full_prompt = f"{system}\n\n{prompt}" if system else prompt
 
         try:
-            response = self._client.models.generate_content_stream(
+            async for chunk in await self._client.aio.models.generate_content_stream(
                 model=self._model_name,
                 contents=full_prompt,
-                config={
-                    "temperature": settings.llm.temperature,
-                    "top_p": settings.llm.top_p,
-                    "max_output_tokens": settings.llm.max_tokens,
-                },
-            )
-            for chunk in response:
+                config=types.GenerateContentConfig(
+                    temperature=settings.llm.temperature,
+                    top_p=settings.llm.top_p,
+                    max_output_tokens=settings.llm.max_tokens,
+                ),
+            ):
                 if chunk.text:
                     yield chunk.text
         except Exception:
