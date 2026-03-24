@@ -288,7 +288,7 @@ class ReportGenerator:
             suggestions = await self.icd10.suggest(transcript)
             if suggestions:
                 icd10_text = "\n".join(
-                    f"({s.icd_kodu}) - {s.tani} (Ön Tanı)"
+                    f"({s.icd_kodu}) - {s.tani} (Ön Tanı) [%{int(s.confidence * 100)}]"
                     for s in suggestions
                 )
                 icd10_section["content"] = icd10_text

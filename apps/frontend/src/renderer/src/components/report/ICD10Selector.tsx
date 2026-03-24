@@ -11,15 +11,22 @@ interface ICD10SelectorProps {
   onChange: (formatted: string) => void
 }
 
-function parseExistingCodes(value: string): ICD10ConfirmedCode[] {
+interface ParsedCode extends ICD10ConfirmedCode {
+  confidence?: number
+}
+
+function parseExistingCodes(value: string): ParsedCode[] {
   if (!value || value === 'BELIRTILMEDI') return []
-  const codes: ICD10ConfirmedCode[] = []
+  const codes: ParsedCode[] = []
   const lines = value.split('\n').filter((l) => l.trim())
   for (const line of lines) {
-    const match = line.match(/^\(([A-Z0-9.]+)\)\s*-\s*(.+?)(?:\s*\((Ön Tanı|On Tanı|Kesin Tanı|Ön Tani|On Tani|Kesin Tani)\))?$/)
+    const match = line.match(
+      /^\(([A-Z0-9.]+)\)\s*-\s*(.+?)(?:\s*\((Ön Tanı|On Tanı|Kesin Tanı|Ön Tani|On Tani|Kesin Tani)\))?(?:\s*\[%(\d+)\])?$/
+    )
     if (match) {
-      const taniTipi = match[3]?.toLowerCase().includes('kesin') ? 'kesin_tani' : 'on_tani'
-      codes.push({ icd_kodu: match[1], tani: match[2].trim(), tani_tipi: taniTipi })
+      const taniTipi = match[3]?.toLowerCase().includes('kesin') ? 'kesin_tani' as const : 'on_tani' as const
+      const confidence = match[4] ? parseInt(match[4], 10) / 100 : undefined
+      codes.push({ icd_kodu: match[1], tani: match[2].trim(), tani_tipi: taniTipi, confidence })
     }
   }
   return codes
@@ -36,12 +43,22 @@ function formatCodes(codes: ICD10ConfirmedCode[]): string {
 }
 
 export function ICD10Selector({ value, transcriptText, onChange }: ICD10SelectorProps) {
+  const parsed = parseExistingCodes(value)
   const [selectedCodes, setSelectedCodes] = useState<ICD10ConfirmedCode[]>(() =>
-    parseExistingCodes(value)
+    parsed.map(({ confidence: _, ...rest }) => rest)
   )
   const [searchQuery, setSearchQuery] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [suggestions, setSuggestions] = useState<ICD10Suggestion[]>([])
+  const [suggestions, setSuggestions] = useState<ICD10Suggestion[]>(() =>
+    parsed
+      .filter((p) => p.confidence !== undefined)
+      .map((p) => ({
+        icd_kodu: p.icd_kodu,
+        tani: p.tani,
+        confidence: p.confidence ?? 0.5,
+        reasoning: '',
+      }))
+  )
   const [isSuggesting, setIsSuggesting] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
