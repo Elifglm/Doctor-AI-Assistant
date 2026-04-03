@@ -7,15 +7,15 @@ import type { Report, ReportSection } from '../../types/report'
 
 interface ReportEditorProps {
   report: Report
-  transcriptText?: string
 }
 
-export function ReportEditor({ report, transcriptText }: ReportEditorProps): React.JSX.Element {
+export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   const queryClient = useQueryClient()
   const [sections, setSections] = useState<ReportSection[]>(report.content.sections)
 
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
+  const [icdWarning, setIcdWarning] = useState(false)
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -56,6 +56,7 @@ export function ReportEditor({ report, transcriptText }: ReportEditorProps): Rea
     setSections((prev) =>
       prev.map((s) => {
         if (s.key !== key) return s
+        if (s.content === content) return s
         return { ...s, content, status: s.status === 'approved' ? 'edited' as const : s.status }
       })
     )
@@ -79,6 +80,13 @@ export function ReportEditor({ report, transcriptText }: ReportEditorProps): Rea
   }
 
   const handleApproveAll = (): void => {
+    const icdSection = sections.find((s) => s.key === 'icd10_list')
+    if (icdSection && (!icdSection.content || icdSection.content === 'BELIRTILMEDI')) {
+      setIcdWarning(true)
+      setTimeout(() => setIcdWarning(false), 5000)
+      return
+    }
+
     const allApproved = sections.map((s) => ({ ...s, status: 'approved' as const }))
     setSections(allApproved)
     saveMutation.mutate({
@@ -107,7 +115,7 @@ export function ReportEditor({ report, transcriptText }: ReportEditorProps): Rea
             section={section}
             onContentChange={handleContentChange}
             onApprove={handleApprove}
-            transcriptText={transcriptText}
+            allSections={sections}
           />
         ))}
       </div>
@@ -125,6 +133,9 @@ export function ReportEditor({ report, transcriptText }: ReportEditorProps): Rea
           )}
           {showError && (
             <span className="text-xs text-red-600 transition-opacity duration-200">Kaydetme hatası</span>
+          )}
+          {icdWarning && (
+            <span className="text-xs text-amber-600 font-medium transition-opacity duration-200">ICD-10 tanı kodu seçiniz</span>
           )}
         </div>
         <div className="flex items-center gap-2">

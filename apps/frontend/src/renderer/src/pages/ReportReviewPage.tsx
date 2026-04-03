@@ -208,7 +208,6 @@ export function ReportReviewPage(): React.JSX.Element {
           {report ? (
             <ReportEditor
               report={report}
-              transcriptText={segments.map((s) => `${s.speaker_label}: ${s.text}`).join('\n')}
             />
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-4">

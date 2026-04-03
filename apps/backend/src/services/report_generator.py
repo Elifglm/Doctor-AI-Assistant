@@ -108,9 +108,7 @@ class ReportGenerator:
             f"BUYUK HARF kullan. Bilgi parcalarini '----' ile ayir.\n"
             f"Bilgi yoksa bos string ver.\n"
             f"Vital degerler (sistolik, diyastolik, nabiz, ates, so2, kilo, boy) icin SADECE sayi yaz.\n"
-            f"icd10_list alani icin: transkriptteki semptom ve tanilardan ICD-10 kodlari oner. "
-            f"Format: (KOD) - Tani Adi (On Tani) seklinde, her satira bir kod yaz. "
-            f"Ornek: (I10) - Esansiyel hipertansiyon (On Tani)\n\n"
+            f"icd10_list alani icin bos string ver, bu alan ayrica olusturulacak.\n\n"
             f"Alanlar: {{{fields}}}\n\n"
             f"SADECE JSON yanit ver: {{\"alan_key\": \"icerik\", ...}}"
         )
@@ -249,8 +247,9 @@ class ReportGenerator:
 
         await _progress("validating", "Rapor dogrulaniyor...", 0.9)
 
-        # 4. ICD-10: NER → Vector DB → LLM selection pipeline
-        await self._generate_icd10(sections, full_text)
+        # 4. ICD-10: Report fields → NER → Vector DB → LLM selection
+        report_sections = {s["key"]: s["content"] for s in sections}
+        await self._generate_icd10(sections, report_sections)
 
         # 5. Validation
         sections = self._validate(sections, entities, full_text)
@@ -268,9 +267,9 @@ class ReportGenerator:
     # ------------------------------------------------------------------
 
     async def _generate_icd10(
-        self, sections: list[dict[str, Any]], transcript: str
+        self, sections: list[dict[str, Any]], report_sections: dict[str, str]
     ) -> None:
-        """Generate ICD-10 suggestions using NER → Vector DB → LLM pipeline."""
+        """Generate ICD-10 suggestions using report fields → Vector DB → LLM pipeline."""
         if self.icd10 is None:
             return
 
@@ -285,7 +284,7 @@ class ReportGenerator:
             return
 
         try:
-            suggestions = await self.icd10.suggest(transcript)
+            suggestions = await self.icd10.suggest_from_report(report_sections)
             if suggestions:
                 icd10_text = "\n".join(
                     f"({s.icd_kodu}) - {s.tani} (Ön Tanı) [%{int(s.confidence * 100)}]"

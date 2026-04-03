@@ -18,7 +18,8 @@ class ICD10SearchResponse(BaseModel):
 
 
 class ICD10SuggestRequest(BaseModel):
-    transcript_text: str = Field(..., min_length=1)
+    transcript_text: str | None = Field(default=None, min_length=1)
+    report_sections: dict[str, str] | None = None
 
 
 class ICD10Suggestion(BaseModel):

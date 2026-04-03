@@ -60,7 +60,7 @@ async def suggest_icd10(
     request: Request,
     user: UserInfo = Depends(get_current_user),
 ) -> ICD10SuggestResponse:
-    """Get LLM-powered ICD-10 suggestions from transcript text."""
+    """Get LLM-powered ICD-10 suggestions from report sections or transcript text."""
     suggestion_service = getattr(request.app.state, "icd10_suggestion_service", None)
     if suggestion_service is None:
         raise HTTPException(
@@ -68,7 +68,16 @@ async def suggest_icd10(
             detail="ICD-10 oneri servisi kullanilamaz",
         )
 
-    suggestions = await suggestion_service.suggest(body.transcript_text)
+    if body.report_sections:
+        suggestions = await suggestion_service.suggest_from_report(body.report_sections)
+    elif body.transcript_text:
+        suggestions = await suggestion_service.suggest(body.transcript_text)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="report_sections veya transcript_text alanlarindan biri gerekli",
+        )
+
     return ICD10SuggestResponse(suggestions=suggestions)
 
 
