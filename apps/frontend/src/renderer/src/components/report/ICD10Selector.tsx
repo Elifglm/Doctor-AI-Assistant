@@ -5,9 +5,14 @@ import { useICD10Search } from '../../hooks/useICD10Search'
 import { apiClient } from '../../services/apiClient'
 import type { ICD10ConfirmedCode, ICD10Suggestion, ICD10SuggestResponse } from '../../types/icd10'
 
+interface ReportSectionData {
+  key: string
+  content: string
+}
+
 interface ICD10SelectorProps {
   value: string
-  transcriptText?: string
+  reportSections?: ReportSectionData[]
   onChange: (formatted: string) => void
 }
 
@@ -42,10 +47,10 @@ function formatCodes(codes: ICD10ConfirmedCode[]): string {
     .join('\n')
 }
 
-export function ICD10Selector({ value, transcriptText, onChange }: ICD10SelectorProps) {
+export function ICD10Selector({ value, reportSections, onChange }: ICD10SelectorProps) {
   const parsed = parseExistingCodes(value)
   const [selectedCodes, setSelectedCodes] = useState<ICD10ConfirmedCode[]>(() =>
-    parsed.map(({ confidence: _, ...rest }) => rest)
+    parsed.filter((p) => p.confidence === undefined).map(({ confidence: _, ...rest }) => rest)
   )
   const [searchQuery, setSearchQuery] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -58,6 +63,7 @@ export function ICD10Selector({ value, transcriptText, onChange }: ICD10Selector
         confidence: p.confidence ?? 0.5,
         reasoning: '',
       }))
+      .sort((a, b) => b.confidence - a.confidence)
   )
   const [isSuggesting, setIsSuggesting] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -113,13 +119,17 @@ export function ICD10Selector({ value, transcriptText, onChange }: ICD10Selector
   }
 
   const handleSuggest = async () => {
-    if (!transcriptText) return
+    if (!reportSections || reportSections.length === 0) return
     setIsSuggesting(true)
     try {
+      const sectionMap: Record<string, string> = {}
+      for (const s of reportSections) {
+        sectionMap[s.key] = s.content
+      }
       const data = await apiClient.post<ICD10SuggestResponse>('/api/v1/icd10/suggest', {
-        transcript_text: transcriptText,
+        report_sections: sectionMap,
       })
-      setSuggestions(data.suggestions)
+      setSuggestions([...data.suggestions].sort((a, b) => b.confidence - a.confidence))
     } catch {
       setSuggestions([])
     } finally {
@@ -136,7 +146,7 @@ export function ICD10Selector({ value, transcriptText, onChange }: ICD10Selector
   return (
     <div className="space-y-3">
       {/* AI Suggest Button */}
-      {transcriptText && (
+      {reportSections && reportSections.length > 0 && (
         <button
           type="button"
           onClick={handleSuggest}

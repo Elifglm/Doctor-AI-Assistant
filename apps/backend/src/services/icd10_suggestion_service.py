@@ -42,6 +42,33 @@ Yanit (sadece JSON, baska bir sey yazma):
 Hicbir aday uygun degilse bos liste don: []
 """
 
+ICD10_REPORT_SELECTION_PROMPT = """\
+Sen bir tibbi kodlama uzmanisin. Asagida bir anamnez raporunun ilgili alanlari ve \
+ICD-10 aday kodlari verilmistir.
+
+GOREV: Aday kodlardan rapora en uygun olanlari sec. Uygun olmayanları SECME.
+
+KURALLAR:
+- Rapordaki sikayet, oykü, bulgular ve ön taniya uyan kodlari sec.
+- Raporla ilgisi olmayan kodlari SECME.
+- Maksimum 5 kod sec.
+- Her kod icin guven skoru (0.0-1.0) ver.
+- Sadece JSON formatinda yanit ver.
+
+ANAMNEZ RAPORU:
+{report_text}
+
+ADAY ICD-10 KODLARI:
+{candidates}
+
+Yanit (sadece JSON, baska bir sey yazma):
+[
+  {{"icd_kodu": "E11", "tani": "Tip 2 diyabet", "confidence": 0.85, "reasoning": "Raporda seker hastaligi belirtilmis"}}
+]
+
+Hicbir aday uygun degilse bos liste don: []
+"""
+
 
 class ICD10SuggestionService:
     """NER → Vector DB search → LLM selection pipeline for ICD-10 coding.
@@ -84,6 +111,90 @@ class ICD10SuggestionService:
         logger.info("LLM selected %d ICD-10 codes", len(suggestions))
 
         return suggestions
+
+    # ------------------------------------------------------------------
+    # Report-based suggestion (structured data → better ICD-10)
+    # ------------------------------------------------------------------
+
+    _RELEVANT_KEYS = {
+        "hastanin_yakinmasi", "hastanin_oykusu", "fizik_muayene",
+        "oz_gecmisi_soy_gecmisi", "on_tani",
+    }
+
+    async def suggest_from_report(
+        self, report_sections: dict[str, str]
+    ) -> list[ICD10Suggestion]:
+        """Generate ICD-10 suggestions from structured report fields.
+
+        Uses report fields (complaint, history, findings) instead of raw
+        transcript for more accurate ICD-10 matching.
+        """
+        # Build search text from relevant report fields
+        search_parts: list[str] = []
+        for key in self._RELEVANT_KEYS:
+            val = report_sections.get(key, "").strip()
+            if val and val not in {"BELIRTILMEDI", "BELIRTILMEDI.", ""}:
+                search_parts.append(val)
+
+        if not search_parts:
+            logger.warning("No relevant report fields for ICD-10 suggestion")
+            return []
+
+        report_text = "\n".join(search_parts)
+
+        # Step 1: Extract medical terms from report text
+        ner_terms = await self._extract_ner_terms(report_text)
+        logger.info("Report NER extracted %d terms: %s", len(ner_terms), ner_terms[:5])
+
+        # Step 2: Find candidate ICD-10 codes via vector DB + text search
+        candidates = await self._find_vector_candidates(ner_terms)
+        # Also add text search results for better coverage
+        text_candidates = await self._text_search_fallback(ner_terms)
+        seen = {c["icd_kodu"] for c in candidates}
+        for tc in text_candidates:
+            if tc["icd_kodu"] not in seen:
+                seen.add(tc["icd_kodu"])
+                candidates.append(tc)
+        logger.info("Report combined %d candidates (vector + text)", len(candidates))
+
+        if not candidates:
+            return []
+
+        # Step 3: LLM selects from candidates using report context
+        suggestions = await self._llm_select_from_report(report_text, candidates)
+        logger.info("Report LLM selected %d ICD-10 codes", len(suggestions))
+
+        return suggestions
+
+    async def _llm_select_from_report(
+        self, report_text: str, candidates: list[dict[str, Any]]
+    ) -> list[ICD10Suggestion]:
+        """Ask LLM to select ICD-10 codes based on structured report."""
+        candidates_text = "\n".join(
+            f"({c['icd_kodu']}) - {c['tani']} [skor: {c['score']:.2f}]"
+            for c in candidates
+        )
+
+        prompt = ICD10_REPORT_SELECTION_PROMPT.format(
+            report_text=report_text,
+            candidates=candidates_text,
+        )
+
+        try:
+            raw = await self._llm.generate(prompt, "")
+        except Exception:
+            logger.exception("LLM ICD-10 report selection failed")
+            return [
+                ICD10Suggestion(
+                    icd_kodu=c["icd_kodu"],
+                    tani=c["tani"],
+                    confidence=c["score"],
+                    reasoning=f"Vektörel arama: {c['source']}",
+                )
+                for c in candidates[:5]
+            ]
+
+        return self._parse_llm_selection(raw)
 
     # ------------------------------------------------------------------
     # Step 1: NER extraction

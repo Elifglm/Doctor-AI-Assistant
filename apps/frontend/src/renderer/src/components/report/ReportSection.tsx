@@ -24,16 +24,17 @@ interface ReportSectionProps {
   section: ReportSectionType
   onContentChange: (key: string, content: string) => void
   onApprove: (key: string) => void
-  transcriptText?: string
+  allSections?: ReportSectionType[]
 }
 
 export function ReportSectionCard({
   section,
   onContentChange,
   onApprove,
-  transcriptText,
+  allSections,
 }: ReportSectionProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(true)
+  const [icdWarning, setIcdWarning] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const resizeTextarea = useCallback(() => {
@@ -83,7 +84,7 @@ export function ReportSectionCard({
           {section.key === 'icd10_list' ? (
             <ICD10Selector
               value={section.content}
-              transcriptText={transcriptText}
+              reportSections={allSections}
               onChange={(formatted) => onContentChange(section.key, formatted)}
             />
           ) : (
@@ -110,14 +111,26 @@ export function ReportSectionCard({
                 Düzenle
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => onApprove(section.key)}
-                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors"
-              >
-                <Check className="h-3.5 w-3.5" />
-                Onayla
-              </button>
+              <div className="flex items-center gap-2">
+                {icdWarning && (
+                  <span className="text-xs text-amber-600 font-medium">ICD-10 tanı kodu seçiniz</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (section.key === 'icd10_list' && (!section.content || section.content === 'BELIRTILMEDI')) {
+                      setIcdWarning(true)
+                      setTimeout(() => setIcdWarning(false), 5000)
+                      return
+                    }
+                    onApprove(section.key)
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  Onayla
+                </button>
+              </div>
             )}
           </div>
         </div>
