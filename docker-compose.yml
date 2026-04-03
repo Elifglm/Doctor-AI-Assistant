@@ -1,0 +1,15 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8700:8700"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - ASR_WHISPER__DEVICE=cpu
+      - ASR_WHISPER__COMPUTE_TYPE=int8
+    restart: unless-stopped

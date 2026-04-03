@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Node / Frontend
+node_modules/
+apps/frontend/dist/
+apps/frontend/out/
+apps/frontend/node_modules/
+
+# Data (mounted as volume)
+data/
+output/
+logs/
+test_audio/
+
+# Large model files (downloaded at runtime)
+models/
+*.pt
+*.bin
+*.onnx
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+
+# Docs & tests
+docs/
+*.pdf
+CMPE_RD4*.pdf
+
+# Environment (passed via docker-compose)
+.env
+
+# Claude
+.claude/
