@@ -81,13 +81,22 @@ class RAGService:
         self,
         text: str,
         n_results: int | None = None,
+        where: dict[str, Any] | None = None,
     ) -> list[RAGResult]:
         """Retrieve the most relevant documents for a query string."""
         if self._collection is None or self._collection.count() == 0:
             return []
 
         n = min(n_results or settings.rag.n_results, self._collection.count())
-        results = self._collection.query(query_texts=[text], n_results=n)
+
+        query_kwargs: dict[str, Any] = {
+            "query_texts": [text],
+            "n_results": n,
+        }
+        if where:
+            query_kwargs["where"] = where
+
+        results = self._collection.query(**query_kwargs)
 
         docs = results.get("documents", [[]])[0]
         metas = results.get("metadatas", [[]])[0]
@@ -97,3 +106,38 @@ class RAGService:
             RAGResult(content=doc, metadata=meta, distance=dist)
             for doc, meta, dist in zip(docs, metas, dists)
         ]
+
+    async def query_diverse(
+        self,
+        text: str,
+        n_results: int = 20,
+        top_k: int = 5,
+    ) -> list[RAGResult]:
+        """Retrieve results with diagnosis diversity.
+
+        Fetches n_results candidates, then picks top_k ensuring
+        different diagnoses are represented.
+        """
+        candidates = await self.query(text, n_results=n_results)
+        if not candidates:
+            return []
+
+        seen: set[str] = set()
+        diverse: list[RAGResult] = []
+
+        for r in candidates:
+            diag = r.metadata.get("diagnosis", "")
+            if diag not in seen:
+                diverse.append(r)
+                seen.add(diag)
+                if len(diverse) >= top_k:
+                    break
+
+        if len(diverse) < top_k:
+            for r in candidates:
+                if r not in diverse:
+                    diverse.append(r)
+                    if len(diverse) >= top_k:
+                        break
+
+        return diverse

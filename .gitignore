@@ -56,7 +56,10 @@ apps/frontend/release/
 data/recordings/
 data/exports/
 data/asr.db
+data/icd10.db
+data/icd10_chroma/
 
 # Temp
 *.tmp
 *.bak
+*.tsbuildinfo

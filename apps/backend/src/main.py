@@ -9,13 +9,28 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 # Add FFmpeg to PATH so whisperx and other subprocess calls can find it
-_FFMPEG_DIR = (
-    r"C:\Users\Huckleberry\AppData\Local\Microsoft\WinGet\Packages"
-    r"\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe"
-    r"\ffmpeg-8.0.1-full_build\bin"
-)
-if _FFMPEG_DIR not in os.environ.get("PATH", ""):
-    os.environ["PATH"] = _FFMPEG_DIR + os.pathsep + os.environ.get("PATH", "")
+import glob as _glob
+
+_FFMPEG_PATTERNS = [
+    os.path.expandvars(
+        r"%LOCALAPPDATA%\Microsoft\WinGet\Packages"
+        r"\Gyan.FFmpeg_Microsoft.Winget.Source_*"
+        r"\ffmpeg-*-full_build\bin"
+    ),
+    # Legacy path (original dev machine)
+    (
+        r"C:\Users\Huckleberry\AppData\Local\Microsoft\WinGet\Packages"
+        r"\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe"
+        r"\ffmpeg-8.0.1-full_build\bin"
+    ),
+]
+for _pattern in _FFMPEG_PATTERNS:
+    _matches = _glob.glob(_pattern)
+    if _matches:
+        _ffmpeg_dir = _matches[0]
+        if _ffmpeg_dir not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+        break
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,8 +45,10 @@ from apps.backend.src.db.database import init_db
 from apps.backend.src.routes import auth as auth_routes
 from apps.backend.src.routes import data as data_routes
 from apps.backend.src.routes import health as health_routes
+from apps.backend.src.routes import icd10 as icd10_routes
 from apps.backend.src.routes import reports as reports_routes
 from apps.backend.src.routes import sessions as sessions_routes
+from apps.backend.src.routes import settings as settings_routes
 from apps.backend.src.routes import transcription as transcription_routes
 
 
@@ -44,19 +61,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await init_db()
 
     # ---- LLM pipeline services (lazy init, non-blocking) ----
-    from apps.backend.src.services.llm_service import LLMService
+    from config.settings import AppSettings
+    from apps.backend.src.services.llm_factory import create_llm_service
     from apps.backend.src.services.ner_service import NERService
     from apps.backend.src.services.rag_service import RAGService
     from apps.backend.src.services.report_generator import ReportGenerator
 
-    llm_service = LLMService()
+    app_settings = AppSettings()
+    llm_service = create_llm_service(app_settings)
     ner_service = NERService()
     rag_service = RAGService()
 
     try:
         await llm_service.initialize()
     except Exception:
-        logger.warning("LLM service initialization failed (Ollama may not be running)")
+        logger.warning(
+            "LLM service initialization failed (provider=%s)",
+            llm_service.provider_name,
+        )
 
     try:
         await rag_service.initialize()
@@ -65,12 +87,34 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # NER is lazy-loaded on first use (heavy model ~500MB)
 
-    report_generator = ReportGenerator(ner_service, rag_service, llm_service)
+    # ---- ICD-10 services ----
+    from apps.backend.src.services.icd10_service import ICD10Service
+    from apps.backend.src.services.icd10_vector_service import ICD10VectorService
+    from apps.backend.src.services.icd10_suggestion_service import ICD10SuggestionService
+
+    icd10_service = ICD10Service()
+    icd10_vector_service = ICD10VectorService()
+    try:
+        await icd10_vector_service.initialize()
+    except Exception:
+        logger.warning("ICD-10 vector service initialization failed")
+
+    icd10_suggestion_service = ICD10SuggestionService(
+        llm=llm_service,
+        icd10_service=icd10_service,
+        vector_service=icd10_vector_service,
+        ner_service=ner_service,
+    )
+
+    report_generator = ReportGenerator(ner_service, rag_service, llm_service, icd10_suggestion_service)
 
     app.state.llm_service = llm_service
     app.state.ner_service = ner_service
     app.state.rag_service = rag_service
     app.state.report_generator = report_generator
+    app.state.icd10_service = icd10_service
+    app.state.icd10_suggestion_service = icd10_suggestion_service
+    app.state.app_settings = app_settings
 
     yield
 
@@ -113,4 +157,6 @@ app.include_router(auth_routes.router)
 app.include_router(sessions_routes.router)
 app.include_router(transcription_routes.router)
 app.include_router(reports_routes.router)
+app.include_router(settings_routes.router)
+app.include_router(icd10_routes.router)
 app.include_router(data_routes.router)

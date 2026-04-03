@@ -20,13 +20,22 @@ from apps.backend.src.services.asr_service import asr_service
 
 logger = logging.getLogger(__name__)
 
-# FFmpeg path
-FFMPEG_DIR = (
-    r"C:\Users\Huckleberry\AppData\Local\Microsoft\WinGet\Packages"
-    r"\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe"
-    r"\ffmpeg-8.0.1-full_build\bin"
+# FFmpeg path — auto-detect from WinGet installation
+import glob as _glob
+
+FFMPEG_PATH = "ffmpeg"  # fallback: assume it's on PATH
+_ffmpeg_pattern = os.path.expandvars(
+    r"%LOCALAPPDATA%\Microsoft\WinGet\Packages"
+    r"\Gyan.FFmpeg_Microsoft.Winget.Source_*"
+    r"\ffmpeg-*-full_build\bin\ffmpeg.exe"
 )
-FFMPEG_PATH = os.path.join(FFMPEG_DIR, "ffmpeg.exe")
+_ffmpeg_matches = _glob.glob(_ffmpeg_pattern)
+if _ffmpeg_matches:
+    FFMPEG_PATH = _ffmpeg_matches[0]
+    # Also add the directory to PATH for subprocess calls
+    _ffmpeg_dir = os.path.dirname(FFMPEG_PATH)
+    if _ffmpeg_dir not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
 
 # Project data directory for recordings
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
@@ -162,8 +171,11 @@ class AudioHandler:
                 session.audio_duration_seconds = duration
                 await self.db.commit()
 
-            # Send result
+            # Send transcription result
             await self._send_result(segments, asr_result)
+
+            # Auto-generate anamnesis report
+            await self._auto_generate_report(segments)
 
         except Exception as e:
             tb = traceback.format_exc()
@@ -271,6 +283,43 @@ class AudioHandler:
 
         await self.db.commit()
         return saved
+
+    async def _auto_generate_report(self, segments: list[dict]) -> None:
+        """Automatically generate anamnesis report after transcription."""
+        try:
+            await self._send_progress("Stage 4/4", "Anamnez raporu olusturuluyor...", 0.9)
+
+            # Get report_generator from app state via websocket
+            app = self.ws.app  # type: ignore[attr-defined]
+            report_generator = getattr(app.state, "report_generator", None)
+            if report_generator is None:
+                logger.warning("report_generator not available, skipping auto-report")
+                return
+
+            report_content = await report_generator.generate_report(segments)
+
+            # Save report to DB using ReportService (handles versioning, flush, refresh)
+            from apps.backend.src.services.report_service import ReportService
+            svc = ReportService(self.db)
+            report = await svc.generate_with_content(
+                self.session_id, report_content, method="ai_generated"
+            )
+            await self.db.commit()
+
+            await self._send_json({
+                "type": "report_ready",
+                "session_id": self.session_id,
+                "report_id": report.id,
+                "message": "Anamnez raporu olusturuldu",
+            })
+            logger.info("Auto-generated report for session %d", self.session_id)
+
+        except Exception:
+            logger.exception("Auto report generation failed for session %d", self.session_id)
+            await self._send_json({
+                "type": "report_warning",
+                "message": "Otomatik rapor olusturulamadi, manuel olusturabilirsiniz",
+            })
 
     async def _send_result(self, segments: list[dict], asr_result: dict) -> None:
         """Send the transcription result to the client."""

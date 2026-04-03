@@ -206,7 +206,10 @@ export function ReportReviewPage(): React.JSX.Element {
           style={{ width: `${100 - dividerPosition}%` }}
         >
           {report ? (
-            <ReportEditor report={report} />
+            <ReportEditor
+              report={report}
+              transcriptText={segments.map((s) => `${s.speaker_label}: ${s.text}`).join('\n')}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">

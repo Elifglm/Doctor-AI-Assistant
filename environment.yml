@@ -26,3 +26,4 @@ dependencies:
       - python-multipart>=0.0.12
       - sqlalchemy>=2.0.0
       - aiosqlite>=0.20.0
+      - google-genai>=1.0.0

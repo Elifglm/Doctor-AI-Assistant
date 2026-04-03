@@ -1,4 +1,4 @@
-"""Ollama LLM client -- async HTTP interface for text generation."""
+"""Ollama LLM client -- async HTTP interface for text generation with fallback."""
 
 from __future__ import annotations
 
@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 settings = AppSettings()
 
 
-class LLMService:
-    """Async client for the Ollama REST API."""
+class OllamaLLMService:
+    """Async client for the Ollama REST API with model fallback support."""
 
     def __init__(
         self,
@@ -24,8 +24,19 @@ class LLMService:
         model: str | None = None,
     ) -> None:
         self.base_url = base_url or settings.llm.ollama_url
-        self.model = model or settings.llm.model_name
+        self._primary_model = model or settings.llm.model_name
+        self._fallback_model = settings.llm.fallback_model
+        self._fallback_enabled = settings.llm.ollama_fallback_enabled
+        self._active_model = self._primary_model
         self._client: httpx.AsyncClient | None = None
+
+    @property
+    def provider_name(self) -> str:
+        return "ollama"
+
+    @property
+    def model_name(self) -> str:
+        return self._active_model
 
     async def initialize(self) -> None:
         """Create the underlying HTTP client."""
@@ -33,7 +44,12 @@ class LLMService:
             base_url=self.base_url,
             timeout=httpx.Timeout(settings.llm.timeout_seconds, connect=10.0),
         )
-        logger.info("LLMService initialized (url=%s, model=%s)", self.base_url, self.model)
+        logger.info(
+            "OllamaLLMService initialized (url=%s, model=%s, fallback=%s)",
+            self.base_url,
+            self._primary_model,
+            self._fallback_model if self._fallback_enabled else "disabled",
+        )
 
     async def shutdown(self) -> None:
         """Close the HTTP client."""
@@ -44,7 +60,7 @@ class LLMService:
     @property
     def client(self) -> httpx.AsyncClient:
         if self._client is None:
-            raise RuntimeError("LLMService not initialized. Call initialize() first.")
+            raise RuntimeError("OllamaLLMService not initialized. Call initialize() first.")
         return self._client
 
     # ------------------------------------------------------------------
@@ -67,7 +83,7 @@ class LLMService:
                 return False
             data = resp.json()
             model_names = [m.get("name", "") for m in data.get("models", [])]
-            return any(self.model in name for name in model_names)
+            return any(self._active_model in name for name in model_names)
         except Exception:
             return False
 
@@ -75,38 +91,57 @@ class LLMService:
     # Generation
     # ------------------------------------------------------------------
 
-    async def generate(self, prompt: str, system: str = "") -> str:
-        """Non-streaming generation -- returns the full response text."""
-        payload = {
-            "model": self.model,
+    def _build_payload(self, model: str, prompt: str, system: str, stream: bool) -> dict:
+        return {
+            "model": model,
             "prompt": prompt,
             "system": system,
-            "stream": False,
+            "stream": stream,
             "options": {
                 "temperature": settings.llm.temperature,
                 "top_p": settings.llm.top_p,
                 "num_predict": settings.llm.max_tokens,
             },
         }
+
+    async def _generate_with_model(self, model: str, prompt: str, system: str) -> str:
+        """Generate with a specific model (no fallback)."""
+        payload = self._build_payload(model, prompt, system, stream=False)
         resp = await self.client.post("/api/generate", json=payload)
         resp.raise_for_status()
         return resp.json().get("response", "")
+
+    async def generate(self, prompt: str, system: str = "") -> str:
+        """Non-streaming generation with automatic fallback to secondary model."""
+        try:
+            result = await self._generate_with_model(self._primary_model, prompt, system)
+            self._active_model = self._primary_model
+            return result
+        except Exception as primary_err:
+            if not self._fallback_enabled or self._fallback_model == self._primary_model:
+                raise
+
+            logger.warning(
+                "Primary model %s failed (%s), falling back to %s",
+                self._primary_model,
+                primary_err,
+                self._fallback_model,
+            )
+            try:
+                result = await self._generate_with_model(self._fallback_model, prompt, system)
+                self._active_model = self._fallback_model
+                return result
+            except Exception:
+                logger.exception(
+                    "Fallback model %s also failed", self._fallback_model
+                )
+                raise
 
     async def generate_stream(
         self, prompt: str, system: str = ""
     ) -> AsyncIterator[str]:
         """Streaming generation -- yields token strings as they arrive."""
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "system": system,
-            "stream": True,
-            "options": {
-                "temperature": settings.llm.temperature,
-                "top_p": settings.llm.top_p,
-                "num_predict": settings.llm.max_tokens,
-            },
-        }
+        payload = self._build_payload(self._active_model, prompt, system, stream=True)
         async with self.client.stream("POST", "/api/generate", json=payload) as resp:
             resp.raise_for_status()
             async for line in resp.aiter_lines():

@@ -17,6 +17,9 @@ class WhisperSettings(BaseModel):
     language: str = "tr"
     batch_size: int = 16
     vad_method: str = "silero"  # Windows uyumlulugu icin kritik
+    fallback_device: str = "cpu"
+    fallback_compute_type: str = "int8"
+    auto_fallback: bool = True
 
 
 class DiarizationSettings(BaseModel):
@@ -39,13 +42,23 @@ class OutputSettings(BaseModel):
 
 
 class LLMSettings(BaseModel):
+    mode: str = "local"  # "local" (Ollama) | "api" (Gemini)
     ollama_url: str = "http://localhost:11434"
     model_name: str = "qwen3:14b"
     fallback_model: str = "qwen3:8b"
+    ollama_fallback_enabled: bool = True
     temperature: float = 0.3
     top_p: float = 0.9
-    max_tokens: int = 2048
+    max_tokens: int = 8192
     timeout_seconds: int = 300
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+    cerebras_api_key: str = ""
+    cerebras_model: str = "llama3.1-8b"
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-haiku-4-5-20251001"
 
 
 class NERSettings(BaseModel):
@@ -57,7 +70,7 @@ class NERSettings(BaseModel):
 class RAGSettings(BaseModel):
     persist_dir: str = "data/rag/chroma_db"
     collection_name: str = "medical_knowledge"
-    n_results: int = 5
+    n_results: int = 50
 
 
 class AppSettings(BaseSettings):
@@ -75,5 +88,6 @@ class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_prefix="ASR_",
+        env_nested_delimiter="__",
         populate_by_name=True,
     )

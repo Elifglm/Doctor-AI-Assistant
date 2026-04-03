@@ -8,7 +8,7 @@ const stageLabelMap: Record<string, string> = {
   'Stage 1/4': 'Gürültü bastırma...',
   'Stage 2/4': 'Transkripsiyon...',
   'Stage 3/4': 'Konuşmacı ayrıştırma...',
-  'Stage 4/4': 'Sonuçlar kaydediliyor...',
+  'Stage 4/4': 'Anamnez raporu oluşturuluyor...',
 }
 
 function getStageIndex(stage: string): number {
@@ -22,11 +22,11 @@ export function ProcessingPage(): React.JSX.Element {
   const navigate = useNavigate()
   const sessionId = id ? Number(id) : null
 
-  const { processingStage, processingMessage, processingProgress, hasResults } = useTranscription()
+  const { processingStage, processingMessage, processingProgress, hasResults, reportFlowDone } = useTranscription()
 
-  // Navigate to review page when processing is complete
+  // Navigate to review page when processing is complete and report flow is done
   useEffect(() => {
-    if (processingProgress >= 1.0 && hasResults && sessionId) {
+    if (processingProgress >= 1.0 && hasResults && reportFlowDone && sessionId) {
       const timeout = setTimeout(() => {
         navigate(`/session/${sessionId}/review`)
       }, 500)
@@ -35,7 +35,7 @@ export function ProcessingPage(): React.JSX.Element {
       }
     }
     return undefined
-  }, [processingProgress, hasResults, sessionId, navigate])
+  }, [processingProgress, hasResults, reportFlowDone, sessionId, navigate])
 
   const stageIndex = getStageIndex(processingStage)
   const totalStages = 5

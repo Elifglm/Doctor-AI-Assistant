@@ -7,9 +7,10 @@ import type { Report, ReportSection } from '../../types/report'
 
 interface ReportEditorProps {
   report: Report
+  transcriptText?: string
 }
 
-export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
+export function ReportEditor({ report, transcriptText }: ReportEditorProps): React.JSX.Element {
   const queryClient = useQueryClient()
   const [sections, setSections] = useState<ReportSection[]>(report.content.sections)
 
@@ -106,6 +107,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             section={section}
             onContentChange={handleContentChange}
             onApprove={handleApprove}
+            transcriptText={transcriptText}
           />
         ))}
       </div>
