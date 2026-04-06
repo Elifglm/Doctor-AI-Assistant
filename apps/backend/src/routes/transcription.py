@@ -21,6 +21,7 @@ from apps.backend.src.schemas.transcription import (
 from apps.backend.src.services.audit_service import AuditService
 from apps.backend.src.ws.audio_handler import (
     AudioHandler,
+    get_active_websocket,
     is_session_connected,
     register_connection,
     unregister_connection,
@@ -100,14 +101,25 @@ async def audio_websocket(websocket: WebSocket, session_id: int):
     await websocket.accept()
 
     # ---- Concurrent-connection guard (in-memory) ----
+    # If a stale connection exists (e.g. from React StrictMode re-mount),
+    # force-close it and let the new connection proceed ("last writer wins").
     if is_session_connected(session_id):
-        await websocket.send_json({
-            "type": "error",
-            "message": "Bu gorusme baska bir pencerede zaten aktif",
-            "code": "SESSION_ALREADY_CONNECTED",
-        })
-        await websocket.close()
-        return
+        old_ws = get_active_websocket(session_id)
+        if old_ws is not None:
+            logger.info(
+                "Stale WS connection for session %d, replacing with new one",
+                session_id,
+            )
+            try:
+                await old_ws.send_json({
+                    "type": "error",
+                    "message": "Yeni baglanti geldi, eski baglanti kapatiliyor",
+                    "code": "SUPERSEDED",
+                })
+                await old_ws.close()
+            except Exception:
+                pass  # Already dead
+        unregister_connection(session_id)
 
     # Register this connection *before* any async DB work so that a second
     # connect attempt arriving in the meantime is rejected immediately.
@@ -129,15 +141,10 @@ async def audio_websocket(websocket: WebSocket, session_id: int):
                 await websocket.close()
                 return
 
-            # Prevent concurrent recording on the same session
-            if session.status == "RECORDING":
-                await websocket.send_json({
-                    "type": "error",
-                    "message": "Bu gorusme zaten kayit altinda",
-                    "code": "ALREADY_RECORDING",
-                })
-                await websocket.close()
-                return
+            # Note: "RECORDING" status check removed. The in-memory connection
+            # registry above already prevents true concurrent access. The DB
+            # status check caused false rejections when the old WS's finally
+            # block hadn't reset the status yet (race condition).
 
             # Update session status to RECORDING
             session.status = "RECORDING"

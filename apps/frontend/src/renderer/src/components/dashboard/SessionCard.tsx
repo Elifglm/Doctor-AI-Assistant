@@ -1,4 +1,4 @@
-import { User, ChevronRight } from 'lucide-react'
+import { User, ChevronRight, Trash2, Loader2 } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import type { Session, VisitType } from '../../types/session'
 
@@ -19,6 +19,8 @@ const visitTypeBadgeColors: Record<VisitType, string> = {
 interface SessionCardProps {
   session: Session
   onClick: () => void
+  onDelete?: (sessionId: number) => void
+  isDeleting?: boolean
 }
 
 function formatDateTime(isoString: string): string {
@@ -31,7 +33,7 @@ function formatDateTime(isoString: string): string {
   return `${day}.${month}.${year} ${hours}:${minutes}`
 }
 
-export function SessionCard({ session, onClick }: SessionCardProps): React.JSX.Element {
+export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionCardProps): React.JSX.Element {
   return (
     <button
       onClick={onClick}
@@ -55,6 +57,24 @@ export function SessionCard({ session, onClick }: SessionCardProps): React.JSX.E
       </div>
       <div className="flex items-center gap-3">
         <span className="text-xs text-slate-400">{formatDateTime(session.created_at)}</span>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(session.id)
+            }}
+            disabled={isDeleting}
+            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+            title="Görüşmeyi arşivle"
+          >
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </button>
+        )}
         <ChevronRight className="h-4 w-4 text-slate-400" />
       </div>
     </button>

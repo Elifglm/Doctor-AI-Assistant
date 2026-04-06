@@ -49,6 +49,9 @@ export function useRecording(sessionId: number | null) {
     // Always clean up previous resources before starting
     cleanup()
 
+    // Yield to event loop so the browser can send the WS close frame
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
     setError(null)
     setElapsedTime(0)
     setAudioLevel(0)
@@ -66,6 +69,11 @@ export function useRecording(sessionId: number | null) {
       wsClient.current.on('progress', (data) => {
         const msg = data as WSProgress
         setProcessing(msg.stage, msg.message, msg.progress)
+      })
+
+      // Processing start handler
+      wsClient.current.on('processing_start', () => {
+        setRecordingState('processing')
       })
 
       wsClient.current.on('result', (data) => {

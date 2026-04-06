@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Search,
   ChevronLeft,
@@ -9,6 +9,7 @@ import {
   Loader2,
   Calendar,
   Filter,
+  Trash2,
 } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 import { StatusBadge } from '../components/dashboard/StatusBadge'
@@ -59,6 +60,23 @@ function getSessionRoute(session: Session): string {
 
 export function SessionHistoryPage(): React.JSX.Element {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+
+  const handleDelete = useCallback(async (e: React.MouseEvent, sessionId: number) => {
+    e.stopPropagation() // Satir tiklamasini engelle
+    if (!confirm('Bu görüşmeyi arşivlemek istediğinizden emin misiniz?')) return
+    setDeletingId(sessionId)
+    try {
+      await apiClient.delete(`/api/v1/sessions/${sessionId}`)
+      queryClient.invalidateQueries({ queryKey: ['sessions-history'] })
+    } catch (err) {
+      console.error('Silme hatasi:', err)
+      alert('Görüşme silinemedi')
+    } finally {
+      setDeletingId(null)
+    }
+  }, [queryClient])
 
   const [statusFilter, setStatusFilter] = useState('')
   const [search, setSearch] = useState('')
@@ -193,7 +211,7 @@ export function SessionHistoryPage(): React.JSX.Element {
       {/* Sessions table */}
       <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60 overflow-hidden">
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr_0.6fr] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr_0.6fr_auto] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Tarih
           </span>
@@ -208,6 +226,8 @@ export function SessionHistoryPage(): React.JSX.Element {
           </span>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Süre
+          </span>
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
           </span>
         </div>
 
@@ -244,11 +264,10 @@ export function SessionHistoryPage(): React.JSX.Element {
         {!isLoading &&
           !error &&
           sessions.map((session) => (
-            <button
+            <div
               key={session.id}
-              type="button"
+              className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr_0.6fr_auto] gap-4 w-full items-center border-b border-slate-100 px-4 py-3 text-left transition-colors hover:bg-slate-50 last:border-b-0 cursor-pointer"
               onClick={() => navigate(getSessionRoute(session))}
-              className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr_0.6fr] gap-4 w-full items-center border-b border-slate-100 px-4 py-3 text-left transition-colors hover:bg-slate-50 last:border-b-0"
             >
               <span className="text-sm text-slate-700">
                 {formatDateTime(session.created_at)}
@@ -263,7 +282,20 @@ export function SessionHistoryPage(): React.JSX.Element {
               <span className="text-sm text-slate-500">
                 {formatDuration(session.audio_duration_seconds)}
               </span>
-            </button>
+              <button
+                type="button"
+                onClick={(e) => handleDelete(e, session.id)}
+                disabled={deletingId === session.id}
+                className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                title="Görüşmeyi arşivle"
+              >
+                {deletingId === session.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           ))}
       </div>
 

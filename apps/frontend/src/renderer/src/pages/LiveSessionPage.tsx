@@ -5,20 +5,12 @@ import { useRecording } from '../hooks/useRecording'
 import { useTranscription } from '../hooks/useTranscription'
 import { useSessionStore } from '../stores/sessionStore'
 import { RecordingControls } from '../components/session/RecordingControls'
-import { TranscriptView } from '../components/session/TranscriptView'
 
 const stageLabelMap: Record<string, string> = {
-  'Stage 0/6': 'Dosya doğrulanıyor...',
-  'Stage 1/6': 'Gürültü bastırma...',
-  'Stage 2/6': 'Transkripsiyon...',
-  'Stage 3/6': 'Konuşmacı ayrıştırma...',
-  'Stage 4/6': 'Tıbbi bilgi çıkarma (NER)...',
-  'Stage 5/6': 'Rapor oluşturma (LLM)...',
-  'Stage 6/6': 'Sonuçlar kaydediliyor...',
-  // Backward compat with old 5-stage format
-  'Stage 0/4': 'Dosya doğrulanıyor...',
-  'Stage 1/4': 'Gürültü bastırma...',
-  'Stage 2/4': 'Transkripsiyon...',
+  // Batch pipeline (4 stages)
+  'Stage 0/4': 'Ses dosyası doğrulanıyor...',
+  'Stage 1/4': 'Transkripsiyon...',
+  'Stage 2/4': 'Metin düzeltme...',
   'Stage 3/4': 'Konuşmacı ayrıştırma...',
   'Stage 4/4': 'Anamnez raporu oluşturuluyor...',
 }
@@ -116,7 +108,7 @@ export function LiveSessionPage(): React.JSX.Element {
         <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 ring-1 ring-blue-200/60">
           <Info className="h-4 w-4 text-blue-600 shrink-0" />
           <p className="text-sm text-blue-700">
-            Kaydı durdurunca işleme başlanacak
+            Kayıt devam ediyor. Durdurunca transkripsiyon başlayacak.
           </p>
         </div>
       )}
@@ -160,12 +152,7 @@ export function LiveSessionPage(): React.JSX.Element {
         </div>
       )}
 
-      {/* Transcript view - visible when recording (not during processing) */}
-      {!isProcessing && (
-        <div className="flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60">
-          <TranscriptView segments={segments} />
-        </div>
-      )}
+      {/* Recording placeholder - no transcript during recording in batch mode */}
     </div>
   )
 }

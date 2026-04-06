@@ -29,11 +29,17 @@ export class WSClient {
 
     return new Promise((resolve, reject) => {
       // Guard: prevent duplicate connections to the same session URL
-      if (_activeClients.has(this.url) && _activeClients.get(this.url) !== this) {
-        reject(
-          new Error('Bu görüşme için zaten aktif bir WebSocket bağlantısı mevcut')
-        )
-        return
+      const existing = _activeClients.get(this.url)
+      if (existing && existing !== this) {
+        if (existing.isConnected) {
+          reject(
+            new Error('Bu görüşme için zaten aktif bir WebSocket bağlantısı mevcut')
+          )
+          return
+        }
+        // Stale entry -- remove it and proceed
+        existing.close()
+        _activeClients.delete(this.url)
       }
 
       // Guard: this instance is already connected
@@ -47,12 +53,14 @@ export class WSClient {
         return
       }
 
+      // Register eagerly so any concurrent connect() sees this instance
+      _activeClients.set(this.url, this)
+
       this.ws = new WebSocket(this.url)
       this.ws.binaryType = 'arraybuffer'
 
       this.ws.onopen = () => {
         this._reconnectAttempts = 0
-        _activeClients.set(this.url, this)
         resolve()
       }
 

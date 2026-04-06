@@ -41,4 +41,9 @@ export interface WSError {
   code: string
 }
 
-export type WSMessage = WSProgress | WSResult | WSError
+export interface WSProcessingStart {
+  type: 'processing_start'
+  message: string
+}
+
+export type WSMessage = WSProgress | WSResult | WSError | WSProcessingStart

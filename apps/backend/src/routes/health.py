@@ -62,10 +62,8 @@ async def health_check(request: Request) -> HealthResponse:
     # --- Pipeline ---
     asr_pipeline_ready = False
     try:
-        import importlib
-
-        importlib.import_module("src.pipeline")
-        asr_pipeline_ready = True
+        from apps.backend.src.services.asr_service import asr_service
+        asr_pipeline_ready = asr_service.is_ready
     except Exception:
         pass
 
@@ -118,7 +116,7 @@ async def health_check(request: Request) -> HealthResponse:
         ollama_status=ollama_status,
         ollama_model_loaded=ollama_model_loaded,
         rag_doc_count=rag_doc_count,
-        version="1.0.0",
+        version="2.0.0",
         llm_mode=llm_mode,
         llm_provider=llm_provider,
         llm_model_name=llm_model_name,
