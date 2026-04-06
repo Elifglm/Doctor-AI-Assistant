@@ -1,5 +1,8 @@
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { Plus, AlertCircle } from 'lucide-react'
+import { apiClient } from '../services/apiClient'
 import { StatsBar } from '../components/dashboard/StatsBar'
 import { SessionCard } from '../components/dashboard/SessionCard'
 import { useSessionList } from '../hooks/useSession'
@@ -19,6 +22,22 @@ function getSessionRoute(session: Session): string {
 
 export function DashboardPage(): React.JSX.Element {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+
+  const handleDelete = useCallback(async (sessionId: number) => {
+    if (!confirm('Bu görüşmeyi arşivlemek istediğinizden emin misiniz?')) return
+    setDeletingId(sessionId)
+    try {
+      await apiClient.delete(`/api/v1/sessions/${sessionId}`)
+      queryClient.invalidateQueries({ queryKey: ['sessions'] })
+    } catch (err) {
+      console.error('Silme hatasi:', err)
+      alert('Görüşme silinemedi')
+    } finally {
+      setDeletingId(null)
+    }
+  }, [queryClient])
 
   const { data, isLoading, error } = useSessionList({
     limit: 10,
@@ -96,6 +115,8 @@ export function DashboardPage(): React.JSX.Element {
                 key={session.id}
                 session={session}
                 onClick={() => navigate(getSessionRoute(session))}
+                onDelete={handleDelete}
+                isDeleting={deletingId === session.id}
               />
             ))}
           </div>

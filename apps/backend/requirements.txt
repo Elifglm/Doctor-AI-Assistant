@@ -6,3 +6,7 @@ python-multipart>=0.0.12
 sqlalchemy>=2.0.0
 aiosqlite>=0.20.0
 google-genai>=1.0.0
+pydantic-settings>=2.0.0
+# Optional ASR post-processing
+# turkish-deasciifier (install from GitHub: pip install git+https://github.com/emres/turkish-deasciifier.git)
+# zemberek-python>=0.2.3
