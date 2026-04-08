@@ -44,6 +44,21 @@ services:
       - mysql
     restart: unless-stopped
 
+  openemr-init:
+    image: mariadb:10.11
+    volumes:
+      - ./docker/openemr/icd10_tr.sql:/tmp/icd10_tr.sql
+      - ./docker/openemr/init_icd10.sh:/tmp/init_icd10.sh
+    entrypoint: ["/bin/bash", "/tmp/init_icd10.sh"]
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: openemr
+      MYSQL_PASS: openemr
+      MYSQL_DATABASE: openemr
+    depends_on:
+      - openemr
+    restart: "no"
+
 volumes:
   openemr_mysql:
   openemr_data:
