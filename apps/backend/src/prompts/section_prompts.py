@@ -246,6 +246,14 @@ ANAMNESIS_SECTIONS: dict[str, dict[str, str]] = {
             "Bilgi yoksa bos birak."
         ),
     },
+    "sut_tetkik_list": {
+        "title": "ISTENEN TETKIK VE TAHLILLER",
+        "prompt": (
+            "Doktorun istedigi tetkik ve tahlilleri cikar.\n"
+            "Format: (SUT_KODU) - TETKIK ADI [brans]\n"
+            "Bilgi yoksa bos birak."
+        ),
+    },
 }
 
 # Fields where empty string is acceptable (not "BELIRTILMEDI")
@@ -253,6 +261,7 @@ OPTIONAL_FIELDS: set[str] = {
     "alerji", "uyari", "oneri", "agri_skalasi",
     "konsultasyon_muayene", "konsultasyon_sonuc", "konsultasyon_oneri",
     "sikayet_baslangic_tarihi", "kontrol_zamani", "icd10_list",
+    "sut_tetkik_list",
 }
 
 # Fields that expect only numeric values

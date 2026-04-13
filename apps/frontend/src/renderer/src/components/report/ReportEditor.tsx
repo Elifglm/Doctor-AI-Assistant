@@ -143,7 +143,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             type="button"
             onClick={handleSaveDraft}
             disabled={saveMutation.isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="flex min-w-[140px] items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -156,14 +156,14 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             type="button"
             onClick={handleApproveAll}
             disabled={saveMutation.isPending || approvedCount === totalCount}
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            className="flex min-w-[160px] items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <CheckCheck className="h-4 w-4" />
             )}
-            Tümünü Onayla
+            {approvedCount === totalCount ? 'Tümü Onaylandı' : 'Tümünü Onayla'}
           </button>
         </div>
       </div>

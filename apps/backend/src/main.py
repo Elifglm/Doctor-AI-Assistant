@@ -46,6 +46,7 @@ from apps.backend.src.routes import auth as auth_routes
 from apps.backend.src.routes import data as data_routes
 from apps.backend.src.routes import health as health_routes
 from apps.backend.src.routes import icd10 as icd10_routes
+from apps.backend.src.routes import sut_tetkik as sut_tetkik_routes
 from apps.backend.src.routes import reports as reports_routes
 from apps.backend.src.routes import sessions as sessions_routes
 from apps.backend.src.routes import settings as settings_routes
@@ -106,7 +107,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         ner_service=ner_service,
     )
 
-    report_generator = ReportGenerator(ner_service, rag_service, llm_service, icd10_suggestion_service)
+    # ---- SUT tetkik services ----
+    from apps.backend.src.services.sut_service import SUTService
+    from apps.backend.src.services.sut_vector_service import SUTVectorService
+    from apps.backend.src.services.sut_suggestion_service import SUTSuggestionService
+
+    sut_service = SUTService()
+    sut_vector_service = SUTVectorService()
+    try:
+        await sut_vector_service.initialize()
+    except Exception:
+        logger.warning("SUT tetkik vector service initialization failed")
+
+    sut_suggestion_service = SUTSuggestionService(
+        llm=llm_service,
+        sut_service=sut_service,
+        vector_service=sut_vector_service,
+        ner_service=ner_service,
+    )
+
+    report_generator = ReportGenerator(ner_service, rag_service, llm_service, icd10_suggestion_service, sut_suggestion_service)
 
     app.state.llm_service = llm_service
     app.state.ner_service = ner_service
@@ -114,6 +134,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.report_generator = report_generator
     app.state.icd10_service = icd10_service
     app.state.icd10_suggestion_service = icd10_suggestion_service
+    app.state.sut_service = sut_service
+    app.state.sut_suggestion_service = sut_suggestion_service
     app.state.app_settings = app_settings
 
     yield
@@ -159,4 +181,5 @@ app.include_router(transcription_routes.router)
 app.include_router(reports_routes.router)
 app.include_router(settings_routes.router)
 app.include_router(icd10_routes.router)
+app.include_router(sut_tetkik_routes.router)
 app.include_router(data_routes.router)

@@ -79,11 +79,13 @@ class ReportGenerator:
         rag: RAGService,
         llm: LLMProvider,
         icd10_suggestion_service: Any | None = None,
+        sut_suggestion_service: Any | None = None,
     ) -> None:
         self.ner = ner
         self.rag = rag
         self.llm = llm
         self.icd10 = icd10_suggestion_service
+        self.sut = sut_suggestion_service
 
     # ------------------------------------------------------------------
     # Batch prompt helpers
@@ -108,7 +110,7 @@ class ReportGenerator:
             f"BUYUK HARF kullan. Bilgi parcalarini '----' ile ayir.\n"
             f"Bilgi yoksa bos string ver.\n"
             f"Vital degerler (sistolik, diyastolik, nabiz, ates, so2, kilo, boy) icin SADECE sayi yaz.\n"
-            f"icd10_list alani icin bos string ver, bu alan ayrica olusturulacak.\n\n"
+            f"icd10_list ve sut_tetkik_list alanlari icin bos string ver, bu alanlar ayrica olusturulacak.\n\n"
             f"Alanlar: {{{fields}}}\n\n"
             f"SADECE JSON yanit ver: {{\"alan_key\": \"icerik\", ...}}"
         )
@@ -251,6 +253,9 @@ class ReportGenerator:
         report_sections = {s["key"]: s["content"] for s in sections}
         await self._generate_icd10(sections, report_sections)
 
+        # 4b. SUT Tetkik: Report fields + transcript → NER → Vector DB → LLM selection
+        await self._generate_sut_tetkik(sections, report_sections, full_text)
+
         # 5. Validation
         sections = self._validate(sections, entities, full_text)
 
@@ -301,6 +306,49 @@ class ReportGenerator:
                 logger.info("ICD-10 pipeline returned no suggestions")
         except Exception:
             logger.exception("ICD-10 pipeline failed")
+
+    # ------------------------------------------------------------------
+    # SUT Tetkik: NER → Vector DB → LLM selection
+    # ------------------------------------------------------------------
+
+    async def _generate_sut_tetkik(
+        self, sections: list[dict[str, Any]], report_sections: dict[str, str],
+        transcript: str = ""
+    ) -> None:
+        """Generate SUT tetkik suggestions using report fields + transcript → Vector DB → LLM pipeline."""
+        if self.sut is None:
+            return
+
+        sut_section: dict[str, Any] | None = None
+        for section in sections:
+            if section["key"] == "sut_tetkik_list":
+                sut_section = section
+                break
+
+        if sut_section is None:
+            return
+
+        try:
+            # Use transcript directly — tetkik names are in conversation, not report fields
+            suggestions = await self.sut.suggest(transcript) if transcript else []
+            if not suggestions:
+                suggestions = await self.sut.suggest_from_report(report_sections)
+            if suggestions:
+                sut_text = "\n".join(
+                    f"({s.kodu}) - {s.adi} [%{int(s.confidence * 100)}]"
+                    for s in suggestions
+                )
+                sut_section["content"] = sut_text
+                sut_section["confidence"] = (
+                    "high" if suggestions[0].confidence >= 0.7 else "medium"
+                )
+                logger.info(
+                    "SUT tetkik pipeline generated %d suggestions", len(suggestions)
+                )
+            else:
+                logger.info("SUT tetkik pipeline returned no suggestions")
+        except Exception:
+            logger.exception("SUT tetkik pipeline failed")
 
     # ------------------------------------------------------------------
     # ICD-10 batch validation (legacy, kept for fallback)
@@ -619,9 +667,9 @@ class ReportGenerator:
             if key in NUMERIC_FIELDS:
                 continue
 
-            # Skip icd10_list — already validated against DB, formal
-            # diagnosis names won't appear verbatim in the transcript
-            if key == "icd10_list":
+            # Skip icd10_list and sut_tetkik_list — already validated against DB,
+            # formal names won't appear verbatim in the transcript
+            if key in ("icd10_list", "sut_tetkik_list"):
                 continue
 
             # --- Clean inline BELIRTILMEDI entries ---

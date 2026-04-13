@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Check, Pencil } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { ConfidenceBadge } from './ConfidenceBadge'
 import { ICD10Selector } from './ICD10Selector'
+import { SutTetkikSelector } from './SutTetkikSelector'
 import type { ReportSection as ReportSectionType } from '../../types/report'
 
 const statusConfig: Record<ReportSectionType['status'], { label: string; className: string }> = {
@@ -83,6 +84,12 @@ export function ReportSectionCard({
         <div className="border-t border-slate-100 px-4 py-3 space-y-3">
           {section.key === 'icd10_list' ? (
             <ICD10Selector
+              value={section.content}
+              reportSections={allSections}
+              onChange={(formatted) => onContentChange(section.key, formatted)}
+            />
+          ) : section.key === 'sut_tetkik_list' ? (
+            <SutTetkikSelector
               value={section.content}
               reportSections={allSections}
               onChange={(formatted) => onContentChange(section.key, formatted)}
