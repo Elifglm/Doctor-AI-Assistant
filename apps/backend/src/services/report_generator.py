@@ -251,10 +251,10 @@ class ReportGenerator:
 
         # 4. ICD-10: Report fields → NER → Vector DB → LLM selection
         report_sections = {s["key"]: s["content"] for s in sections}
-        await self._generate_icd10(sections, report_sections)
+        icd_suggestions = await self._generate_icd10(sections, report_sections)
 
-        # 4b. SUT Tetkik: Report fields + transcript → NER → Vector DB → LLM selection
-        await self._generate_sut_tetkik(sections, report_sections, full_text)
+        # 4b. SUT Tetkik: transcript + ICD context → Vector DB → LLM selection
+        await self._generate_sut_tetkik(sections, report_sections, full_text, icd_suggestions)
 
         # 5. Validation
         sections = self._validate(sections, entities, full_text)
@@ -273,12 +273,14 @@ class ReportGenerator:
 
     async def _generate_icd10(
         self, sections: list[dict[str, Any]], report_sections: dict[str, str]
-    ) -> None:
-        """Generate ICD-10 suggestions using report fields → Vector DB → LLM pipeline."""
-        if self.icd10 is None:
-            return
+    ) -> list[str]:
+        """Generate ICD-10 suggestions using report fields → Vector DB → LLM pipeline.
 
-        # Find the icd10_list section
+        Returns list of ICD-10 diagnosis descriptions for use by SUT pipeline.
+        """
+        if self.icd10 is None:
+            return []
+
         icd10_section: dict[str, Any] | None = None
         for section in sections:
             if section["key"] == "icd10_list":
@@ -286,7 +288,7 @@ class ReportGenerator:
                 break
 
         if icd10_section is None:
-            return
+            return []
 
         try:
             suggestions = await self.icd10.suggest_from_report(report_sections)
@@ -302,10 +304,13 @@ class ReportGenerator:
                 logger.info(
                     "ICD-10 pipeline generated %d suggestions", len(suggestions)
                 )
+                return [s.tani for s in suggestions]
             else:
                 logger.info("ICD-10 pipeline returned no suggestions")
+                return []
         except Exception:
             logger.exception("ICD-10 pipeline failed")
+            return []
 
     # ------------------------------------------------------------------
     # SUT Tetkik: NER → Vector DB → LLM selection
@@ -313,9 +318,13 @@ class ReportGenerator:
 
     async def _generate_sut_tetkik(
         self, sections: list[dict[str, Any]], report_sections: dict[str, str],
-        transcript: str = ""
+        transcript: str = "", icd_diagnoses: list[str] | None = None
     ) -> None:
-        """Generate SUT tetkik suggestions using report fields + transcript → Vector DB → LLM pipeline."""
+        """Generate SUT tetkik suggestions using transcript + ICD context → Vector DB → LLM pipeline.
+
+        Only suggests tetkik if the doctor actually requested tests in the conversation.
+        ICD diagnoses are used to improve accuracy, not to force suggestions.
+        """
         if self.sut is None:
             return
 
@@ -330,7 +339,10 @@ class ReportGenerator:
 
         try:
             # Use transcript directly — tetkik names are in conversation, not report fields
-            suggestions = await self.sut.suggest(transcript) if transcript else []
+            # ICD diagnoses passed as context to improve accuracy (not to force suggestions)
+            suggestions = await self.sut.suggest(
+                transcript, icd_context=icd_diagnoses
+            ) if transcript else []
             if not suggestions:
                 suggestions = await self.sut.suggest_from_report(report_sections)
             if suggestions:

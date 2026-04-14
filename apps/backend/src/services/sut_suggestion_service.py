@@ -21,18 +21,18 @@ transkripti ve SUT tetkik/tahlil aday kodlari verilmistir.
 GOREV: Aday tetkiklerden transkripte en uygun olanlari sec. Uygun olmayanları SECME.
 
 KURALLAR:
-- SADECE transkriptte doktorun istedigi veya bahsettiğı tetkikleri sec.
-- Transkriptle ilgisi olmayan tetkikleri SECME.
+- SADECE transkriptte doktorun istedigi veya bahsettiği tetkikleri sec.
+- Doktor tetkik istemiyorsa bos liste don.
 - Doktorun kullandigi halk dilindeki ifadeleri dogru tetkikle esle \
   (ornek: "kan sayimi" = Hemogram, "seker" = Aclik kan sekeri).
-- Branşa uygun tetkikleri oncelikle sec.
+- ICD-10 tanilari verilmisse, o taniya uygun tetkikleri oncelikle sec.
 - Maksimum 10 tetkik sec.
 - Her tetkik icin guven skoru (0.0-1.0) ver.
 - Sadece JSON formatinda yanit ver.
 
 TRANSKRIPT:
 {transcript}
-
+{icd_context}
 ADAY TETKIKLER:
 {candidates}
 
@@ -94,11 +94,18 @@ class SUTSuggestionService:
         self._ner = ner_service
 
     async def suggest(
-        self, transcript: str, brans: str | None = None
+        self, transcript: str, brans: str | None = None,
+        icd_context: list[str] | None = None
     ) -> list[SUTSuggestion]:
         """Full pipeline: NER → Vector DB → LLM selection."""
         ner_terms = await self._extract_ner_terms(transcript)
         logger.info("NER extracted %d terms: %s", len(ner_terms), ner_terms[:5])
+
+        # If no tetkik terms found in transcript, don't suggest anything
+        # ICD context alone should NOT trigger tetkik suggestions
+        if not ner_terms:
+            logger.info("No tetkik terms in transcript, skipping SUT suggestions")
+            return []
 
         candidates = await self._find_vector_candidates(ner_terms, brans=brans)
         # Always add text search results for better coverage
@@ -108,13 +115,14 @@ class SUTSuggestionService:
             if tc["kodu"] not in seen:
                 seen.add(tc["kodu"])
                 candidates.append(tc)
-        print(f"[SUT-DEBUG] suggest: {len(candidates)} total candidates (vector+text)", flush=True)
 
         if not candidates:
             logger.warning("No SUT tetkik candidates found")
             return []
 
-        suggestions = await self._llm_select(transcript, candidates)
+        suggestions = await self._llm_select(
+            transcript, candidates, icd_context=icd_context
+        )
         logger.info("LLM selected %d SUT tetkik", len(suggestions))
 
         return suggestions
@@ -331,17 +339,25 @@ class SUTSuggestionService:
     # ------------------------------------------------------------------
 
     async def _llm_select(
-        self, transcript: str, candidates: list[dict[str, Any]]
+        self, transcript: str, candidates: list[dict[str, Any]],
+        icd_context: list[str] | None = None
     ) -> list[SUTSuggestion]:
         """Ask LLM to select the most relevant tetkik from candidates."""
         candidates_text = "\n".join(
-            f"({c['kodu']}) - {c['adi']} [{c['brans']}] [kaynak: \"{c['source']}\", skor: {c['score']:.2f}]"
+            f"({c['kodu']}) - {c['adi']} [kaynak: \"{c['source']}\", skor: {c['score']:.2f}]"
             for c in candidates
         )
+
+        icd_text = ""
+        if icd_context:
+            icd_text = "\nICD-10 TANILARI (referans):\n" + "\n".join(
+                f"- {d}" for d in icd_context
+            ) + "\n"
 
         prompt = SUT_SELECTION_PROMPT.format(
             transcript=transcript,
             candidates=candidates_text,
+            icd_context=icd_text,
         )
 
         try:
