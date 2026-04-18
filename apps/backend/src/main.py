@@ -42,6 +42,8 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 from apps.backend.src.db.database import init_db
+from apps.backend.src.routes import admin as admin_routes
+from apps.backend.src.routes import appointments as appointment_routes
 from apps.backend.src.routes import auth as auth_routes
 from apps.backend.src.routes import data as data_routes
 from apps.backend.src.routes import health as health_routes
@@ -60,6 +62,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     logger = logging.getLogger(__name__)
     await init_db()
+
+    # ---- Seed default users ----
+    from apps.backend.src.services.auth_service import seed_default_users
+    await seed_default_users()
 
     # ---- LLM pipeline services (lazy init, non-blocking) ----
     from config.settings import AppSettings
@@ -128,6 +134,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     report_generator = ReportGenerator(ner_service, rag_service, llm_service, icd10_suggestion_service, sut_suggestion_service)
 
+    # ---- OpenEMR integration ----
+    from apps.backend.src.services.openemr_service import OpenEMRService
+
+    openemr_service = OpenEMRService()
+    try:
+        await openemr_service.initialize()
+    except Exception:
+        logger.warning("OpenEMR service initialization failed")
+
     app.state.llm_service = llm_service
     app.state.ner_service = ner_service
     app.state.rag_service = rag_service
@@ -136,11 +151,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.icd10_suggestion_service = icd10_suggestion_service
     app.state.sut_service = sut_service
     app.state.sut_suggestion_service = sut_suggestion_service
+    app.state.openemr_service = openemr_service
     app.state.app_settings = app_settings
 
     yield
 
     # Shutdown
+    await openemr_service.shutdown()
     await llm_service.shutdown()
 
 
@@ -176,6 +193,8 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 app.include_router(health_routes.router)
 app.include_router(auth_routes.router)
+app.include_router(admin_routes.router)
+app.include_router(appointment_routes.router)
 app.include_router(sessions_routes.router)
 app.include_router(transcription_routes.router)
 app.include_router(reports_routes.router)

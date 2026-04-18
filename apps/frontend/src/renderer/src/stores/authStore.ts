@@ -7,6 +7,7 @@ interface UserInfo {
   username: string
   display_name: string
   role: string
+  brans: string
 }
 
 interface AuthState {

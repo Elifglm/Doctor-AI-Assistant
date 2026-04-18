@@ -21,7 +21,21 @@ export function Header(): React.JSX.Element {
         </button>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50">
           <User className="h-4 w-4 text-slate-500" />
-          <span className="text-sm text-slate-700">{user?.display_name || 'Kullanıcı'}</span>
+          <span className="text-sm text-slate-700">{user?.display_name || 'Kullanici'}</span>
+          {user?.brans && (
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+              user.brans === 'dahiliye'
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-amber-50 text-amber-700'
+            }`}>
+              {user.brans === 'dahiliye' ? 'Dahiliye' : 'Ortopedi'}
+            </span>
+          )}
+          {user?.role === 'admin' && (
+            <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700">
+              Admin
+            </span>
+          )}
         </div>
       </div>
     </header>

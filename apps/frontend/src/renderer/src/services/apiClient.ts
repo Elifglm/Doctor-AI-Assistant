@@ -17,6 +17,7 @@ interface TokenRefreshResponse {
     username: string
     display_name: string
     role: string
+    brans: string
   }
 }
 

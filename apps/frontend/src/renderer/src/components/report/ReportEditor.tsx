@@ -116,6 +116,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             onContentChange={handleContentChange}
             onApprove={handleApprove}
             allSections={sections}
+            sessionId={report.session_id}
           />
         ))}
       </div>

@@ -37,6 +37,7 @@ async def get_current_user(
         username=username,
         display_name=payload.get("display_name", username),
         role=payload.get("role", "doctor"),
+        brans=payload.get("brans", ""),
     )
 
 

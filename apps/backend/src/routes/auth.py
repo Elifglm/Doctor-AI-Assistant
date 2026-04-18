@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest) -> TokenResponse:
     """Authenticate with username/password and receive a JWT."""
-    user = authenticate_user(body.username, body.password)
+    user = await authenticate_user(body.username, body.password)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -30,6 +30,7 @@ async def login(body: LoginRequest) -> TokenResponse:
             "sub": user.username,
             "display_name": user.display_name,
             "role": user.role,
+            "brans": user.brans,
         }
     )
     return TokenResponse(
@@ -50,6 +51,7 @@ async def refresh_token(
             "sub": current_user.username,
             "display_name": current_user.display_name,
             "role": current_user.role,
+            "brans": current_user.brans,
         }
     )
     return TokenResponse(

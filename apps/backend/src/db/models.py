@@ -120,6 +120,29 @@ class Report(Base):
         return {"sections": [], "approved_sections": 0, "total_sections": 12}
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    username: str = Column(String(100), unique=True, nullable=False)
+    hashed_password: str = Column(String(255), nullable=False)
+    display_name: str = Column(String(200), nullable=False)
+    role: str = Column(String(50), nullable=False, default="doctor")
+    brans: str = Column(String(50), nullable=False, default="")
+    is_active: bool = Column(Boolean, nullable=False, default=True)
+    created_at: datetime = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: datetime = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
 

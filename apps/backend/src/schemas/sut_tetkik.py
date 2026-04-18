@@ -51,3 +51,19 @@ class SUTConfirmRequest(BaseModel):
 class SUTConfirmResponse(BaseModel):
     confirmed: bool
     tetkikler: list[SUTConfirmedTetkik]
+
+
+class SUTOpenEMRSendRequest(BaseModel):
+    session_id: int
+    tetkikler: list[SUTConfirmedTetkik]
+    notes: str = ""
+
+
+class SUTOpenEMRSendResponse(BaseModel):
+    success: bool
+    order_id: str = ""
+    patient_id: str = ""
+    sent_count: int = 0
+    filtered_count: int = 0
+    error: str = ""
+    doctor_brans: str = ""

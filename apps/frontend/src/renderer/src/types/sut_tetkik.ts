@@ -29,3 +29,19 @@ export interface SUTConfirmedTetkik {
   adi: string
   brans: string
 }
+
+export interface SUTOpenEMRSendRequest {
+  session_id: number
+  tetkikler: SUTConfirmedTetkik[]
+  notes: string
+}
+
+export interface SUTOpenEMRSendResponse {
+  success: boolean
+  order_id: string
+  patient_id: string
+  sent_count: number
+  filtered_count: number
+  error: string
+  doctor_brans: string
+}

@@ -1,9 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, Sparkles, X, Loader2 } from 'lucide-react'
+import { Search, Sparkles, X, Loader2, Send, CheckCircle2, AlertCircle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useSutTetkikSearch } from '../../hooks/useSutTetkikSearch'
 import { apiClient } from '../../services/apiClient'
-import type { SUTConfirmedTetkik, SUTSuggestion, SUTSuggestResponse } from '../../types/sut_tetkik'
+import { useAuthStore } from '../../stores/authStore'
+import type {
+  SUTConfirmedTetkik,
+  SUTSuggestion,
+  SUTSuggestResponse,
+  SUTOpenEMRSendResponse,
+} from '../../types/sut_tetkik'
 
 interface ReportSectionData {
   key: string
@@ -14,6 +20,7 @@ interface SutTetkikSelectorProps {
   value: string
   reportSections?: ReportSectionData[]
   brans?: string
+  sessionId?: number
   onChange: (formatted: string) => void
 }
 
@@ -46,7 +53,7 @@ function formatTetkik(items: SUTConfirmedTetkik[]): string {
     .join('\n')
 }
 
-export function SutTetkikSelector({ value, reportSections, brans, onChange }: SutTetkikSelectorProps) {
+export function SutTetkikSelector({ value, reportSections, brans: bransProp, sessionId, onChange }: SutTetkikSelectorProps) {
   const parsed = parseExistingTetkik(value)
   const [selectedTetkik, setSelectedTetkik] = useState<SUTConfirmedTetkik[]>(() =>
     parsed.filter((p) => p.confidence === undefined).map(({ confidence: _, ...rest }) => rest)
@@ -66,8 +73,17 @@ export function SutTetkikSelector({ value, reportSections, brans, onChange }: Su
       .sort((a, b) => b.confidence - a.confidence)
   )
   const [isSuggesting, setIsSuggesting] = useState(false)
+  const [isSendingToOpenEMR, setIsSendingToOpenEMR] = useState(false)
+  const [openEMRResult, setOpenEMRResult] = useState<{
+    success: boolean
+    message: string
+  } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const user = useAuthStore((s) => s.user)
+
+  // Doktorun branşına göre tetkik filtrele
+  const brans = bransProp || user?.brans || undefined
 
   const { results, isLoading } = useSutTetkikSearch(searchQuery, brans)
 
@@ -128,6 +144,46 @@ export function SutTetkikSelector({ value, reportSections, brans, onChange }: Su
       setSuggestions([])
     } finally {
       setIsSuggesting(false)
+    }
+  }
+
+  const handleSendToOpenEMR = async () => {
+    if (!sessionId || selectedTetkik.length === 0) return
+    setIsSendingToOpenEMR(true)
+    setOpenEMRResult(null)
+    try {
+      const data = await apiClient.post<SUTOpenEMRSendResponse>(
+        '/api/v1/sut-tetkik/send-to-openemr',
+        {
+          session_id: sessionId,
+          tetkikler: selectedTetkik,
+          notes: '',
+        }
+      )
+      if (data.success) {
+        const bransLabel = data.doctor_brans === 'dahiliye' ? 'Dahiliye' : 'Ortopedi'
+        setOpenEMRResult({
+          success: true,
+          message: `${data.sent_count} tetkik OpenEMR'e gönderildi (${bransLabel})${
+            data.filtered_count > 0
+              ? ` — ${data.filtered_count} tetkik branş uyumsuzluğu nedeniyle filtrelendi`
+              : ''
+          }`,
+        })
+      } else {
+        setOpenEMRResult({
+          success: false,
+          message: data.error || 'OpenEMR gönderimi başarısız',
+        })
+      }
+    } catch (err) {
+      console.error('[SUT] OpenEMR send error:', err)
+      setOpenEMRResult({
+        success: false,
+        message: 'OpenEMR bağlantı hatası',
+      })
+    } finally {
+      setIsSendingToOpenEMR(false)
     }
   }
 
@@ -268,6 +324,43 @@ export function SutTetkikSelector({ value, reportSections, brans, onChange }: Su
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* OpenEMR Send Button */}
+      {selectedTetkik.length > 0 && sessionId && user?.brans && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={handleSendToOpenEMR}
+            disabled={isSendingToOpenEMR}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50"
+          >
+            {isSendingToOpenEMR ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
+            OpenEMR'e Gönder ({user.brans === 'dahiliye' ? 'Dahiliye' : 'Ortopedi'})
+          </button>
+
+          {openEMRResult && (
+            <div
+              className={cn(
+                'flex items-start gap-2 rounded-lg border px-3 py-2 text-xs',
+                openEMRResult.success
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-red-200 bg-red-50 text-red-700'
+              )}
+            >
+              {openEMRResult.success ? (
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              )}
+              <span>{openEMRResult.message}</span>
+            </div>
+          )}
         </div>
       )}
 

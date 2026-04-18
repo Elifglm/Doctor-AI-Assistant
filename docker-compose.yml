@@ -59,6 +59,21 @@ services:
       - openemr
     restart: "no"
 
+  openemr-sut-init:
+    image: mariadb:10.11
+    volumes:
+      - ./docker/openemr/sut_tetkik.sql:/tmp/sut_tetkik.sql
+      - ./docker/openemr/init_sut_tetkik.sh:/tmp/init_sut_tetkik.sh
+    entrypoint: ["/bin/bash", "/tmp/init_sut_tetkik.sh"]
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: openemr
+      MYSQL_PASS: openemr
+      MYSQL_DATABASE: openemr
+    depends_on:
+      - openemr
+    restart: "no"
+
 volumes:
   openemr_mysql:
   openemr_data:

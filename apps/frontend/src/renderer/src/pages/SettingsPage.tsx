@@ -72,9 +72,17 @@ function ProfilTab(): React.JSX.Element {
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">Rol</label>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
-              {user?.role ?? 'Bilinmiyor'}
+              {user?.role === 'admin' ? 'Admin' : 'Doktor'}
             </div>
           </div>
+          {user?.brans && (
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Brans</label>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
+                {user.brans === 'dahiliye' ? 'Dahiliye' : 'Ortopedi'}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

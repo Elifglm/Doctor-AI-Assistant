@@ -118,7 +118,8 @@ class ICD10SuggestionService:
 
     _RELEVANT_KEYS = {
         "hastanin_yakinmasi", "hastanin_oykusu", "fizik_muayene",
-        "oz_gecmisi_soy_gecmisi", "on_tani",
+        "oz_gecmisi_soy_gecmisi", "on_tani", "konsultasyon_sonuc",
+        "tedavi",
     }
 
     async def suggest_from_report(
@@ -145,6 +146,14 @@ class ICD10SuggestionService:
         # Step 1: Extract medical terms from report text
         ner_terms = await self._extract_ner_terms(report_text)
         logger.info("Report NER extracted %d terms: %s", len(ner_terms), ner_terms[:5])
+
+        # Also extract terms directly from report fields (split by ----)
+        for part_text in search_parts:
+            for fragment in part_text.split("----"):
+                fragment = fragment.strip()
+                if fragment and len(fragment) > 2 and fragment not in {"BELIRTILMEDI", "BELIRTILMEDI."}:
+                    if fragment not in ner_terms:
+                        ner_terms.append(fragment)
 
         # Step 2: Find candidate ICD-10 codes via vector DB + text search
         candidates = await self._find_vector_candidates(ner_terms)
@@ -282,10 +291,25 @@ class ICD10SuggestionService:
     async def _text_search_fallback(
         self, terms: list[str]
     ) -> list[dict[str, Any]]:
-        """Fallback: text-based ICD-10 search when vector DB is unavailable."""
+        """Fallback: text-based ICD-10 search when vector DB is unavailable.
+
+        Also splits compound terms (e.g. 'MIDE BULANTIASI') into individual
+        words and searches each word separately for better coverage.
+        """
         candidates = []
         seen: set[str] = set()
-        for term in terms[:5]:
+
+        # Build expanded search terms: original + individual words
+        expanded: list[str] = []
+        for term in terms[:10]:
+            expanded.append(term)
+            # Split compound terms and ---- separated parts
+            for part in term.replace("----", " ").split():
+                part = part.strip()
+                if len(part) > 3 and part not in expanded:
+                    expanded.append(part)
+
+        for term in expanded[:15]:
             results = await self._icd10.search(term, limit=3)
             for r in results:
                 if r.icd_kodu not in seen:

@@ -50,7 +50,7 @@ class SUTService:
             brans_filter = ""
             params: dict = {"limit": limit}
             if brans:
-                brans_filter = " AND brans = :brans"
+                brans_filter = " AND (brans = :brans OR brans = 'her ikisi')"
                 params["brans"] = brans.lower()
 
             # 1. Exact code prefix match

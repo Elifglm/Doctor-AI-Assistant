@@ -26,6 +26,7 @@ interface ReportSectionProps {
   onContentChange: (key: string, content: string) => void
   onApprove: (key: string) => void
   allSections?: ReportSectionType[]
+  sessionId?: number
 }
 
 export function ReportSectionCard({
@@ -33,6 +34,7 @@ export function ReportSectionCard({
   onContentChange,
   onApprove,
   allSections,
+  sessionId,
 }: ReportSectionProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(true)
   const [icdWarning, setIcdWarning] = useState(false)
@@ -92,6 +94,7 @@ export function ReportSectionCard({
             <SutTetkikSelector
               value={section.content}
               reportSections={allSections}
+              sessionId={sessionId}
               onChange={(formatted) => onContentChange(section.key, formatted)}
             />
           ) : (

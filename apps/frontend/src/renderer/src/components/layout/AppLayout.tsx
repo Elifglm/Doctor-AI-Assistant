@@ -1,15 +1,11 @@
-import { useState, useCallback } from 'react'
-import { Outlet, Navigate } from 'react-router-dom'
-import { AlertTriangle } from 'lucide-react'
+import { useState, useCallback, useEffect } from 'react'
+import { Outlet, Navigate, useNavigate } from 'react-router-dom'
+import { AlertTriangle, UserPlus, X } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { useAuthStore } from '../../stores/authStore'
 import { useInactivityTimeout } from '../../hooks/useInactivityTimeout'
-
-// TODO [S7 - Production]: Role-based access control should be implemented here.
-// Currently the prototype has a single admin/doctor user.  For production,
-// gate routes based on `user.role` (e.g. "doctor", "nurse", "admin") and
-// hide/show sidebar links accordingly.
+import { apiClient } from '../../services/apiClient'
 
 function InactivityWarningDialog({ onDismiss }: { onDismiss: () => void }): React.JSX.Element {
   return (
@@ -39,9 +35,13 @@ function InactivityWarningDialog({ onDismiss }: { onDismiss: () => void }): Reac
 
 export function AppLayout(): React.JSX.Element {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
+  const navigate = useNavigate()
 
   const [showWarning, setShowWarning] = useState(false)
+  const [newDoctorCount, setNewDoctorCount] = useState(0)
+  const [showDoctorBanner, setShowDoctorBanner] = useState(false)
 
   const handleLogout = useCallback(() => {
     logout()
@@ -57,6 +57,24 @@ export function AppLayout(): React.JSX.Element {
     onWarningChange: handleWarningChange,
   })
 
+  // Startup check: admin kullanicisi icin OpenEMR'de yeni doktor var mi
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'admin') return
+
+    const checkNewDoctors = async () => {
+      try {
+        const data = await apiClient.get<{ new_count: number }>('/api/v1/admin/openemr-doctors')
+        if (data.new_count > 0) {
+          setNewDoctorCount(data.new_count)
+          setShowDoctorBanner(true)
+        }
+      } catch {
+        // OpenEMR unavailable — skip silently
+      }
+    }
+    void checkNewDoctors()
+  }, [isAuthenticated, user?.role])
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
@@ -66,6 +84,32 @@ export function AppLayout(): React.JSX.Element {
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header />
+        {/* New doctor notification banner */}
+        {showDoctorBanner && newDoctorCount > 0 && (
+          <div className="flex items-center justify-between bg-amber-50 border-b border-amber-200 px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-amber-600" />
+              <span className="text-sm text-amber-800">
+                OpenEMR'de <strong>{newDoctorCount}</strong> yeni doktor bulundu.
+              </span>
+              <button
+                onClick={() => {
+                  setShowDoctorBanner(false)
+                  navigate('/admin')
+                }}
+                className="ml-1 rounded bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+              >
+                Rol Ata
+              </button>
+            </div>
+            <button
+              onClick={() => setShowDoctorBanner(false)}
+              className="rounded p-1 text-amber-400 hover:text-amber-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
         <main className="flex-1 overflow-auto p-6">
           <Outlet />
         </main>

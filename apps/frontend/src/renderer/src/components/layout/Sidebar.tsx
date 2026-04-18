@@ -7,25 +7,35 @@ import {
   Settings,
   LogOut,
   FileText,
+  ShieldCheck,
+  Calendar,
 } from 'lucide-react'
 import { useUIStore } from '../../stores/uiStore'
 import { useAuthStore } from '../../stores/authStore'
 import { useSessionStore } from '../../stores/sessionStore'
 import { cn } from '../../lib/utils'
 
-const navItems = [
+const baseNavItems = [
   { path: '/', icon: LayoutDashboard, label: 'Ana Sayfa' },
-  { path: '/session/new', icon: Mic, label: 'Yeni Görüşme' },
-  { path: '/history', icon: History, label: 'Geçmiş' },
+  { path: '/calendar', icon: Calendar, label: 'Randevular' },
+  { path: '/session/new', icon: Mic, label: 'Yeni Gorusme' },
+  { path: '/history', icon: History, label: 'Gecmis' },
   { path: '/settings', icon: Settings, label: 'Ayarlar' },
 ]
+
+const adminNavItem = { path: '/admin', icon: ShieldCheck, label: 'Kullanici Yonetimi' }
 
 export function Sidebar(): React.JSX.Element {
   const location = useLocation()
   const navigate = useNavigate()
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
+  const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const recordingState = useSessionStore((s) => s.recordingState)
+
+  const navItems = user?.role === 'admin'
+    ? [...baseNavItems, adminNavItem]
+    : baseNavItems
 
   const handleNavClick = useCallback(
     (e: React.MouseEvent, path: string) => {

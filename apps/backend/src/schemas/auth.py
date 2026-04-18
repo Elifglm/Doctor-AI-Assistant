@@ -14,6 +14,7 @@ class UserInfo(BaseModel):
     username: str
     display_name: str
     role: str
+    brans: str = ""
 
 
 class TokenResponse(BaseModel):

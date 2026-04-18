@@ -1,4 +1,4 @@
-"""SUT tetkik search, suggestion, and confirmation routes."""
+"""SUT tetkik search, suggestion, confirmation, and OpenEMR integration routes."""
 
 from __future__ import annotations
 
@@ -6,13 +6,18 @@ import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import select
 
+from apps.backend.src.db.database import async_session_maker
+from apps.backend.src.db.models import Session as SessionModel
 from apps.backend.src.dependencies import get_audit_service, get_current_user
 from apps.backend.src.schemas.auth import UserInfo
 from apps.backend.src.schemas.sut_tetkik import (
     SUTConfirmRequest,
     SUTConfirmResponse,
     SUTItem,
+    SUTOpenEMRSendRequest,
+    SUTOpenEMRSendResponse,
     SUTSearchResponse,
     SUTSuggestRequest,
     SUTSuggestResponse,
@@ -105,3 +110,99 @@ async def confirm_sut(
     )
 
     return SUTConfirmResponse(confirmed=True, tetkikler=body.tetkikler)
+
+
+@router.post("/send-to-openemr", response_model=SUTOpenEMRSendResponse)
+async def send_to_openemr(
+    body: SUTOpenEMRSendRequest,
+    request: Request,
+    user: UserInfo = Depends(get_current_user),
+    audit: AuditService = Depends(get_audit_service),
+) -> SUTOpenEMRSendResponse:
+    """Send confirmed tetkik codes to OpenEMR as a procedure order."""
+    openemr_service = getattr(request.app.state, "openemr_service", None)
+    if openemr_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="OpenEMR servisi kullanılamaz",
+        )
+
+    doctor_brans = user.brans
+    if not doctor_brans:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Kullanıcının branş bilgisi tanımlı değil",
+        )
+
+    # Get patient info from session
+    async with async_session_maker() as db:
+        result = await db.execute(
+            select(SessionModel).where(SessionModel.id == body.session_id)
+        )
+        session_row = result.scalar_one_or_none()
+
+    if session_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Oturum bulunamadı",
+        )
+
+    patient_id = session_row.patient_id or ""
+    patient_name = session_row.patient_name or "Bilinmiyor"
+
+    if not patient_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Oturumda hasta kimlik numarası tanımlı değil",
+        )
+
+    # Prepare tetkik list with brans info
+    tetkik_list = [
+        {"kodu": t.kodu, "adi": t.adi, "brans": t.brans}
+        for t in body.tetkikler
+    ]
+
+    # Filter by doctor's specialty
+    filtered = [
+        t for t in tetkik_list
+        if t["brans"] in (doctor_brans, "her ikisi", "")
+    ]
+
+    # Send to OpenEMR
+    order_result = await openemr_service.send_tetkik_orders(
+        patient_id=patient_id,
+        patient_name=patient_name,
+        tetkik_list=tetkik_list,
+        doctor_brans=doctor_brans,
+        notes=body.notes,
+    )
+
+    # Audit log
+    await audit.log(
+        action="SUT_TETKIK_OPENEMR_SEND",
+        resource_type="openemr_order",
+        resource_id=order_result.order_id or "failed",
+        user_id=user.username,
+        details=json.dumps(
+            {
+                "session_id": body.session_id,
+                "doctor_brans": doctor_brans,
+                "total_tetkik": len(tetkik_list),
+                "filtered_tetkik": len(filtered),
+                "success": order_result.success,
+                "error": order_result.error,
+            },
+            ensure_ascii=False,
+        ),
+        ip_address=request.client.host if request.client else None,
+    )
+
+    return SUTOpenEMRSendResponse(
+        success=order_result.success,
+        order_id=order_result.order_id,
+        patient_id=order_result.patient_id,
+        sent_count=len(filtered),
+        filtered_count=len(tetkik_list) - len(filtered),
+        error=order_result.error,
+        doctor_brans=doctor_brans,
+    )
