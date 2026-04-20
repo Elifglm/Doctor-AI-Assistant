@@ -72,6 +72,7 @@ async def list_sessions(
     # Doktor sadece kendi oturumlarini gorsun, admin hepsini
     doctor_filter = None
     if user.role != "admin":
+        # display_name "Dr. Ahmet Yılmaz" ama session'da "Ahmet Yılmaz" olabilir
         doctor_filter = user.display_name
 
     items, total = await svc.list_sessions(
@@ -115,7 +116,9 @@ async def get_session(
         )
 
     # Doktor sadece kendi oturumunu gorebilir
-    if user.role != "admin" and session.doctor_name != user.display_name:
+    name_without_prefix = user.display_name.replace("Dr. ", "").strip()
+    is_own_session = session.doctor_name in (user.display_name, name_without_prefix, f"Dr. {name_without_prefix}")
+    if user.role != "admin" and not is_own_session:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bu oturumu goruntuleme yetkiniz yok",

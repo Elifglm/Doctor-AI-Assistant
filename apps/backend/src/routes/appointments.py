@@ -33,6 +33,7 @@ class Appointment(BaseModel):
     status: str
     category_name: str
     category_color: str
+    reason: str
 
 
 class AppointmentListResponse(BaseModel):
@@ -97,6 +98,7 @@ async def get_appointments(
             status=a["status"],
             category_name=a["category_name"],
             category_color=a["category_color"],
+            reason=a.get("reason", ""),
         )
         for a in raw
     ]

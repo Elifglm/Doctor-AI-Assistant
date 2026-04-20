@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Save, CheckCheck, Loader2, FileDown } from 'lucide-react'
+import { Save, CheckCheck, Loader2, FileDown, Send, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ReportSectionCard } from './ReportSection'
 import { apiClient } from '../../services/apiClient'
@@ -17,6 +17,8 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   const [showError, setShowError] = useState(false)
   const [icdWarning, setIcdWarning] = useState(false)
   const [pdfWarning, setPdfWarning] = useState(false)
+  const [isPushingOpenEMR, setIsPushingOpenEMR] = useState(false)
+  const [openEMRResult, setOpenEMRResult] = useState<{ success: boolean; message: string } | null>(null)
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -128,6 +130,34 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
     }
   }
 
+  const handlePushToOpenEMR = async (): Promise<void> => {
+    setIsPushingOpenEMR(true)
+    setOpenEMRResult(null)
+    try {
+      const res = await apiClient.post<{
+        success: boolean
+        encounter_id: number
+        icd10_count: number
+        error: string
+      }>(`/api/v1/reports/${report.id}/push-to-openemr`)
+      if (res.success) {
+        setOpenEMRResult({
+          success: true,
+          message: `OpenEMR'e gonderildi (Encounter #${res.encounter_id}, ${res.icd10_count} ICD-10 kodu)`,
+        })
+      } else {
+        setOpenEMRResult({ success: false, message: res.error || 'Gonderim basarisiz' })
+      }
+    } catch (err) {
+      setOpenEMRResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'OpenEMR baglanti hatasi',
+      })
+    } finally {
+      setIsPushingOpenEMR(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="border-b border-slate-200 bg-white px-4 py-3">
@@ -150,30 +180,30 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
         ))}
       </div>
 
-      <div className="border-t border-slate-200 bg-white px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center gap-1 shrink-0">
+      <div className="border-t border-slate-200 bg-white px-4 py-3 space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1">
             <div className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="text-xs text-slate-600 whitespace-nowrap">
               {approvedCount}/{totalCount} bolum onaylandi
             </span>
           </div>
           {showSuccess && (
-            <span className="text-xs text-emerald-600 shrink-0">Kaydedildi</span>
+            <span className="text-xs text-emerald-600">Kaydedildi</span>
           )}
           {showError && (
-            <span className="text-xs text-red-600 shrink-0">Kaydetme hatasi</span>
+            <span className="text-xs text-red-600">Kaydetme hatasi</span>
           )}
           {icdWarning && (
-            <span className="text-xs text-amber-600 font-medium shrink-0">ICD-10 tani kodu seciniz</span>
+            <span className="text-xs text-amber-600 font-medium">ICD-10 tani kodu seciniz</span>
           )}
           {pdfWarning && (
-            <span className="text-xs text-red-600 font-medium shrink-0">
+            <span className="text-xs text-red-600 font-medium">
               PDF icin tum bolumleri onaylayin ({approvedCount}/{totalCount})
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => {
@@ -225,8 +255,51 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             )}
             {approvedCount === totalCount ? 'Tumu Onaylandi' : 'Tumunu Onayla'}
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (approvedCount < totalCount) {
+                setPdfWarning(true)
+                setTimeout(() => setPdfWarning(false), 5000)
+                return
+              }
+              void handlePushToOpenEMR()
+            }}
+            disabled={isPushingOpenEMR}
+            title={approvedCount < totalCount ? `${totalCount - approvedCount} bolum henuz onaylanmadi` : 'Raporu OpenEMR sistemine gonder'}
+            className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
+              approvedCount < totalCount
+                ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                : 'border-purple-300 bg-purple-600 text-white hover:bg-purple-700'
+            }`}
+          >
+            {isPushingOpenEMR ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            OpenEMR'e Gonder
+          </button>
         </div>
       </div>
+
+      {/* OpenEMR push result */}
+      {openEMRResult && (
+        <div
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm border-t ${
+            openEMRResult.success
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-red-50 text-red-700 border-red-200'
+          }`}
+        >
+          {openEMRResult.success ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          ) : (
+            <AlertCircle className="h-4 w-4 shrink-0" />
+          )}
+          <span>{openEMRResult.message}</span>
+        </div>
+      )}
     </div>
   )
 }

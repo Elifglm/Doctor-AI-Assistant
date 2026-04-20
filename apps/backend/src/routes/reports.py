@@ -364,3 +364,119 @@ async def download_report_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ---------------------------------------------------------------------------
+# POST  /api/v1/reports/{report_id}/push-to-openemr
+# ---------------------------------------------------------------------------
+@router.post("/{report_id}/push-to-openemr")
+async def push_report_to_openemr(
+    report_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: UserInfo = Depends(get_current_user),
+    audit: AuditService = Depends(get_audit_service),
+) -> dict:
+    """Push an approved report to OpenEMR (encounter + vitals + SOAP + ICD-10)."""
+    import re
+
+    from apps.backend.src.services.openemr_service import OpenEMRService, OPENEMR_DOCTORS
+
+    # Fetch report
+    svc = ReportService(db)
+    report = await svc.get_by_id(report_id)
+    if report is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rapor bulunamadi",
+        )
+
+    if report.status != "APPROVED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rapor henuz onaylanmamis. Once tum bolumleri onaylayin.",
+        )
+
+    # Fetch session
+    stmt = select(SessionModel).where(SessionModel.id == report.session_id)
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Oturum bulunamadi",
+        )
+
+    # Get patient PID from OpenEMR (pubpid = our patient_id)
+    patient_id = session.patient_id or ""
+    if not patient_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Oturumda hasta ID bilgisi yok",
+        )
+
+    # Find patient pid in OpenEMR
+    try:
+        raw = await OpenEMRService._mysql_exec(
+            f"SELECT pid FROM patient_data WHERE pubpid = '{patient_id}' LIMIT 1;"
+        )
+        if not raw.strip():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"OpenEMR'de hasta bulunamadi (ID: {patient_id})",
+            )
+        patient_pid = int(raw.strip())
+    except (ValueError, RuntimeError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"OpenEMR baglanti hatasi: {e}",
+        )
+
+    # Determine provider ID
+    doctor_info = OPENEMR_DOCTORS.get(user.brans, {})
+    provider_id = doctor_info.get("openemr_user_id", 1)
+
+    # Build sections dict
+    content = report.content
+    sections = content.get("sections", [])
+    report_sections = {s["key"]: s.get("content", "") for s in sections}
+
+    # Parse ICD-10 codes from icd10_list
+    icd10_codes: list[dict[str, str]] = []
+    icd_content = report_sections.get("icd10_list", "")
+    if icd_content and icd_content.strip() not in ("BELIRTILMEDI", ""):
+        for line in icd_content.split("\n"):
+            match = re.match(r"\(([A-Z]\d[\dA-Z.]*)\)\s*-\s*(.+?)(?:\s*\(.*\))?\s*(?:\[.*\])?\s*$", line.strip())
+            if match:
+                icd10_codes.append({"code": match.group(1), "text": match.group(2).strip()})
+
+    # Parse SUT tetkik codes from sut_tetkik_list
+    sut_codes: list[dict[str, str]] = []
+    sut_content = report_sections.get("sut_tetkik_list", "")
+    if sut_content and sut_content.strip() not in ("BELIRTILMEDI", ""):
+        for line in sut_content.split("\n"):
+            sut_match = re.match(r"\(([A-Za-z0-9]+)\)\s*-\s*(.+?)(?:\s*\[.*\])?\s*$", line.strip())
+            if sut_match:
+                sut_codes.append({"code": sut_match.group(1), "name": sut_match.group(2).strip()})
+
+    # Push to OpenEMR
+    push_result = await OpenEMRService.push_report_to_openemr(
+        patient_pid=patient_pid,
+        provider_id=provider_id,
+        report_sections=report_sections,
+        icd10_codes=icd10_codes,
+        sut_codes=sut_codes,
+        facility_id=3,
+    )
+
+    # Audit
+    await audit.log(
+        action="PUSH_TO_OPENEMR",
+        resource_type="report",
+        resource_id=str(report.id),
+        user_id=user.username,
+        details=f"encounter={push_result.get('encounter_id')}, icd10={push_result.get('icd10_count')}",
+        ip_address=request.client.host if request.client else None,
+    )
+
+    return push_result

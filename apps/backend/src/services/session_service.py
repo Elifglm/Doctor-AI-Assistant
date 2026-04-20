@@ -71,7 +71,15 @@ class SessionService:
 
         # -- Filters --------------------------------------------------------
         if doctor_name:
-            base = base.where(Session.doctor_name == doctor_name)
+            # Match both "Dr. Ahmet Yılmaz" and "Ahmet Yılmaz"
+            name_without_prefix = doctor_name.replace("Dr. ", "").strip()
+            base = base.where(
+                or_(
+                    Session.doctor_name == doctor_name,
+                    Session.doctor_name == name_without_prefix,
+                    Session.doctor_name == f"Dr. {name_without_prefix}",
+                )
+            )
         if status:
             base = base.where(Session.status == status)
         if from_date:

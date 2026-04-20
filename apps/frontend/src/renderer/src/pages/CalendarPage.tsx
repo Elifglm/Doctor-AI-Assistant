@@ -31,6 +31,7 @@ interface Appointment {
   status: string
   category_name: string
   category_color: string
+  reason: string
 }
 
 interface AppointmentListResponse {
@@ -250,6 +251,12 @@ export function CalendarPage(): React.JSX.Element {
                             {appt.patient_name || 'Hasta bilgisi yok'}
                           </span>
                         </div>
+                        {/* Reason / Complaint from reception */}
+                        {appt.reason && (
+                          <p className="ml-6 text-xs text-amber-700 bg-amber-50 rounded px-2 py-1 inline-block">
+                            Sikayet: {appt.reason}
+                          </p>
+                        )}
                         {/* Provider (admin sees this) */}
                         {user?.role === 'admin' && (
                           <div className="flex items-center gap-2">

@@ -466,7 +466,8 @@ class OpenEMRService:
             "e.pc_duration, e.pc_aid, e.pc_pid, e.pc_apptstatus, e.pc_catid, "
             "c.pc_catname, c.pc_catcolor, "
             "u.fname AS dr_fname, u.lname AS dr_lname, u.username AS dr_username, "
-            "p.fname AS pt_fname, p.lname AS pt_lname, p.pubpid AS pt_id "
+            "p.fname AS pt_fname, p.lname AS pt_lname, p.pubpid AS pt_id, "
+            "COALESCE(e.pc_hometext,'') AS reason "
             "FROM openemr_postcalendar_events e "
             "LEFT JOIN openemr_postcalendar_categories c ON e.pc_catid = c.pc_catid "
             "LEFT JOIN users u ON e.pc_aid = u.id "
@@ -511,8 +512,345 @@ class OpenEMRService:
                     "patient_fname": parts[15],
                     "patient_lname": parts[16] if len(parts) > 16 else "",
                     "patient_ext_id": parts[17] if len(parts) > 17 else "",
+                    "reason": parts[18] if len(parts) > 18 else "",
                 })
             return appointments
         except Exception as e:
             logger.error("OpenEMR appointment query failed: %s", e)
             return []
+
+    # ------------------------------------------------------------------
+    # MySQL helper
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    async def _mysql_exec(query: str) -> str:
+        """Execute a MySQL query on OpenEMR via docker exec and return stdout."""
+        import asyncio
+
+        proc = await asyncio.create_subprocess_exec(
+            "docker", "compose", "exec", "-T", "mysql",
+            "mysql", "-u", "openemr", "-popenemr", "openemr",
+            "-sN", "-e", query,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            raise RuntimeError(f"MySQL error: {stderr.decode()}")
+        return stdout.decode().strip()
+
+    # ------------------------------------------------------------------
+    # Push report data to OpenEMR
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _sql_escape(val: str) -> str:
+        """Escape single quotes for MySQL."""
+        return val.replace("\\", "\\\\").replace("'", "\\'")
+
+    @staticmethod
+    async def push_report_to_openemr(
+        patient_pid: int,
+        provider_id: int,
+        report_sections: dict[str, str],
+        icd10_codes: list[dict[str, str]],
+        sut_codes: list[dict[str, str]] | None = None,
+        facility_id: int = 3,
+    ) -> dict:
+        """Push a complete report to OpenEMR: encounter + vitals + SOAP + ICD-10 + procedure orders.
+
+        Args:
+            patient_pid: OpenEMR patient pid (patient_data.pid)
+            provider_id: OpenEMR provider/doctor user ID
+            report_sections: dict of section_key -> content
+            icd10_codes: list of {"code": "K29.0", "text": "Akut gastrit"}
+            sut_codes: list of {"code": "902050", "name": "Hemogram"}
+            facility_id: OpenEMR facility ID
+
+        Returns:
+            dict with encounter_id and status
+        """
+        esc = OpenEMRService._sql_escape
+        mysql = OpenEMRService._mysql_exec
+
+        result = {
+            "success": False,
+            "encounter_id": 0,
+            "vitals_id": 0,
+            "soap_id": 0,
+            "icd10_count": 0,
+            "procedure_order_id": 0,
+            "tetkik_count": 0,
+            "updated": False,
+            "error": "",
+        }
+
+        try:
+            reason = esc(report_sections.get("hastanin_yakinmasi", "Muayene")[:255])
+
+            # ---- 1. Find existing encounter for this patient today, or create ----
+            existing = await mysql(
+                f"SELECT id FROM form_encounter "
+                f"WHERE pid = {patient_pid} AND provider_id = {provider_id} "
+                f"AND DATE(date) = CURDATE() "
+                f"ORDER BY id DESC LIMIT 1;"
+            )
+
+            if existing.strip():
+                # Use existing encounter — update reason
+                encounter_id = int(existing.strip().split("\n")[0].strip())
+                await mysql(
+                    f"UPDATE form_encounter SET reason = '{reason}', last_update = NOW() "
+                    f"WHERE id = {encounter_id} AND pid = {patient_pid};"
+                )
+                result["updated"] = True
+
+                # Clean old data for this encounter so we don't duplicate
+                await mysql(f"DELETE FROM billing WHERE encounter = {encounter_id} AND pid = {patient_pid};")
+                await mysql(f"DELETE FROM procedure_order WHERE encounter_id = {encounter_id} AND patient_id = {patient_pid};")
+                await mysql(f"DELETE FROM procedure_order_code WHERE procedure_order_id IN (SELECT procedure_order_id FROM procedure_order WHERE encounter_id = {encounter_id} AND patient_id = {patient_pid});")
+                # Delete old SOAP and vitals forms + form entries
+                await mysql(
+                    f"DELETE fv FROM form_vitals fv "
+                    f"INNER JOIN forms f ON f.form_id = fv.id AND f.formdir = 'vitals' "
+                    f"WHERE f.encounter = {encounter_id} AND f.pid = {patient_pid};"
+                )
+                await mysql(
+                    f"DELETE fs FROM form_soap fs "
+                    f"INNER JOIN forms f ON f.form_id = fs.id AND f.formdir = 'soap' "
+                    f"WHERE f.encounter = {encounter_id} AND f.pid = {patient_pid};"
+                )
+                await mysql(
+                    f"DELETE FROM forms WHERE encounter = {encounter_id} AND pid = {patient_pid} "
+                    f"AND formdir IN ('vitals', 'soap');"
+                )
+
+                logger.info("Mevcut encounter guncelleniyor: %d", encounter_id)
+            else:
+                # Create new encounter
+                enc_query = (
+                    f"INSERT INTO form_encounter "
+                    f"(date, reason, facility_id, pid, provider_id, class_code, pc_catid) "
+                    f"VALUES (NOW(), '{reason}', {facility_id}, {patient_pid}, {provider_id}, 'AMB', 5); "
+                    f"SELECT LAST_INSERT_ID();"
+                )
+                raw = await mysql(enc_query)
+                encounter_id = int(raw.strip().split("\n")[-1].strip())
+                # Set encounter = id (OpenEMR expects this)
+                await mysql(f"UPDATE form_encounter SET encounter = {encounter_id} WHERE id = {encounter_id};")
+
+                # Register in forms table
+                await mysql(
+                    f"INSERT INTO forms (date, encounter, form_name, form_id, pid, user, "
+                    f"groupname, authorized, formdir, provider_id) "
+                    f"VALUES (NOW(), {encounter_id}, 'New Patient Encounter', {encounter_id}, "
+                    f"{patient_pid}, 'admin', 'Default', 1, 'newpatient', {provider_id});"
+                )
+
+            result["encounter_id"] = encounter_id
+
+            # ---- 2. Push Vitals ----
+            vital_map = {
+                "sistolik": "bps",
+                "diyastolik": "bpd",
+                "nabiz": "pulse",
+                "ates": "temperature",
+                "solunum_sayisi": "respiration",
+                "spo2": "oxygen_saturation",
+                "kilo": "weight",
+                "boy": "height",
+            }
+
+            vital_cols = ["date", "pid", "user", "groupname", "authorized", "activity"]
+            vital_vals = [f"NOW()", str(patient_pid), "'admin'", "'Default'", "1", "1"]
+
+            has_vitals = False
+            for section_key, db_col in vital_map.items():
+                val = report_sections.get(section_key, "").strip()
+                if val and val not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                    try:
+                        numeric = float(val.replace(",", "."))
+                        vital_cols.append(db_col)
+                        vital_vals.append(str(numeric))
+                        has_vitals = True
+                    except ValueError:
+                        pass
+
+            if has_vitals:
+                vitals_query = (
+                    f"INSERT INTO form_vitals ({', '.join(vital_cols)}) "
+                    f"VALUES ({', '.join(vital_vals)}); "
+                    f"SELECT LAST_INSERT_ID();"
+                )
+                raw = await mysql(vitals_query)
+                vitals_id = int(raw.strip().split("\n")[-1].strip())
+                result["vitals_id"] = vitals_id
+
+                # Register in forms
+                await mysql(
+                    f"INSERT INTO forms (date, encounter, form_name, form_id, pid, user, "
+                    f"groupname, authorized, formdir, provider_id) "
+                    f"VALUES (NOW(), {encounter_id}, 'Vitals', {vitals_id}, "
+                    f"{patient_pid}, 'admin', 'Default', 1, 'vitals', {provider_id});"
+                )
+
+            # ---- 3. Push SOAP note ----
+            subjective_parts = []
+            for key in ("hastanin_yakinmasi", "hastanin_oykusu", "oz_gecmisi_soy_gecmisi",
+                        "alerji", "sigara", "alkol"):
+                val = report_sections.get(key, "").strip()
+                if val and val not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                    subjective_parts.append(val.replace("----", ", "))
+
+            objective_parts = []
+            for key in ("fizik_muayene", "konsultasyon_muayene"):
+                val = report_sections.get(key, "").strip()
+                if val and val not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                    objective_parts.append(val.replace("----", ", "))
+
+            assessment = report_sections.get("konsultasyon_sonuc", "").strip()
+            if assessment in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                assessment = ""
+
+            plan_parts = []
+            for key in ("tedavi", "oneri", "uyari", "kontrol_zamani"):
+                val = report_sections.get(key, "").strip()
+                if val and val not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                    plan_parts.append(val.replace("----", ", "))
+
+            soap_query = (
+                f"INSERT INTO form_soap (date, pid, user, groupname, authorized, activity, "
+                f"subjective, objective, assessment, plan) "
+                f"VALUES (NOW(), {patient_pid}, 'admin', 'Default', 1, 1, "
+                f"'{esc(chr(10).join(subjective_parts))}', "
+                f"'{esc(chr(10).join(objective_parts))}', "
+                f"'{esc(assessment)}', "
+                f"'{esc(chr(10).join(plan_parts))}'); "
+                f"SELECT LAST_INSERT_ID();"
+            )
+            raw = await mysql(soap_query)
+            soap_id = int(raw.strip().split("\n")[-1].strip())
+            result["soap_id"] = soap_id
+
+            # Register in forms
+            await mysql(
+                f"INSERT INTO forms (date, encounter, form_name, form_id, pid, user, "
+                f"groupname, authorized, formdir, provider_id) "
+                f"VALUES (NOW(), {encounter_id}, 'SOAP', {soap_id}, "
+                f"{patient_pid}, 'admin', 'Default', 1, 'soap', {provider_id});"
+            )
+
+            # ---- 4. Push ICD-10 diagnoses to billing ----
+            icd_count = 0
+            for icd in icd10_codes:
+                code = esc(icd.get("code", ""))
+                text = esc(icd.get("text", ""))
+                if not code:
+                    continue
+                await mysql(
+                    f"INSERT INTO billing (date, code_type, code, code_text, pid, "
+                    f"provider_id, user, encounter, authorized, activity, groupname) "
+                    f"VALUES (NOW(), 'ICD10', '{code}', '{text}', {patient_pid}, "
+                    f"{provider_id}, 1, {encounter_id}, 1, 1, 'Default');"
+                )
+                icd_count += 1
+            result["icd10_count"] = icd_count
+
+            # ---- 5. Push SUT tetkik as procedure order ----
+            if sut_codes:
+                # Build ICD diagnosis string for the order
+                icd_diag = ";".join(f"ICD10:{c['code']}" for c in icd10_codes) if icd10_codes else ""
+
+                order_query = (
+                    f"INSERT INTO procedure_order "
+                    f"(provider_id, patient_id, encounter_id, date_ordered, "
+                    f"order_priority, order_status, procedure_order_type, "
+                    f"clinical_hx, order_diagnosis, activity) "
+                    f"VALUES ({provider_id}, {patient_pid}, {encounter_id}, NOW(), "
+                    f"'normal', 'pending', 'laboratory_test', "
+                    f"'{esc(reason[:255])}', '{esc(icd_diag[:255])}', 1); "
+                    f"SELECT LAST_INSERT_ID();"
+                )
+                raw = await mysql(order_query)
+                order_id = int(raw.strip().split("\n")[-1].strip())
+                result["procedure_order_id"] = order_id
+
+                # Insert each tetkik as a line item
+                for seq, sut in enumerate(sut_codes, 1):
+                    sut_code = esc(sut.get("code", ""))
+                    sut_name = esc(sut.get("name", ""))
+                    if not sut_code:
+                        continue
+                    await mysql(
+                        f"INSERT INTO procedure_order_code "
+                        f"(procedure_order_id, procedure_order_seq, procedure_code, "
+                        f"procedure_name, diagnoses) "
+                        f"VALUES ({order_id}, {seq}, '{sut_code}', '{sut_name}', "
+                        f"'{esc(icd_diag[:255])}');"
+                    )
+                result["tetkik_count"] = len(sut_codes)
+
+                logger.info(
+                    "OpenEMR procedure order olusturuldu: order=%d, tetkik=%d",
+                    order_id, len(sut_codes),
+                )
+
+            # ---- 6. Update patient history_data ----
+            history_updates: list[str] = []
+
+            # Tobacco / Sigara
+            sigara = report_sections.get("sigara", "").strip()
+            if sigara and sigara not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                history_updates.append(f"tobacco = '{esc(sigara)}'")
+
+            # Alcohol / Alkol
+            alkol = report_sections.get("alkol", "").strip()
+            if alkol and alkol not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                history_updates.append(f"alcohol = '{esc(alkol)}'")
+
+            # Öz geçmiş → additional_history
+            oz_gecmis = report_sections.get("oz_gecmisi_soy_gecmisi", "").strip()
+            if oz_gecmis and oz_gecmis not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                history_updates.append(f"additional_history = '{esc(oz_gecmis.replace(chr(10), ', '))}'")
+
+            # Soy geçmiş → family history fields
+            soy_gecmis = report_sections.get("soy_gecmisi", "").strip()
+            if soy_gecmis and soy_gecmis not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                soy_lower = soy_gecmis.lower()
+                if "diyabet" in soy_lower or "seker" in soy_lower:
+                    history_updates.append("relatives_diabetes = 'Var'")
+                if "hipertansiyon" in soy_lower or "tansiyon" in soy_lower:
+                    history_updates.append("relatives_high_blood_pressure = 'Var'")
+                if "kalp" in soy_lower or "kardiy" in soy_lower:
+                    history_updates.append("relatives_heart_problems = 'Var'")
+                if "kanser" in soy_lower:
+                    history_updates.append("relatives_cancer = 'Var'")
+                if "inme" in soy_lower or "felc" in soy_lower:
+                    history_updates.append("relatives_stroke = 'Var'")
+
+            # Alerji → Risk Factors (exams alanı)
+            alerji = report_sections.get("alerji", "").strip()
+            if alerji and alerji not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
+                history_updates.append(f"exams = '{esc(alerji.replace(chr(10), ', '))}'")
+
+            if history_updates:
+                update_sql = ", ".join(history_updates)
+                await mysql(
+                    f"UPDATE history_data SET {update_sql}, date = NOW() "
+                    f"WHERE pid = {patient_pid} ORDER BY id DESC LIMIT 1;"
+                )
+                result["history_updated"] = True
+                logger.info("OpenEMR history_data guncellendi: pid=%d", patient_pid)
+
+            result["success"] = True
+            logger.info(
+                "OpenEMR push basarili: encounter=%d, vitals=%d, soap=%d, icd10=%d",
+                encounter_id, result["vitals_id"], soap_id, icd_count,
+            )
+
+        except Exception as e:
+            result["error"] = str(e)
+            logger.error("OpenEMR push hatasi: %s", e)
+
+        return result
