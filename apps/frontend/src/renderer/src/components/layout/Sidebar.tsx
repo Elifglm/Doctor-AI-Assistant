@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
-  Mic,
   History,
   Settings,
   LogOut,
@@ -18,7 +17,6 @@ import { cn } from '../../lib/utils'
 const baseNavItems = [
   { path: '/', icon: LayoutDashboard, label: 'Ana Sayfa' },
   { path: '/calendar', icon: Calendar, label: 'Randevular' },
-  { path: '/session/new', icon: Mic, label: 'Yeni Gorusme' },
   { path: '/history', icon: History, label: 'Gecmis' },
   { path: '/settings', icon: Settings, label: 'Ayarlar' },
 ]

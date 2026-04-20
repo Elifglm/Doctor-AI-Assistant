@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Save, CheckCheck, Loader2 } from 'lucide-react'
+import { Save, CheckCheck, Loader2, FileDown } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ReportSectionCard } from './ReportSection'
 import { apiClient } from '../../services/apiClient'
@@ -16,6 +16,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
   const [icdWarning, setIcdWarning] = useState(false)
+  const [pdfWarning, setPdfWarning] = useState(false)
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -99,6 +100,34 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
     })
   }
 
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
+
+  const handleDownloadPdf = async (): Promise<void> => {
+    setIsDownloadingPdf(true)
+    try {
+      const token = (await import('../../stores/authStore')).useAuthStore.getState().token
+      const baseUrl = 'http://127.0.0.1:8700'
+      const res = await fetch(`${baseUrl}/api/v1/reports/${report.id}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('PDF indirilemedi')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `anamnez_rapor_${report.id}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('PDF download error:', err)
+      alert('PDF indirme hatasi')
+    } finally {
+      setIsDownloadingPdf(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="border-b border-slate-200 bg-white px-4 py-3">
@@ -122,49 +151,79 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
       </div>
 
       <div className="border-t border-slate-200 bg-white px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1 shrink-0">
             <div className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-xs text-slate-600">
-              {approvedCount}/{totalCount} bölüm onaylandı
+            <span className="text-xs text-slate-600 whitespace-nowrap">
+              {approvedCount}/{totalCount} bolum onaylandi
             </span>
           </div>
           {showSuccess && (
-            <span className="text-xs text-emerald-600 transition-opacity duration-200">Kaydedildi</span>
+            <span className="text-xs text-emerald-600 shrink-0">Kaydedildi</span>
           )}
           {showError && (
-            <span className="text-xs text-red-600 transition-opacity duration-200">Kaydetme hatası</span>
+            <span className="text-xs text-red-600 shrink-0">Kaydetme hatasi</span>
           )}
           {icdWarning && (
-            <span className="text-xs text-amber-600 font-medium transition-opacity duration-200">ICD-10 tanı kodu seçiniz</span>
+            <span className="text-xs text-amber-600 font-medium shrink-0">ICD-10 tani kodu seciniz</span>
+          )}
+          {pdfWarning && (
+            <span className="text-xs text-red-600 font-medium shrink-0">
+              PDF icin tum bolumleri onaylayin ({approvedCount}/{totalCount})
+            </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (approvedCount < totalCount) {
+                setPdfWarning(true)
+                setTimeout(() => setPdfWarning(false), 5000)
+                return
+              }
+              void handleDownloadPdf()
+            }}
+            disabled={isDownloadingPdf}
+            title={approvedCount < totalCount ? `${totalCount - approvedCount} bolum henuz onaylanmadi` : 'PDF olarak indir'}
+            className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
+              approvedCount < totalCount
+                ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                : 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
+            }`}
+          >
+            {isDownloadingPdf ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="h-4 w-4" />
+            )}
+            PDF Indir
+          </button>
           <button
             type="button"
             onClick={handleSaveDraft}
             disabled={saveMutation.isPending}
-            className="flex min-w-[140px] items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 whitespace-nowrap"
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Taslağı Kaydet
+            Taslagi Kaydet
           </button>
           <button
             type="button"
             onClick={handleApproveAll}
             disabled={saveMutation.isPending || approvedCount === totalCount}
-            className="flex min-w-[160px] items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <CheckCheck className="h-4 w-4" />
             )}
-            {approvedCount === totalCount ? 'Tümü Onaylandı' : 'Tümünü Onayla'}
+            {approvedCount === totalCount ? 'Tumu Onaylandi' : 'Tumunu Onayla'}
           </button>
         </div>
       </div>

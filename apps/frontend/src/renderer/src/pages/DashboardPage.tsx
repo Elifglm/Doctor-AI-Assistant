@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Plus, AlertCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 import { StatsBar } from '../components/dashboard/StatsBar'
 import { SessionCard } from '../components/dashboard/SessionCard'
@@ -53,26 +53,27 @@ export function DashboardPage(): React.JSX.Element {
   const pendingCount = sessions.filter((s) => s.status === 'AWAITING_REVIEW').length
   const completedCount = sessions.filter((s) => s.status === 'COMPLETED').length
 
+  // Fetch today's appointment count from OpenEMR
+  const [appointmentCount, setAppointmentCount] = useState(0)
+  useEffect(() => {
+    apiClient
+      .get<{ total: number }>(`/api/v1/appointments?appointment_date=${todayStr}`)
+      .then((res) => setAppointmentCount(res.total))
+      .catch(() => setAppointmentCount(0))
+  }, [todayStr])
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Ana Sayfa</h1>
-          <p className="text-sm text-slate-500 mt-1">Görüşme yönetimi ve genel bakış</p>
-        </div>
-        <button
-          onClick={() => navigate('/session/new')}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-        >
-          <Plus className="h-4 w-4" />
-          Yeni Görüşme Başlat
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Ana Sayfa</h1>
+        <p className="text-sm text-slate-500 mt-1">Gorusme yonetimi ve genel bakis</p>
       </div>
 
       <StatsBar
         todayCount={todayCount}
         pendingCount={pendingCount}
         completedCount={completedCount}
+        appointmentCount={appointmentCount}
       />
 
       <div>
@@ -98,12 +99,12 @@ export function DashboardPage(): React.JSX.Element {
 
         {!isLoading && !error && sessions.length === 0 && (
           <div className="flex flex-col items-center justify-center rounded-xl bg-white p-12 shadow-sm ring-1 ring-slate-200/60">
-            <p className="text-sm text-slate-500">Henüz görüşme bulunmuyor</p>
+            <p className="text-sm text-slate-500">Henuz gorusme bulunmuyor</p>
             <button
-              onClick={() => navigate('/session/new')}
+              onClick={() => navigate('/calendar')}
               className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700"
             >
-              İlk görüşmenizi başlatın
+              Randevularinizi gorun
             </button>
           </div>
         )}

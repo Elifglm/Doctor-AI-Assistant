@@ -17,6 +17,14 @@ interface UIState {
   closeModal: () => void
 }
 
+function applyTheme(theme: Theme): void {
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
+
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
@@ -25,13 +33,23 @@ export const useUIStore = create<UIState>()(
       fontSize: 16,
       locale: 'tr',
       activeModal: null,
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => {
+        applyTheme(theme)
+        set({ theme })
+      },
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
       setFontSize: (fontSize) => set({ fontSize }),
       setLocale: (locale) => set({ locale }),
       openModal: (id) => set({ activeModal: id }),
       closeModal: () => set({ activeModal: null }),
     }),
-    { name: 'ui-storage' }
+    {
+      name: 'ui-storage',
+      onRehydrateStorage: () => (state) => {
+        if (state?.theme) {
+          applyTheme(state.theme)
+        }
+      },
+    }
   )
 )

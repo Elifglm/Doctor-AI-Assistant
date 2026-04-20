@@ -1,28 +1,37 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Mic, Loader2, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { useCreateSession } from '../hooks/useSession'
 import type { VisitType } from '../types/session'
 
 const visitTypeOptions: { value: VisitType; label: string }[] = [
-  { value: 'ilk_muayene', label: 'İlk Muayene' },
+  { value: 'ilk_muayene', label: 'Ilk Muayene' },
   { value: 'kontrol', label: 'Kontrol' },
-  { value: 'konsultasyon', label: 'Konsültasyon' },
+  { value: 'konsultasyon', label: 'Konsultasyon' },
   { value: 'acil', label: 'Acil' },
 ]
 
 export function PreSessionPage(): React.JSX.Element {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const user = useAuthStore((s) => s.user)
   const createSession = useCreateSession()
 
-  const [patientId, setPatientId] = useState('')
+  // Pre-fill from calendar appointment query params
+  const appointmentPatientId = searchParams.get('patient_id') ?? ''
+  const appointmentPatientName = searchParams.get('patient_name') ?? ''
+  const appointmentProvider = searchParams.get('provider') ?? ''
+
+  // If no appointment data, redirect to calendar
+  const hasAppointment = Boolean(appointmentPatientId && appointmentPatientName)
+
   const [visitType, setVisitType] = useState<VisitType>('ilk_muayene')
-  const [doctorName, setDoctorName] = useState(user?.display_name ?? '')
   const [preDiagnosis, setPreDiagnosis] = useState('')
   const [location, setLocation] = useState('')
   const [kvkkConsent, setKvkkConsent] = useState(false)
+
+  const doctorName = appointmentProvider || user?.display_name || ''
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
@@ -31,7 +40,8 @@ export function PreSessionPage(): React.JSX.Element {
 
     createSession.mutate(
       {
-        patient_id: patientId || undefined,
+        patient_id: appointmentPatientId,
+        patient_name: appointmentPatientName,
         visit_type: visitType,
         doctor_name: doctorName,
         pre_diagnosis: preDiagnosis || undefined,
@@ -46,6 +56,26 @@ export function PreSessionPage(): React.JSX.Element {
     )
   }
 
+  if (!hasAppointment) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200/60 text-center">
+          <AlertCircle className="mx-auto h-10 w-10 text-amber-500 mb-4" />
+          <h2 className="text-lg font-semibold text-slate-800 mb-2">Randevu Secilmedi</h2>
+          <p className="text-sm text-slate-500 mb-6">
+            Ses kaydi baslatmak icin once takvimden bir randevu secin.
+          </p>
+          <button
+            onClick={() => navigate('/calendar')}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          >
+            Takvime Git
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200/60">
@@ -54,24 +84,29 @@ export function PreSessionPage(): React.JSX.Element {
             <Mic className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Yeni Görüşme Ayarları</h1>
-            <p className="text-sm text-slate-500">Kayda başlamadan önce bilgileri doldurun</p>
+            <h1 className="text-xl font-bold text-slate-800">Gorusme Baslat</h1>
+            <p className="text-sm text-slate-500">Kayda baslamadan once bilgileri kontrol edin</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label htmlFor="patientId" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Hasta ID
-            </label>
-            <input
-              id="patientId"
-              type="text"
-              value={patientId}
-              onChange={(e) => setPatientId(e.target.value)}
-              placeholder="Hasta numarası"
-              className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
+          {/* Patient Info (read-only, from appointment) */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 space-y-2">
+            <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Hasta Bilgileri</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="text-xs text-slate-500">Hasta</span>
+                <p className="text-sm font-semibold text-slate-800">{appointmentPatientName}</p>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500">Hasta ID</span>
+                <p className="text-sm font-mono text-slate-800">{appointmentPatientId}</p>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500">Doktor</span>
+                <p className="text-sm text-slate-800">{doctorName}</p>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -94,33 +129,16 @@ export function PreSessionPage(): React.JSX.Element {
 
           <div>
             <label
-              htmlFor="doctorName"
-              className="mb-1.5 block text-sm font-medium text-slate-700"
-            >
-              Doktor Adı
-            </label>
-            <input
-              id="doctorName"
-              type="text"
-              value={doctorName}
-              onChange={(e) => setDoctorName(e.target.value)}
-              required
-              className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
-          </div>
-
-          <div>
-            <label
               htmlFor="preDiagnosis"
               className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              Ön Tanı
+              On Tani
             </label>
             <textarea
               id="preDiagnosis"
               value={preDiagnosis}
               onChange={(e) => setPreDiagnosis(e.target.value)}
-              placeholder="Ön tanı notu..."
+              placeholder="On tani notu..."
               rows={3}
               className="w-full resize-none rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
@@ -149,7 +167,7 @@ export function PreSessionPage(): React.JSX.Element {
                 className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-sm text-slate-700 leading-relaxed">
-                Hasta KVKK aydınlatma metnini okumuş ve ses kaydına onay vermiştir
+                Hasta KVKK aydinlatma metnini okumus ve ses kaydina onay vermistir
               </span>
             </label>
           </div>
@@ -167,7 +185,7 @@ export function PreSessionPage(): React.JSX.Element {
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {createSession.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Kaydı Başlat
+            Kaydi Baslat
           </button>
         </form>
       </div>

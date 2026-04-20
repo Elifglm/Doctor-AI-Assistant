@@ -68,11 +68,18 @@ async def list_sessions(
 ) -> SessionListResponse:
     """Return a filtered, paginated session list."""
     svc = SessionService(db)
+
+    # Doktor sadece kendi oturumlarini gorsun, admin hepsini
+    doctor_filter = None
+    if user.role != "admin":
+        doctor_filter = user.display_name
+
     items, total = await svc.list_sessions(
         status=status_filter,
         from_date=from_date,
         to_date=to_date,
         search=search,
+        doctor_name=doctor_filter,
         page=page,
         limit=limit,
         sort=sort,
@@ -105,6 +112,13 @@ async def get_session(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Session {session_id} not found",
+        )
+
+    # Doktor sadece kendi oturumunu gorebilir
+    if user.role != "admin" and session.doctor_name != user.display_name:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu oturumu goruntuleme yetkiniz yok",
         )
 
     await audit.log(

@@ -6,12 +6,14 @@ import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sse_starlette.sse import EventSourceResponse
 
 from apps.backend.src.db.database import get_db
-from apps.backend.src.db.models import Report as ReportModel, TranscriptionSegment
+from apps.backend.src.db.models import Report as ReportModel, Session as SessionModel, TranscriptionSegment
 from apps.backend.src.dependencies import get_audit_service, get_current_user
 from apps.backend.src.schemas.auth import UserInfo
 from apps.backend.src.schemas.report import (
@@ -291,3 +293,74 @@ async def stream_report_generation(
             }
 
     return EventSourceResponse(event_generator())
+
+
+# ---------------------------------------------------------------------------
+# GET  /api/v1/reports/{report_id}/pdf  -- Download PDF report
+# ---------------------------------------------------------------------------
+@router.get("/{report_id}/pdf")
+async def download_report_pdf(
+    report_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: UserInfo = Depends(get_current_user),
+    audit: AuditService = Depends(get_audit_service),
+) -> Response:
+    """Generate and return a PDF version of the report."""
+    from apps.backend.src.services.pdf_service import generate_report_pdf
+
+    # Fetch report
+    svc = ReportService(db)
+    report = await svc.get_by_id(report_id)
+    if report is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Report {report_id} not found",
+        )
+
+    # Fetch session
+    stmt = select(SessionModel).where(SessionModel.id == report.session_id)
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+
+    # Build data dicts
+    session_data = {
+        "patient_id": session.patient_id or "",
+        "patient_name": session.patient_name or "",
+        "doctor_name": session.doctor_name or "",
+        "visit_type": session.visit_type or "",
+        "created_at": session.created_at,
+    }
+
+    content = report.content  # parsed JSON via @property
+    report_data = {
+        "report_id": report.id,
+        "sections": content.get("sections", []),
+        "approved_at": report.approved_at,
+    }
+
+    # Generate PDF
+    pdf_bytes = generate_report_pdf(session_data, report_data)
+
+    # Audit
+    await audit.log(
+        action="EXPORT_PDF",
+        resource_type="report",
+        resource_id=str(report.id),
+        user_id=user.username,
+        ip_address=request.client.host if request.client else None,
+    )
+
+    patient_name = (session.patient_name or "rapor").replace(" ", "_")
+    filename = f"anamnez_{patient_name}_{report.id}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -56,6 +56,7 @@ class SessionService:
         from_date: Optional[datetime] = None,
         to_date: Optional[datetime] = None,
         search: Optional[str] = None,
+        doctor_name: Optional[str] = None,
         page: int = 1,
         limit: int = 20,
         sort: str = "created_at:desc",
@@ -64,10 +65,13 @@ class SessionService:
 
         ``sort`` must be ``"field:asc"`` or ``"field:desc"``.
         ``search`` matches against ``patient_id`` or ``doctor_name``.
+        ``doctor_name`` filters by the exact doctor display name.
         """
         base = select(Session)
 
         # -- Filters --------------------------------------------------------
+        if doctor_name:
+            base = base.where(Session.doctor_name == doctor_name)
         if status:
             base = base.where(Session.status == status)
         if from_date:

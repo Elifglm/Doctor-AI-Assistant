@@ -1,9 +1,10 @@
-import { Calendar, Clock, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, CheckCircle, Stethoscope } from 'lucide-react'
 
 interface StatsBarProps {
   todayCount: number
   pendingCount: number
   completedCount: number
+  appointmentCount: number
 }
 
 interface StatCardProps {
@@ -31,17 +32,24 @@ export function StatsBar({
   todayCount,
   pendingCount,
   completedCount,
+  appointmentCount,
 }: StatsBarProps): React.JSX.Element {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
       <StatCard
-        label="Bugünün Görüşmeleri"
+        label="Bugunun Randevulari"
+        value={appointmentCount}
+        icon={<Stethoscope className="h-6 w-6 text-purple-600" />}
+        colorClass="bg-purple-50"
+      />
+      <StatCard
+        label="Bugunun Gorusmeleri"
         value={todayCount}
         icon={<Calendar className="h-6 w-6 text-blue-600" />}
         colorClass="bg-blue-50"
       />
       <StatCard
-        label="Bekleyen İnceleme"
+        label="Bekleyen Inceleme"
         value={pendingCount}
         icon={<Clock className="h-6 w-6 text-amber-600" />}
         colorClass="bg-amber-50"

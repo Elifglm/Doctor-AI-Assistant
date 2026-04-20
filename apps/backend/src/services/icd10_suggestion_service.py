@@ -16,17 +16,24 @@ logger = logging.getLogger(__name__)
 
 # LLM prompt for selecting from candidates
 ICD10_SELECTION_PROMPT = """\
-Sen bir tibbi kodlama uzmanisin. Asagida bir doktor-hasta gorusme transkripti ve \
-ICD-10 aday kodlari verilmistir.
+Sen bir deneyimli tibbi kodlama uzmanisin. Asagida bir doktor-hasta gorusme \
+transkripti ve ICD-10 aday kodlari verilmistir.
 
-GOREV: Aday kodlardan transkripte en uygun olanlari sec. Uygun olmayanları SECME.
+GOREV: Aday kodlardan transkripte KLINIK OLARAK en uygun olanlari sec.
 
-KURALLAR:
-- SADECE transkriptte gecen sikayet, bulgu ve tanilara uyan kodlari sec.
-- Transkriptle ilgisi olmayan kodlari SECME (ornek: hastada gebelik yoksa gebelik kodunu secme).
-- Maksimum 5 kod sec.
-- Her kod icin guven skoru (0.0-1.0) ver.
-- Sadece JSON formatinda yanit ver.
+KRITIK KURALLAR:
+1. SADECE kelime eslesmesine bakma, KLINIK BAGLAMI degerlendir.
+   - Ornek: Hasta "basim donuyor" diyorsa ve anemi bulgulari varsa (halsizlik, solukluk,
+     dusuk hemoglobin), R42 (Vertigo) SECME — bu semptom aneminin sonucu.
+   - Semptom kodlari (R grubu) yerine ALTTA YATAN HASTALIK kodlarini tercih et.
+2. AYIRICI TANI mantigi kullan:
+   - Bir semptom baska bir hastaligin sonucu olabilir mi? Eger evetse semptom kodunu SECME.
+   - Ornek: Bas donmesi + halsizlik + solukluk = Anemi (D50), Vertigo (R42) degil.
+   - Ornek: Karin agrisi + ishal + ates = Gastroenterit (A09), karin agrisi (R10) degil.
+3. Eger doktor acik bir tani soyluyorsa (ornek: "akut gastrit"), o taniyi yuksek guvenle sec.
+4. Maksimum 5 kod sec. Semptom kodlari ancak altta yatan hastalik bulunamazsa secilmeli.
+5. Her kod icin guven skoru (0.0-1.0) ve NEDEN sectigini acikla.
+6. Sadece JSON formatinda yanit ver.
 
 TRANSKRIPT:
 {transcript}
@@ -36,24 +43,31 @@ ADAY ICD-10 KODLARI:
 
 Yanit (sadece JSON, baska bir sey yazma):
 [
-  {{"icd_kodu": "E11", "tani": "Tip 2 diyabet", "confidence": 0.85, "reasoning": "Hasta seker semptomlari gosteriyor"}}
+  {{"icd_kodu": "D50", "tani": "Demir eksikligi anemisi", "confidence": 0.90, "reasoning": "Hasta halsizlik, solukluk ve bas donmesi tarif ediyor - anemi bulgulari"}}
 ]
 
 Hicbir aday uygun degilse bos liste don: []
 """
 
 ICD10_REPORT_SELECTION_PROMPT = """\
-Sen bir tibbi kodlama uzmanisin. Asagida bir anamnez raporunun ilgili alanlari ve \
-ICD-10 aday kodlari verilmistir.
+Sen bir deneyimli tibbi kodlama uzmanisin. Asagida bir anamnez raporunun ilgili \
+alanlari ve ICD-10 aday kodlari verilmistir.
 
-GOREV: Aday kodlardan rapora en uygun olanlari sec. Uygun olmayanları SECME.
+GOREV: Aday kodlardan rapora KLINIK OLARAK en uygun olanlari sec.
 
-KURALLAR:
-- Rapordaki sikayet, oykü, bulgular ve ön taniya uyan kodlari sec.
-- Raporla ilgisi olmayan kodlari SECME.
-- Maksimum 5 kod sec.
-- Her kod icin guven skoru (0.0-1.0) ver.
-- Sadece JSON formatinda yanit ver.
+KRITIK KURALLAR:
+1. SADECE kelime eslesmesine bakma, KLINIK BAGLAMI degerlendir.
+   - Semptom kodlari (R grubu) yerine ALTTA YATAN HASTALIK kodlarini tercih et.
+   - Bir semptom baska bir hastaligin sonucu olabiliyorsa, semptom kodunu SECME.
+   - Ornek: "Bas donmesi" + anemi bulgulari varsa → D50 (Anemi) sec, R42 (Vertigo) SECME.
+   - Ornek: "Karin agrisi" + gastrit bulgulari varsa → K29 (Gastrit) sec, R10 (Karin agrisi) SECME.
+2. AYIRICI TANI mantigi:
+   - Raporun tum alanlarini bir arada degerlendir (sikayet + oykü + muayene + konsultasyon sonucu).
+   - Doktorun konsultasyon sonucunda yazdigi taniyi EN YUKSEK guvenle sec.
+   - Birden fazla hastalik varsa hepsini listele (ornek: anemi + gastrit ayni anda olabilir).
+3. Maksimum 5 kod sec.
+4. Her kod icin guven skoru (0.0-1.0) ve NEDEN sectigini acikla.
+5. Sadece JSON formatinda yanit ver.
 
 ANAMNEZ RAPORU:
 {report_text}
@@ -63,7 +77,7 @@ ADAY ICD-10 KODLARI:
 
 Yanit (sadece JSON, baska bir sey yazma):
 [
-  {{"icd_kodu": "E11", "tani": "Tip 2 diyabet", "confidence": 0.85, "reasoning": "Raporda seker hastaligi belirtilmis"}}
+  {{"icd_kodu": "D50", "tani": "Demir eksikligi anemisi", "confidence": 0.90, "reasoning": "Raporda halsizlik, solukluk ve bas donmesi — anemi bulgulari"}}
 ]
 
 Hicbir aday uygun degilse bos liste don: []

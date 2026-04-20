@@ -51,3 +51,4 @@ rich
 
 # --- HuggingFace ---
 huggingface_hub
+reportlab

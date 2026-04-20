@@ -11,6 +11,7 @@ interface SessionListParams {
 
 interface CreateSessionPayload {
   patient_id?: string
+  patient_name?: string
   visit_type: VisitType
   doctor_name: string
   pre_diagnosis?: string

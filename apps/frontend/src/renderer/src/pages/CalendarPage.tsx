@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -8,6 +9,7 @@ import {
   Stethoscope,
   Loader2,
   RefreshCw,
+  Mic,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { apiClient } from '../services/apiClient'
@@ -97,6 +99,7 @@ export function CalendarPage(): React.JSX.Element {
   const [loading, setLoading] = useState(true)
   const [filteredBy, setFilteredBy] = useState('')
   const user = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
 
   const weekDates = getWeekDates(selectedDate)
 
@@ -267,15 +270,34 @@ export function CalendarPage(): React.JSX.Element {
                           {appt.category_name}
                         </span>
                       </div>
-                      {/* Time */}
-                      <div className="flex items-center gap-1.5 text-slate-500">
-                        <Clock className="h-4 w-4" />
-                        <span className="text-sm font-mono font-medium">
-                          {formatTime(appt.start_time)}
-                          {appt.end_time !== appt.start_time && (
-                            <> — {formatTime(appt.end_time)}</>
-                          )}
-                        </span>
+                      {/* Time + Action */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <Clock className="h-4 w-4" />
+                          <span className="text-sm font-mono font-medium">
+                            {formatTime(appt.start_time)}
+                            {appt.end_time !== appt.start_time && (
+                              <> — {formatTime(appt.end_time)}</>
+                            )}
+                          </span>
+                        </div>
+                        {(user?.role === 'admin' || appt.provider_username === user?.username) && (
+                          <button
+                            onClick={() => {
+                              const params = new URLSearchParams({
+                                patient_id: appt.patient_ext_id || appt.patient_id,
+                                patient_name: appt.patient_name,
+                                provider: appt.provider_name,
+                                appointment_id: String(appt.id),
+                              })
+                              navigate(`/session/new?${params.toString()}`)
+                            }}
+                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 transition-colors"
+                          >
+                            <Mic className="h-3.5 w-3.5" />
+                            Kayit Baslat
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

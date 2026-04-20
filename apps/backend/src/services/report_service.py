@@ -9,7 +9,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.backend.src.db.models import Report
+from apps.backend.src.db.models import Report, Session
 from apps.backend.src.schemas.report import UpdateReportRequest
 
 # Build empty HBYS anamnesis template from the single source of truth
@@ -103,6 +103,14 @@ class ReportService:
             report.status = data.status
             if data.status == "APPROVED":
                 report.approved_at = datetime.now(timezone.utc)
+                # Session'ı da COMPLETED yap
+                session_result = await self.db.execute(
+                    select(Session).where(Session.id == report.session_id)
+                )
+                session = session_result.scalar_one_or_none()
+                if session and session.status != "COMPLETED":
+                    session.status = "COMPLETED"
+                    session.updated_at = datetime.now(timezone.utc)
 
         await self.db.flush()
         await self.db.refresh(report)
