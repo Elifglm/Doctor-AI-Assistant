@@ -14,6 +14,7 @@ interface TokenRefreshResponse {
   access_token: string
   expires_in: number
   user: {
+    id: number
     username: string
     display_name: string
     role: string

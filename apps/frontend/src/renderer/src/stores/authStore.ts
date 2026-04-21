@@ -4,6 +4,7 @@ import { useSessionStore } from './sessionStore'
 import { useTranscriptionStore } from './transcriptionStore'
 
 interface UserInfo {
+  id: number
   username: string
   display_name: string
   role: string
