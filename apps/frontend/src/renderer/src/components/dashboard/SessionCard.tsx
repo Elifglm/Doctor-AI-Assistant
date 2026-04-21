@@ -45,6 +45,9 @@ export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionC
         </div>
         <div className="space-y-1">
           <p className="text-sm font-medium text-slate-800">{session.doctor_name}</p>
+          {session.patient_name && (
+            <p className="text-xs text-slate-500">Hasta: {session.patient_name}</p>
+          )}
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${visitTypeBadgeColors[session.visit_type]}`}

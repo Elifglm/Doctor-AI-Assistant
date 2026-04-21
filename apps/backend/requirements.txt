@@ -1,12 +1,13 @@
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0,<5.0.0
 python-multipart>=0.0.12
 sqlalchemy>=2.0.0
 aiosqlite>=0.20.0
 google-genai>=1.0.0
 pydantic-settings>=2.0.0
+rapidfuzz>=3.0.0
 # Optional ASR post-processing
 # turkish-deasciifier (install from GitHub: pip install git+https://github.com/emres/turkish-deasciifier.git)
 # zemberek-python>=0.2.3
