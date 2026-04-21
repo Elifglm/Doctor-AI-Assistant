@@ -64,7 +64,7 @@ class SessionService:
         """Return a filtered, paginated list of sessions plus total count.
 
         ``sort`` must be ``"field:asc"`` or ``"field:desc"``.
-        ``search`` matches against ``patient_id`` or ``doctor_name``.
+        ``search`` matches against ``patient_id``, ``patient_name`` or ``doctor_name``.
         ``doctor_name`` filters by the exact doctor display name.
         """
         base = select(Session)
@@ -82,6 +82,9 @@ class SessionService:
             )
         if status:
             base = base.where(Session.status == status)
+        else:
+            # Hide archived sessions by default
+            base = base.where(Session.status != "ARCHIVED")
         if from_date:
             base = base.where(Session.created_at >= from_date)
         if to_date:
@@ -91,6 +94,7 @@ class SessionService:
             base = base.where(
                 or_(
                     Session.patient_id.ilike(pattern),
+                    Session.patient_name.ilike(pattern),
                     Session.doctor_name.ilike(pattern),
                 )
             )
