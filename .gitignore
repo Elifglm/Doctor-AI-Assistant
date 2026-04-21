@@ -69,3 +69,19 @@ data/rag/
 *.tmp
 *.bak
 *.tsbuildinfo
+
+# PHI / hospital data (never commit)
+data/Anemnez_tetkik/
+data/icd10_backfill_output/
+reports_for_claude.json
+batch_*.json
+
+# Scratch / local-only outputs
+phi_check.txt
+checks.txt
+excel_inspect.txt
+prepare_output.txt
+icd10_export.csv
+
+# Local Claude Code settings
+.claude/settings.local.json
