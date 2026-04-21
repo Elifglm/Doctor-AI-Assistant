@@ -342,10 +342,13 @@
       "UserInfo": {
         "type": "object",
         "properties": {
+          "id": { "type": "integer", "default": 0 },
           "username": { "type": "string" },
           "display_name": { "type": "string" },
-          "role": { "type": "string" }
-        }
+          "role": { "type": "string" },
+          "brans": { "type": "string", "default": "" }
+        },
+        "required": ["username", "display_name", "role"]
       },
       "CreateSessionRequest": {
         "type": "object",
