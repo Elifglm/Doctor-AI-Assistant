@@ -1,7 +1,11 @@
 import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ShieldCheck } from 'lucide-react'
 import { useTranscription } from '../hooks/useTranscription'
+
+// TODO: Replace hardcoded value with a real backend endpoint once
+// GET /api/v1/settings/deid is implemented (returns { deid_enabled: boolean }).
+const DEID_ENABLED = true
 
 const stageLabelMap: Record<string, string> = {
   'Stage 0/4': 'Dosya doğrulanıyor...',
@@ -82,6 +86,15 @@ export function ProcessingPage(): React.JSX.Element {
 
         {processingMessage && (
           <p className="text-sm text-slate-400">{processingMessage}</p>
+        )}
+
+        {DEID_ENABLED && (
+          <div className="flex justify-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              PII Koruması Aktif
+            </span>
+          </div>
         )}
       </div>
     </div>

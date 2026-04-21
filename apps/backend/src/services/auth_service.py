@@ -109,6 +109,7 @@ async def authenticate_user(username: str, password: str) -> UserInfo | None:
         return None
 
     return UserInfo(
+        id=user.id,
         username=user.username,
         display_name=user.display_name,
         role=user.role,

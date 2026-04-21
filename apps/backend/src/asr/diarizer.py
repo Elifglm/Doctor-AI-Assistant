@@ -89,13 +89,23 @@ class SpeakerDiarizer:
             return None
 
         try:
-            import torchaudio
+            import torch
+            import numpy as np
+            import wave
 
             logger.info("Diarization basliyor: %s", audio_path)
 
-            # torchcodec DLL sorunu nedeniyle dosya yolu yerine
-            # in-memory waveform dict geciyoruz (pyannote 4.0 resmi workaround)
-            waveform, sample_rate = torchaudio.load(audio_path)
+            # WAV'i stdlib wave + numpy ile yukle (torchcodec DLL sorununu bypass eder)
+            # Pipeline'a in-memory waveform dict geciyoruz (pyannote 4.0 resmi workaround)
+            with wave.open(audio_path, "rb") as wf:
+                sample_rate = wf.getframerate()
+                n_channels = wf.getnchannels()
+                sampwidth = wf.getsampwidth()
+                frames = wf.readframes(wf.getnframes())
+            audio_np = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
+            if n_channels > 1:
+                audio_np = audio_np.reshape(-1, n_channels).mean(axis=1)
+            waveform = torch.from_numpy(audio_np).unsqueeze(0)  # (1, T)
 
             result = self._pipeline(
                 {"waveform": waveform, "sample_rate": sample_rate},

@@ -34,6 +34,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return UserInfo(
+        id=payload.get("id", 0),
         username=username,
         display_name=payload.get("display_name", username),
         role=payload.get("role", "doctor"),

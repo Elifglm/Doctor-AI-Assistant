@@ -11,6 +11,7 @@ class LoginRequest(BaseModel):
 
 
 class UserInfo(BaseModel):
+    id: int = 0
     username: str
     display_name: str
     role: str
