@@ -13,6 +13,7 @@ import {
 import { apiClient } from '../services/apiClient'
 import { ReportEditor } from '../components/report/ReportEditor'
 import { TranscriptSegmentItem } from '../components/session/TranscriptSegment'
+import { useT } from '../hooks/useT'
 import type { SessionDetail } from '../types/session'
 import type { Report } from '../types/report'
 import { cn } from '../lib/utils'
@@ -22,6 +23,7 @@ export function ReportReviewPage(): React.JSX.Element {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const sessionId = id ? parseInt(id, 10) : null
+  const t = useT()
 
   const [dividerPosition, setDividerPosition] = useState(50)
   const [isDragging, setIsDragging] = useState(false)
@@ -85,7 +87,7 @@ export function ReportReviewPage(): React.JSX.Element {
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-sm text-slate-500">Görüşme yükleniyor...</p>
+          <p className="text-sm text-slate-500">{t('review_loading')}</p>
         </div>
       </div>
     )
@@ -97,9 +99,9 @@ export function ReportReviewPage(): React.JSX.Element {
         <div className="flex items-center gap-3 rounded-xl bg-red-50 p-6 ring-1 ring-red-200">
           <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-red-800">Görüşme yüklenemedi</p>
+            <p className="text-sm font-medium text-red-800">{t('review_loadError')}</p>
             <p className="text-sm text-red-600 mt-1">
-              {error instanceof Error ? error.message : 'Bilinmeyen hata'}
+              {error instanceof Error ? error.message : t('review_unknownError')}
             </p>
           </div>
         </div>
@@ -124,10 +126,10 @@ export function ReportReviewPage(): React.JSX.Element {
         </button>
         <div className="flex-1">
           <h1 className="text-sm font-bold text-slate-800">
-            Rapor İnceleme - {session.doctor_name}
+            {t('review_title', { doctorName: session.doctor_name })}
           </h1>
           <p className="text-xs text-slate-500">
-            Hasta: {session.patient_name || session.patient_id || 'Belirtilmemiş'}
+            {t('review_patient')} {session.patient_name || session.patient_id || t('review_notSpecified')}
           </p>
         </div>
         {/* AI generate button - always visible when segments exist */}
@@ -143,7 +145,7 @@ export function ReportReviewPage(): React.JSX.Element {
             ) : (
               <Sparkles className="h-3.5 w-3.5" />
             )}
-            {report ? 'AI ile Yeniden Oluştur' : 'AI ile Oluştur'}
+            {report ? t('review_regenerate') : t('review_generate')}
           </button>
         )}
       </div>
@@ -159,14 +161,16 @@ export function ReportReviewPage(): React.JSX.Element {
           style={{ width: `${dividerPosition}%` }}
         >
           <div className="border-b border-slate-200 bg-white px-4 py-3 shrink-0">
-            <h2 className="text-lg font-semibold text-slate-800">Transkript</h2>
-            <p className="text-xs text-slate-500 mt-0.5">{segments.length} segment</p>
+            <h2 className="text-lg font-semibold text-slate-800">{t('review_transcript')}</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {t('review_segments', { count: segments.length })}
+            </p>
           </div>
 
           <div className="flex-1 overflow-auto">
             {segments.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <p className="text-sm text-slate-500">Transkript bulunamadı</p>
+                <p className="text-sm text-slate-500">{t('review_transcriptNotFound')}</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
@@ -206,21 +210,15 @@ export function ReportReviewPage(): React.JSX.Element {
           style={{ width: `${100 - dividerPosition}%` }}
         >
           {report ? (
-            <ReportEditor
-              report={report}
-            />
+            <ReportEditor report={report} />
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
                 <FileText className="h-8 w-8 text-slate-400" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-700">
-                  Henüz rapor oluşturulmamış
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  Transkriptten otomatik veya boş rapor oluşturun
-                </p>
+                <p className="text-sm font-medium text-slate-700">{t('review_noReport')}</p>
+                <p className="text-xs text-slate-500 mt-1">{t('review_generateHint')}</p>
               </div>
 
               {/* AI Generate button */}
@@ -235,15 +233,13 @@ export function ReportReviewPage(): React.JSX.Element {
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                AI ile Oluştur
+                {t('review_generate')}
               </button>
 
               {segments.length === 0 && (
                 <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-2 ring-1 ring-amber-200">
                   <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                  <p className="text-xs text-amber-700">
-                    AI rapor oluşturmak için transkript gereklidir
-                  </p>
+                  <p className="text-xs text-amber-700">{t('review_transcriptRequired')}</p>
                 </div>
               )}
 
@@ -257,7 +253,7 @@ export function ReportReviewPage(): React.JSX.Element {
                 {generateReport.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
-                Boş Şablon Oluştur
+                {t('review_createBlank')}
               </button>
 
               {(generateReport.isError || generateAIReport.isError) && (
@@ -266,7 +262,7 @@ export function ReportReviewPage(): React.JSX.Element {
                   <p className="text-xs text-red-700">
                     {(generateAIReport.error ?? generateReport.error) instanceof Error
                       ? ((generateAIReport.error ?? generateReport.error) as Error).message
-                      : 'Rapor oluşturulamadı'}
+                      : t('review_reportFailed')}
                   </p>
                 </div>
               )}

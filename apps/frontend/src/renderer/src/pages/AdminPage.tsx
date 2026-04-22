@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Plus, Pencil, Trash2, KeyRound, Loader2, X, Check, ShieldCheck, RotateCcw, RefreshCw, UserPlus, AlertTriangle } from 'lucide-react'
+import { Plus, Pencil, Trash2, KeyRound, Loader2, X, Check, ShieldCheck, RefreshCw, UserPlus, AlertTriangle } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { apiClient } from '../services/apiClient'
 import { useAuthStore } from '../stores/authStore'
+import { useT } from '../hooks/useT'
 
 interface UserData {
   id: number
@@ -35,28 +36,6 @@ interface OpenEMRSyncResponse {
   total_count: number
 }
 
-const BRANS_OPTIONS = [
-  { value: '', label: 'Yok (Admin)' },
-  { value: 'dahiliye', label: 'Dahiliye' },
-  { value: 'ortopedi', label: 'Ortopedi' },
-]
-
-const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'doctor', label: 'Doktor' },
-]
-
-function bransLabel(brans: string): string {
-  if (brans === 'dahiliye') return 'Dahiliye'
-  if (brans === 'ortopedi') return 'Ortopedi'
-  return '-'
-}
-
-function roleLabel(role: string): string {
-  if (role === 'admin') return 'Admin'
-  return 'Doktor'
-}
-
 export function AdminPage(): React.JSX.Element {
   const [users, setUsers] = useState<UserData[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,6 +47,7 @@ export function AdminPage(): React.JSX.Element {
   const [isSyncing, setIsSyncing] = useState(false)
   const [addingDoctor, setAddingDoctor] = useState<OpenEMRDoctor | null>(null)
   const currentUser = useAuthStore((s) => s.user)
+  const t = useT()
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -75,11 +55,11 @@ export function AdminPage(): React.JSX.Element {
       const data = await apiClient.get<UserListResponse>('/api/v1/admin/users')
       setUsers(data.users)
     } catch {
-      setMessage({ type: 'error', text: 'Kullanici listesi alinamadi' })
+      setMessage({ type: 'error', text: t('admin_loadError') })
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   const syncOpenEMR = useCallback(async () => {
     setIsSyncing(true)
@@ -88,18 +68,18 @@ export function AdminPage(): React.JSX.Element {
       const newDocs = data.doctors.filter((d) => !d.already_in_system)
       setNewOpenEMRDoctors(newDocs)
       if (newDocs.length === 0) {
-        setMessage({ type: 'success', text: 'OpenEMR ile senkronize edildi — yeni doktor yok' })
+        setMessage({ type: 'success', text: t('admin_syncSuccess') })
       }
     } catch {
-      setMessage({ type: 'error', text: 'OpenEMR baglantisi basarisiz' })
+      setMessage({ type: 'error', text: t('admin_syncFailed') })
     } finally {
       setIsSyncing(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void fetchUsers()
-    void syncOpenEMR() // startup check
+    void syncOpenEMR()
   }, [fetchUsers, syncOpenEMR])
 
   useEffect(() => {
@@ -109,6 +89,17 @@ export function AdminPage(): React.JSX.Element {
     }
   }, [message])
 
+  const bransLabel = (brans: string): string => {
+    if (brans === 'dahiliye') return t('admin_internalMed')
+    if (brans === 'ortopedi') return t('admin_ortho')
+    return '-'
+  }
+
+  const roleLabel = (role: string): string => {
+    if (role === 'admin') return t('admin_role_admin')
+    return t('admin_role_doctor')
+  }
+
   return (
     <div className="flex-1 overflow-auto bg-slate-50 p-6">
       <div className="mx-auto max-w-4xl space-y-6">
@@ -117,8 +108,8 @@ export function AdminPage(): React.JSX.Element {
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-7 w-7 text-blue-600" />
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Kullanici Yonetimi</h1>
-              <p className="text-sm text-slate-500">Doktor ve admin hesaplarini yonetin</p>
+              <h1 className="text-xl font-bold text-slate-800">{t('admin_title')}</h1>
+              <p className="text-sm text-slate-500">{t('admin_subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -132,7 +123,7 @@ export function AdminPage(): React.JSX.Element {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              OpenEMR Senkronize Et
+              {t('admin_syncOpenEMR')}
             </button>
             <button
               onClick={() => {
@@ -144,7 +135,7 @@ export function AdminPage(): React.JSX.Element {
               className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Yeni Kullanici
+              {t('admin_newUser')}
             </button>
           </div>
         </div>
@@ -169,12 +160,10 @@ export function AdminPage(): React.JSX.Element {
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-600" />
               <h3 className="text-sm font-semibold text-amber-800">
-                {newOpenEMRDoctors.length} yeni doktor OpenEMR'de bulundu
+                {t('admin_newDoctorsFound', { count: newOpenEMRDoctors.length })}
               </h3>
             </div>
-            <p className="text-xs text-amber-700">
-              Bu doktorlar henuz sisteme eklenmedi. Rol ve brans atayarak ekleyin.
-            </p>
+            <p className="text-xs text-amber-700">{t('admin_newDoctorsDesc')}</p>
             <div className="space-y-2">
               {newOpenEMRDoctors.map((doc) => (
                 <div
@@ -188,9 +177,9 @@ export function AdminPage(): React.JSX.Element {
                         {doc.fname} {doc.lname}
                       </p>
                       <p className="text-xs text-slate-500">
-                        Kullanici: <span className="font-mono">{doc.username}</span>
+                        {t('admin_userLabel')} <span className="font-mono">{doc.username}</span>
                         {doc.specialty && (
-                          <> — Uzmanlik: <span className="font-medium">{doc.specialty}</span></>
+                          <> — {t('admin_specialtyLabel')} <span className="font-medium">{doc.specialty}</span></>
                         )}
                       </p>
                     </div>
@@ -205,7 +194,7 @@ export function AdminPage(): React.JSX.Element {
                     className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Rol Ata ve Ekle
+                    {t('admin_assignRole')}
                   </button>
                 </div>
               ))}
@@ -220,7 +209,7 @@ export function AdminPage(): React.JSX.Element {
             onCreated={() => {
               setShowCreateForm(false)
               setAddingDoctor(null)
-              setMessage({ type: 'success', text: 'Kullanici olusturuldu' })
+              setMessage({ type: 'success', text: t('admin_userCreated') })
               void fetchUsers()
               void syncOpenEMR()
             }}
@@ -237,7 +226,7 @@ export function AdminPage(): React.JSX.Element {
             user={editingUser}
             onUpdated={() => {
               setEditingUser(null)
-              setMessage({ type: 'success', text: 'Kullanici guncellendi' })
+              setMessage({ type: 'success', text: t('admin_userUpdated') })
               void fetchUsers()
             }}
             onCancel={() => setEditingUser(null)}
@@ -251,7 +240,7 @@ export function AdminPage(): React.JSX.Element {
             username={users.find((u) => u.id === passwordUserId)?.username ?? ''}
             onChanged={() => {
               setPasswordUserId(null)
-              setMessage({ type: 'success', text: 'Sifre degistirildi' })
+              setMessage({ type: 'success', text: t('admin_passwordChanged') })
             }}
             onCancel={() => setPasswordUserId(null)}
           />
@@ -267,11 +256,11 @@ export function AdminPage(): React.JSX.Element {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50">
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Kullanici</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Gorunen Ad</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Rol</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Brans</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-600">Islemler</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-600">{t('admin_col_user')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-600">{t('admin_col_displayName')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-600">{t('admin_col_role')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-600">{t('admin_col_specialty')}</th>
+                  <th className="px-4 py-3 text-right font-medium text-slate-600">{t('admin_col_actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -309,7 +298,7 @@ export function AdminPage(): React.JSX.Element {
                     </td>
                     <td className="px-4 py-3">
                       {u.username === currentUser?.username ? (
-                        <span className="text-xs text-slate-400 italic">Mevcut hesap</span>
+                        <span className="text-xs text-slate-400 italic">{t('admin_currentAccount')}</span>
                       ) : (
                         <div className="flex items-center justify-end gap-1">
                           <button
@@ -319,7 +308,7 @@ export function AdminPage(): React.JSX.Element {
                               setPasswordUserId(null)
                             }}
                             className="rounded p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                            title="Duzenle"
+                            title={t('admin_edit')}
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -330,23 +319,23 @@ export function AdminPage(): React.JSX.Element {
                               setShowCreateForm(false)
                             }}
                             className="rounded p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
-                            title="Sifre Degistir"
+                            title={t('admin_changePassword')}
                           >
                             <KeyRound className="h-4 w-4" />
                           </button>
                           <button
                             onClick={async () => {
-                              if (!window.confirm(`'${u.username}' kullanicisini kalici olarak silmek istediginize emin misiniz?`)) return
+                              if (!window.confirm(t('admin_deleteConfirm', { username: u.username }))) return
                               try {
                                 await apiClient.delete(`/api/v1/admin/users/${u.id}`)
-                                setMessage({ type: 'success', text: `'${u.username}' silindi` })
+                                setMessage({ type: 'success', text: t('admin_deleted', { username: u.username }) })
                                 void fetchUsers()
                               } catch {
-                                setMessage({ type: 'error', text: 'Silme islemi basarisiz' })
+                                setMessage({ type: 'error', text: t('admin_deleteFailed') })
                               }
                             }}
                             className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                            title="Sil"
+                            title={t('admin_delete')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -375,6 +364,7 @@ function CreateUserForm({
   onCreated: () => void
   onCancel: () => void
 }): React.JSX.Element {
+  const t = useT()
   const [username, setUsername] = useState(prefill?.username ?? '')
   const [password, setPassword] = useState(prefill?.username ?? '')
   const [displayName, setDisplayName] = useState(
@@ -391,6 +381,16 @@ function CreateUserForm({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const bransOptions = [
+    { value: 'dahiliye', label: t('admin_internalMed') },
+    { value: 'ortopedi', label: t('admin_ortho') },
+  ]
+
+  const roleOptions = [
+    { value: 'admin', label: t('admin_role_admin') },
+    { value: 'doctor', label: t('admin_role_doctor') },
+  ]
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -405,7 +405,7 @@ function CreateUserForm({
       })
       onCreated()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kullanici olusturulamadi')
+      setError(err instanceof Error ? err.message : t('admin_createFailed'))
     } finally {
       setSaving(false)
     }
@@ -415,7 +415,9 @@ function CreateUserForm({
     <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60 p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-slate-800">
-          {prefill ? `OpenEMR Doktoru Ekle: ${prefill.fname} ${prefill.lname}` : 'Yeni Kullanici Olustur'}
+          {prefill
+            ? t('admin_addOpenEMR', { name: `${prefill.fname} ${prefill.lname}` })
+            : t('admin_createUser')}
         </h3>
         <button onClick={onCancel} className="rounded p-1 text-slate-400 hover:text-slate-600">
           <X className="h-4 w-4" />
@@ -424,7 +426,7 @@ function CreateUserForm({
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Kullanici Adi</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_username')}</label>
             <input
               type="text"
               required
@@ -436,7 +438,7 @@ function CreateUserForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Sifre</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_password')}</label>
             <input
               type="password"
               required
@@ -447,7 +449,7 @@ function CreateUserForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Gorunen Ad</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_displayName')}</label>
             <input
               type="text"
               required
@@ -458,26 +460,26 @@ function CreateUserForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Rol</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_role')}</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
-              {ROLE_OPTIONS.map((o) => (
+              {roleOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
           {role === 'doctor' && (
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">Brans</label>
+              <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_specialty')}</label>
               <select
                 value={brans}
                 onChange={(e) => setBrans(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
-                {BRANS_OPTIONS.filter((o) => o.value !== '').map((o) => (
+                {bransOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
@@ -491,7 +493,7 @@ function CreateUserForm({
             onClick={onCancel}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
           >
-            Iptal
+            {t('admin_cancel')}
           </button>
           <button
             type="submit"
@@ -499,7 +501,7 @@ function CreateUserForm({
             className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-            Olustur
+            {t('admin_create')}
           </button>
         </div>
       </form>
@@ -518,12 +520,23 @@ function EditUserForm({
   onUpdated: () => void
   onCancel: () => void
 }): React.JSX.Element {
+  const t = useT()
   const [displayName, setDisplayName] = useState(user.display_name)
   const [role, setRole] = useState(user.role)
   const [brans, setBrans] = useState(user.brans)
   const [isActive, setIsActive] = useState(user.is_active)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const bransOptions = [
+    { value: 'dahiliye', label: t('admin_internalMed') },
+    { value: 'ortopedi', label: t('admin_ortho') },
+  ]
+
+  const roleOptions = [
+    { value: 'admin', label: t('admin_role_admin') },
+    { value: 'doctor', label: t('admin_role_doctor') },
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -538,7 +551,7 @@ function EditUserForm({
       })
       onUpdated()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Guncelleme basarisiz')
+      setError(err instanceof Error ? err.message : t('admin_updateFailed'))
     } finally {
       setSaving(false)
     }
@@ -548,7 +561,7 @@ function EditUserForm({
     <div className="rounded-xl bg-white shadow-sm ring-1 ring-blue-200 p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-slate-800">
-          Kullaniciyi Duzenle: <span className="font-mono text-blue-600">{user.username}</span>
+          {t('admin_editUser')} <span className="font-mono text-blue-600">{user.username}</span>
         </h3>
         <button onClick={onCancel} className="rounded p-1 text-slate-400 hover:text-slate-600">
           <X className="h-4 w-4" />
@@ -557,7 +570,7 @@ function EditUserForm({
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Gorunen Ad</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_displayName')}</label>
             <input
               type="text"
               required
@@ -567,40 +580,40 @@ function EditUserForm({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Rol</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_role')}</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
-              {ROLE_OPTIONS.map((o) => (
+              {roleOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
           {role === 'doctor' && (
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Brans</label>
+              <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_specialty')}</label>
               <select
                 value={brans}
                 onChange={(e) => setBrans(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
-                {BRANS_OPTIONS.filter((o) => o.value !== '').map((o) => (
+                {bransOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Durum</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_status')}</label>
             <select
               value={isActive ? 'active' : 'inactive'}
               onChange={(e) => setIsActive(e.target.value === 'active')}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
-              <option value="active">Aktif</option>
-              <option value="inactive">Pasif</option>
+              <option value="active">{t('settings_active')}</option>
+              <option value="inactive">{t('settings_inactive')}</option>
             </select>
           </div>
         </div>
@@ -611,7 +624,7 @@ function EditUserForm({
             onClick={onCancel}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
           >
-            Iptal
+            {t('admin_cancel')}
           </button>
           <button
             type="submit"
@@ -619,7 +632,7 @@ function EditUserForm({
             className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-            Kaydet
+            {t('admin_save')}
           </button>
         </div>
       </form>
@@ -640,6 +653,7 @@ function PasswordChangeForm({
   onChanged: () => void
   onCancel: () => void
 }): React.JSX.Element {
+  const t = useT()
   const [newPassword, setNewPassword] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -654,7 +668,7 @@ function PasswordChangeForm({
       })
       onChanged()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sifre degistirilemedi')
+      setError(err instanceof Error ? err.message : t('admin_passwordFailed'))
     } finally {
       setSaving(false)
     }
@@ -664,7 +678,7 @@ function PasswordChangeForm({
     <div className="rounded-xl bg-white shadow-sm ring-1 ring-amber-200 p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-slate-800">
-          Sifre Degistir: <span className="font-mono text-amber-600">{username}</span>
+          {t('admin_changePasswordTitle')} <span className="font-mono text-amber-600">{username}</span>
         </h3>
         <button onClick={onCancel} className="rounded p-1 text-slate-400 hover:text-slate-600">
           <X className="h-4 w-4" />
@@ -672,7 +686,7 @@ function PasswordChangeForm({
       </div>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Yeni Sifre</label>
+          <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_newPassword')}</label>
           <input
             type="password"
             required
@@ -689,7 +703,7 @@ function PasswordChangeForm({
             onClick={onCancel}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
           >
-            Iptal
+            {t('admin_cancel')}
           </button>
           <button
             type="submit"
@@ -697,7 +711,7 @@ function PasswordChangeForm({
             className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
-            Degistir
+            {t('admin_change')}
           </button>
         </div>
       </form>

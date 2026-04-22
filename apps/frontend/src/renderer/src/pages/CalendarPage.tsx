@@ -14,6 +14,7 @@ import {
 import { cn } from '../lib/utils'
 import { apiClient } from '../services/apiClient'
 import { useAuthStore } from '../stores/authStore'
+import { useT } from '../hooks/useT'
 
 interface Appointment {
   id: number
@@ -42,18 +43,7 @@ interface AppointmentListResponse {
 }
 
 function formatTime(time: string): string {
-  // "09:00:00" → "09:00"
   return time.slice(0, 5)
-}
-
-function formatDateTR(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00')
-  const days = ['Pazar', 'Pazartesi', 'Sali', 'Carsamba', 'Persembe', 'Cuma', 'Cumartesi']
-  const months = [
-    'Ocak', 'Subat', 'Mart', 'Nisan', 'Mayis', 'Haziran',
-    'Temmuz', 'Agustos', 'Eylul', 'Ekim', 'Kasim', 'Aralik',
-  ]
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${days[d.getDay()]}`
 }
 
 function getToday(): string {
@@ -67,7 +57,6 @@ function addDays(dateStr: string, days: number): string {
   return d.toISOString().split('T')[0]
 }
 
-// Generate week dates from a given date (Mon-Sun)
 function getWeekDates(dateStr: string): string[] {
   const d = new Date(dateStr + 'T00:00:00')
   const day = d.getDay()
@@ -84,12 +73,6 @@ function getWeekDates(dateStr: string): string[] {
   return dates
 }
 
-function getShortDay(dateStr: string): string {
-  const days = ['Paz', 'Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt']
-  const d = new Date(dateStr + 'T00:00:00')
-  return days[d.getDay()]
-}
-
 function getDayNum(dateStr: string): number {
   return new Date(dateStr + 'T00:00:00').getDate()
 }
@@ -101,8 +84,27 @@ export function CalendarPage(): React.JSX.Element {
   const [filteredBy, setFilteredBy] = useState('')
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
+  const t = useT()
 
   const weekDates = getWeekDates(selectedDate)
+
+  // Locale-aware date formatting using translation arrays
+  const getDays = () => t('cal_days').split(',')
+  const getShortDays = () => t('cal_shortDays').split(',')
+  const getMonths = () => t('cal_months').split(',')
+
+  const formatDateLocale = (dateStr: string): string => {
+    const d = new Date(dateStr + 'T00:00:00')
+    const days = getDays()
+    const months = getMonths()
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${days[d.getDay()]}`
+  }
+
+  const getShortDay = (dateStr: string): string => {
+    const shortDays = getShortDays()
+    const d = new Date(dateStr + 'T00:00:00')
+    return shortDays[d.getDay()]
+  }
 
   const fetchAppointments = useCallback(async (date: string) => {
     setLoading(true)
@@ -133,11 +135,11 @@ export function CalendarPage(): React.JSX.Element {
           <div className="flex items-center gap-3">
             <CalendarIcon className="h-7 w-7 text-blue-600" />
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Randevular</h1>
+              <h1 className="text-xl font-bold text-slate-800">{t('cal_title')}</h1>
               <p className="text-sm text-slate-500">
                 {user?.role === 'admin'
-                  ? 'Tum doktorlarin randevulari'
-                  : `${user?.display_name ?? 'Doktor'} randevulari`}
+                  ? t('cal_subtitle_all')
+                  : t('cal_subtitle_doctor', { name: user?.display_name ?? '' })}
               </p>
             </div>
           </div>
@@ -147,13 +149,13 @@ export function CalendarPage(): React.JSX.Element {
                 onClick={() => setSelectedDate(getToday())}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               >
-                Bugun
+                {t('cal_today')}
               </button>
             )}
             <button
               onClick={() => void fetchAppointments(selectedDate)}
               className="rounded-lg border border-slate-300 p-2 text-slate-500 hover:bg-slate-50 transition-colors"
-              title="Yenile"
+              title={t('cal_refresh')}
             >
               <RefreshCw className="h-4 w-4" />
             </button>
@@ -170,7 +172,7 @@ export function CalendarPage(): React.JSX.Element {
               <ChevronLeft className="h-5 w-5" />
             </button>
             <span className="text-sm font-semibold text-slate-700">
-              {formatDateTR(selectedDate)}
+              {formatDateLocale(selectedDate)}
             </span>
             <button
               onClick={() => setSelectedDate(addDays(selectedDate, 7))}
@@ -211,8 +213,8 @@ export function CalendarPage(): React.JSX.Element {
           <div className="flex items-center gap-2">
             <Stethoscope className="h-4 w-4 text-slate-400" />
             <span className="text-xs text-slate-500">
-              Filtre: <span className="font-medium text-slate-700">
-                {filteredBy === 'dahiliye' ? 'Dahiliye' : 'Ortopedi'}
+              {t('cal_filter')} <span className="font-medium text-slate-700">
+                {filteredBy === 'dahiliye' ? t('header_internalMed') : t('header_ortho')}
               </span>
             </span>
           </div>
@@ -226,7 +228,7 @@ export function CalendarPage(): React.JSX.Element {
         ) : appointments.length === 0 ? (
           <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60 p-12 text-center">
             <CalendarIcon className="mx-auto h-10 w-10 text-slate-300 mb-3" />
-            <p className="text-sm text-slate-500">Bu tarihte randevu bulunmuyor</p>
+            <p className="text-sm text-slate-500">{t('cal_noAppts')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -248,13 +250,13 @@ export function CalendarPage(): React.JSX.Element {
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-slate-400" />
                           <span className="text-sm font-semibold text-slate-800">
-                            {appt.patient_name || 'Hasta bilgisi yok'}
+                            {appt.patient_name || t('cal_noPatient')}
                           </span>
                         </div>
                         {/* Reason / Complaint from reception */}
                         {appt.reason && (
                           <p className="ml-6 text-xs text-amber-700 bg-amber-50 rounded px-2 py-1 inline-block">
-                            Sikayet: {appt.reason}
+                            {t('cal_complaint')} {appt.reason}
                           </p>
                         )}
                         {/* Provider (admin sees this) */}
@@ -302,7 +304,7 @@ export function CalendarPage(): React.JSX.Element {
                             className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 transition-colors"
                           >
                             <Mic className="h-3.5 w-3.5" />
-                            Kayit Baslat
+                            {t('cal_startRecording')}
                           </button>
                         )}
                       </div>
@@ -317,7 +319,7 @@ export function CalendarPage(): React.JSX.Element {
         {/* Summary */}
         {!loading && appointments.length > 0 && (
           <p className="text-xs text-slate-400 text-center">
-            Toplam {appointments.length} randevu
+            {t('cal_total', { count: appointments.length })}
           </p>
         )}
       </div>

@@ -4,15 +4,15 @@ import { Info, AlertCircle, RotateCcw, Loader2 } from 'lucide-react'
 import { useRecording } from '../hooks/useRecording'
 import { useTranscription } from '../hooks/useTranscription'
 import { useSessionStore } from '../stores/sessionStore'
+import { useT } from '../hooks/useT'
 import { RecordingControls } from '../components/session/RecordingControls'
 
-const stageLabelMap: Record<string, string> = {
-  // Batch pipeline (4 stages)
-  'Stage 0/4': 'Ses dosyası doğrulanıyor...',
-  'Stage 1/4': 'Transkripsiyon...',
-  'Stage 2/4': 'Metin düzeltme...',
-  'Stage 3/4': 'Konuşmacı ayrıştırma...',
-  'Stage 4/4': 'Anamnez raporu oluşturuluyor...',
+const stageLabelKeys: Record<string, string> = {
+  'Stage 0/4': 'live_validating',
+  'Stage 1/4': 'live_transcribing',
+  'Stage 2/4': 'live_correcting',
+  'Stage 3/4': 'live_diarizing',
+  'Stage 4/4': 'live_generating',
 }
 
 function getStageInfo(stage: string): { index: number; total: number } {
@@ -28,6 +28,7 @@ export function LiveSessionPage(): React.JSX.Element {
   const navigate = useNavigate()
   const sessionId = id ? Number(id) : null
   const lastStartedId = useRef<number | null>(null)
+  const t = useT()
 
   const { startRecording, pauseRecording, resumeRecording, stopRecording, recordingState, error } =
     useRecording(sessionId)
@@ -78,6 +79,9 @@ export function LiveSessionPage(): React.JSX.Element {
     100
   )
 
+  // Suppress unused variable warning — segments used by TranscriptView when wired up
+  void segments
+
   return (
     <div className="flex h-full flex-col gap-4">
       {/* Recording controls - visible when recording */}
@@ -90,7 +94,7 @@ export function LiveSessionPage(): React.JSX.Element {
         <div className="flex items-center gap-3 rounded-lg bg-red-50 px-4 py-3 ring-1 ring-red-200/60">
           <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-red-800">Kayıt başlatılamadı</p>
+            <p className="text-sm font-medium text-red-800">{t('live_startFailed')}</p>
             <p className="text-sm text-red-600">{error}</p>
           </div>
           <button
@@ -98,7 +102,7 @@ export function LiveSessionPage(): React.JSX.Element {
             className="flex items-center gap-1.5 rounded-md bg-red-100 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-200 transition-colors"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            Tekrar Dene
+            {t('live_retry')}
           </button>
         </div>
       )}
@@ -107,9 +111,7 @@ export function LiveSessionPage(): React.JSX.Element {
       {!error && !isProcessing && (recordingState === 'recording' || recordingState === 'paused') && (
         <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 ring-1 ring-blue-200/60">
           <Info className="h-4 w-4 text-blue-600 shrink-0" />
-          <p className="text-sm text-blue-700">
-            Kayıt devam ediyor. Durdurunca transkripsiyon başlayacak.
-          </p>
+          <p className="text-sm text-blue-700">{t('live_recordingInProgress')}</p>
         </div>
       )}
 
@@ -118,9 +120,9 @@ export function LiveSessionPage(): React.JSX.Element {
         <div className="flex flex-col items-center justify-center gap-6 py-12">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
           <div className="text-center space-y-1">
-            <h2 className="text-lg font-bold text-slate-800">İşleniyor</h2>
+            <h2 className="text-lg font-bold text-slate-800">{t('live_processing')}</h2>
             <p className="text-sm font-medium text-slate-600">
-              {stageLabelMap[processingStage] || processingMessage || 'Hazırlanıyor...'}
+              {stageLabelKeys[processingStage] ? t(stageLabelKeys[processingStage]) : processingMessage || t('live_preparing')}
             </p>
           </div>
 
@@ -136,7 +138,7 @@ export function LiveSessionPage(): React.JSX.Element {
             ))}
           </div>
           <p className="text-xs text-slate-400">
-            Aşama {Math.min(stageIndex + 1, totalStages)}/{totalStages}
+            {t('live_stage', { index: Math.min(stageIndex + 1, totalStages), total: totalStages })}
           </p>
 
           {/* Progress bar */}

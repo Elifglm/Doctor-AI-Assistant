@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils'
 import { useSutTetkikSearch } from '../../hooks/useSutTetkikSearch'
 import { apiClient } from '../../services/apiClient'
 import { useAuthStore } from '../../stores/authStore'
+import { useT } from '../../hooks/useT'
 import type {
   SUTConfirmedTetkik,
   SUTSuggestion,
@@ -54,6 +55,7 @@ function formatTetkik(items: SUTConfirmedTetkik[]): string {
 }
 
 export function SutTetkikSelector({ value, reportSections, brans: bransProp, sessionId, onChange }: SutTetkikSelectorProps) {
+  const t = useT()
   const parsed = parseExistingTetkik(value)
   const [selectedTetkik, setSelectedTetkik] = useState<SUTConfirmedTetkik[]>(() =>
     parsed.filter((p) => p.confidence === undefined).map(({ confidence: _, ...rest }) => rest)
@@ -161,7 +163,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
         }
       )
       if (data.success) {
-        const bransLabel = data.doctor_brans === 'dahiliye' ? 'Dahiliye' : 'Ortopedi'
+        const bransLabel = data.doctor_brans === 'dahiliye' ? t('admin_internalMed') : t('admin_ortho')
         setOpenEMRResult({
           success: true,
           message: `${data.sent_count} tetkik OpenEMR'e gönderildi (${bransLabel})${
@@ -173,14 +175,14 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
       } else {
         setOpenEMRResult({
           success: false,
-          message: data.error || 'OpenEMR gönderimi başarısız',
+          message: data.error || t('report_sendFailed'),
         })
       }
     } catch (err) {
       console.error('[SUT] OpenEMR send error:', err)
       setOpenEMRResult({
         success: false,
-        message: 'OpenEMR bağlantı hatası',
+        message: t('report_connectionError'),
       })
     } finally {
       setIsSendingToOpenEMR(false)
@@ -208,14 +210,14 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
           ) : (
             <Sparkles className="h-3.5 w-3.5" />
           )}
-          AI ile Tetkik Öner
+          {t('sut_aiSuggest')}
         </button>
       )}
 
       {/* AI Suggestions */}
       {suggestions.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-slate-500">AI Tetkik Önerileri:</p>
+          <p className="text-xs font-medium text-slate-500">{t('sut_aiSuggestions')}</p>
           {suggestions.map((s) => (
             <button
               key={s.kodu}
@@ -260,7 +262,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
               setIsDropdownOpen(true)
             }}
             onFocus={() => searchQuery.length >= 2 && setIsDropdownOpen(true)}
-            placeholder="SÜT kodu veya tetkik adı yazın..."
+            placeholder={t('sut_searchPlaceholder')}
             className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           {isLoading && (
@@ -295,7 +297,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
 
         {isDropdownOpen && searchQuery.length >= 2 && results.length === 0 && !isLoading && (
           <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-4 text-center text-sm text-slate-500 shadow-lg">
-            Sonuç bulunamadı
+            {t('sut_noResults')}
           </div>
         )}
       </div>
@@ -303,7 +305,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
       {/* Selected Tetkik */}
       {selectedTetkik.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-slate-500">Seçilen tetkikler:</p>
+          <p className="text-xs font-medium text-slate-500">{t('sut_selectedTests')}</p>
           {selectedTetkik.map((t) => (
             <div
               key={t.kodu}
@@ -341,7 +343,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
             ) : (
               <Send className="h-3.5 w-3.5" />
             )}
-            OpenEMR'e Gönder ({user.brans === 'dahiliye' ? 'Dahiliye' : 'Ortopedi'})
+            {t('sut_sendToOpenEMR', { brans: user.brans === 'dahiliye' ? t('admin_internalMed') : t('admin_ortho') })}
           </button>
 
           {openEMRResult && (
@@ -366,7 +368,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
 
       {selectedTetkik.length === 0 && suggestions.length === 0 && (
         <p className="text-xs text-slate-400 italic">
-          Tetkik seçilmedi. Arama yapın veya AI ile öneri alın.
+          {t('sut_noTestSelected')}
         </p>
       )}
     </div>

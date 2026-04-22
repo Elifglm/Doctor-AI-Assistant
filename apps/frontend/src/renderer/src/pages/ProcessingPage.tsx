@@ -2,17 +2,18 @@ import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import { useTranscription } from '../hooks/useTranscription'
+import { useT } from '../hooks/useT'
 
 // TODO: Replace hardcoded value with a real backend endpoint once
 // GET /api/v1/settings/deid is implemented (returns { deid_enabled: boolean }).
 const DEID_ENABLED = true
 
-const stageLabelMap: Record<string, string> = {
-  'Stage 0/4': 'Dosya doğrulanıyor...',
-  'Stage 1/4': 'Gürültü bastırma...',
-  'Stage 2/4': 'Transkripsiyon...',
-  'Stage 3/4': 'Konuşmacı ayrıştırma...',
-  'Stage 4/4': 'Anamnez raporu oluşturuluyor...',
+const stageLabelKeys: Record<string, string> = {
+  'Stage 0/4': 'live_validating',
+  'Stage 1/4': 'live_noiseReduction',
+  'Stage 2/4': 'live_transcribing',
+  'Stage 3/4': 'live_diarizing',
+  'Stage 4/4': 'live_generating',
 }
 
 function getStageIndex(stage: string): number {
@@ -25,6 +26,7 @@ export function ProcessingPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const sessionId = id ? Number(id) : null
+  const t = useT()
 
   const { processingStage, processingMessage, processingProgress, hasResults, reportFlowDone } = useTranscription()
 
@@ -54,9 +56,9 @@ export function ProcessingPage(): React.JSX.Element {
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-slate-800">İşleniyor</h2>
+          <h2 className="text-xl font-bold text-slate-800">{t('live_processing')}</h2>
           <p className="text-base font-medium text-slate-600">
-            {stageLabelMap[processingStage] || processingMessage || 'Hazırlanıyor...'}
+            {stageLabelKeys[processingStage] ? t(stageLabelKeys[processingStage]) : processingMessage || t('live_preparing')}
           </p>
         </div>
 
@@ -71,7 +73,7 @@ export function ProcessingPage(): React.JSX.Element {
           ))}
         </div>
         <p className="text-xs text-slate-400">
-          Aşama {Math.min(stageIndex + 1, totalStages)}/{totalStages}
+          {t('live_stage', { index: Math.min(stageIndex + 1, totalStages), total: totalStages })}
         </p>
 
         <div className="space-y-2">
@@ -92,7 +94,7 @@ export function ProcessingPage(): React.JSX.Element {
           <div className="flex justify-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              PII Koruması Aktif
+              {t('live_piiActive')}
             </span>
           </div>
         )}
