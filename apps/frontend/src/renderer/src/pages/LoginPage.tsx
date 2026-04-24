@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Stethoscope, Loader2 } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 import { useAuthStore } from '../stores/authStore'
+import { useT } from '../hooks/useT'
 
 interface LoginResponse {
   access_token: string
@@ -19,6 +20,7 @@ interface LoginResponse {
 export function LoginPage(): React.JSX.Element {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
+  const t = useT()
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -41,7 +43,7 @@ export function LoginPage(): React.JSX.Element {
       if (err instanceof Error) {
         setError(err.message)
       } else {
-        setError('Giriş sırasında bir hata oluştu')
+        setError(t('login_error'))
       }
     } finally {
       setLoading(false)
@@ -56,20 +58,20 @@ export function LoginPage(): React.JSX.Element {
             <Stethoscope className="h-7 w-7 text-blue-600" />
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Doctor AI Assistant</h1>
-          <p className="text-sm text-slate-500">Devam etmek için giriş yapın</p>
+          <p className="text-sm text-slate-500">{t('login_subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Kullanıcı Adı
+              {t('login_username')}
             </label>
             <input
               id="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Kullanıcı adı"
+              placeholder={t('login_usernamePlaceholder')}
               required
               className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
@@ -77,14 +79,14 @@ export function LoginPage(): React.JSX.Element {
 
           <div>
             <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Şifre
+              {t('login_password')}
             </label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Şifre"
+              placeholder={t('login_passwordPlaceholder')}
               required
               className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
@@ -96,7 +98,7 @@ export function LoginPage(): React.JSX.Element {
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Giriş Yap
+            {t('login_submit')}
           </button>
 
           {error && (

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { ArrowDown } from 'lucide-react'
 import { TranscriptSegmentItem } from './TranscriptSegment'
+import { useT } from '../../hooks/useT'
 import type { TranscriptionSegment } from '../../types/transcription'
 
 interface TranscriptViewProps {
@@ -11,6 +12,7 @@ export function TranscriptView({ segments }: TranscriptViewProps): React.JSX.Ele
   const containerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const [isScrolledUp, setIsScrolledUp] = useState(false)
+  const t = useT()
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -41,7 +43,7 @@ export function TranscriptView({ segments }: TranscriptViewProps): React.JSX.Ele
   if (segments.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-slate-400">
-        <p className="text-sm">Henüz transkript yok. Kayıt devam ediyor...</p>
+        <p className="text-sm">{t('transcript_empty')}</p>
       </div>
     )
   }
@@ -63,7 +65,7 @@ export function TranscriptView({ segments }: TranscriptViewProps): React.JSX.Ele
           className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-slate-800 px-4 py-2 text-xs font-medium text-white shadow-lg transition-colors hover:bg-slate-700"
         >
           <ArrowDown className="h-3.5 w-3.5" />
-          Canlı metne dön
+          {t('transcript_backToLive')}
         </button>
       )}
     </div>

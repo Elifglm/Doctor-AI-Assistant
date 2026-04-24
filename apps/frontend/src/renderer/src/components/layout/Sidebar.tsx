@@ -12,16 +12,23 @@ import {
 import { useUIStore } from '../../stores/uiStore'
 import { useAuthStore } from '../../stores/authStore'
 import { useSessionStore } from '../../stores/sessionStore'
+import { useT } from '../../hooks/useT'
 import { cn } from '../../lib/utils'
 
-const baseNavItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Ana Sayfa' },
-  { path: '/calendar', icon: Calendar, label: 'Randevular' },
-  { path: '/history', icon: History, label: 'Gecmis' },
-  { path: '/settings', icon: Settings, label: 'Ayarlar' },
-]
+type NavItemDef = {
+  path: string
+  icon: React.ComponentType<{ className?: string }>
+  labelKey: string
+  adminOnly?: boolean
+}
 
-const adminNavItem = { path: '/admin', icon: ShieldCheck, label: 'Kullanici Yonetimi' }
+const navItemDefs: NavItemDef[] = [
+  { path: '/', icon: LayoutDashboard, labelKey: 'nav_home' },
+  { path: '/calendar', icon: Calendar, labelKey: 'nav_appointments' },
+  { path: '/history', icon: History, labelKey: 'nav_history' },
+  { path: '/settings', icon: Settings, labelKey: 'nav_settings' },
+  { path: '/admin', icon: ShieldCheck, labelKey: 'nav_userMgmt', adminOnly: true },
+]
 
 export function Sidebar(): React.JSX.Element {
   const location = useLocation()
@@ -30,25 +37,24 @@ export function Sidebar(): React.JSX.Element {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const recordingState = useSessionStore((s) => s.recordingState)
+  const t = useT()
 
-  const navItems = user?.role === 'admin'
-    ? [...baseNavItems, adminNavItem]
-    : baseNavItems
+  const navItems = navItemDefs.filter(
+    (item) => !item.adminOnly || user?.role === 'admin'
+  )
 
   const handleNavClick = useCallback(
     (e: React.MouseEvent, path: string) => {
       if (recordingState !== 'idle') {
         e.preventDefault()
-        const confirmed = window.confirm(
-          'Aktif bir kayıt var. Sayfadan ayrılmak istediğinize emin misiniz? Kayıt durdurulacak.'
-        )
+        const confirmed = window.confirm(t('nav_confirmLeave'))
         if (confirmed) {
           useSessionStore.getState().reset()
           navigate(path)
         }
       }
     },
-    [recordingState, navigate]
+    [recordingState, navigate, t]
   )
 
   return (
@@ -81,7 +87,7 @@ export function Sidebar(): React.JSX.Element {
               )}
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              {sidebarOpen && <span className="truncate">{item.label}</span>}
+              {sidebarOpen && <span className="truncate">{t(item.labelKey)}</span>}
             </Link>
           )
         })}
@@ -90,9 +96,7 @@ export function Sidebar(): React.JSX.Element {
       <button
         onClick={() => {
           if (recordingState !== 'idle') {
-            const confirmed = window.confirm(
-              'Aktif bir kayıt var. Çıkış yapmak istediğinize emin misiniz? Kayıt durdurulacak.'
-            )
+            const confirmed = window.confirm(t('nav_confirmLogout'))
             if (!confirmed) return
           }
           logout()
@@ -100,7 +104,7 @@ export function Sidebar(): React.JSX.Element {
         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-400 hover:text-white hover:bg-slate-700/50 border-t border-slate-700"
       >
         <LogOut className="h-5 w-5 shrink-0" />
-        {sidebarOpen && <span>Çıkış Yap</span>}
+        {sidebarOpen && <span>{t('nav_logout')}</span>}
       </button>
     </aside>
   )

@@ -3,6 +3,7 @@ import { Save, CheckCheck, Loader2, FileDown, Send, CheckCircle2, AlertCircle } 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ReportSectionCard } from './ReportSection'
 import { apiClient } from '../../services/apiClient'
+import { useT } from '../../hooks/useT'
 import type { Report, ReportSection } from '../../types/report'
 
 interface ReportEditorProps {
@@ -11,6 +12,7 @@ interface ReportEditorProps {
 
 export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   const queryClient = useQueryClient()
+  const t = useT()
   const [sections, setSections] = useState<ReportSection[]>(report.content.sections)
 
   const [showSuccess, setShowSuccess] = useState(false)
@@ -143,15 +145,18 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
       if (res.success) {
         setOpenEMRResult({
           success: true,
-          message: `OpenEMR'e gonderildi (Encounter #${res.encounter_id}, ${res.icd10_count} ICD-10 kodu)`,
+          message: t('report_sentToOpenEMR', {
+            encounterId: res.encounter_id,
+            icd10Count: res.icd10_count,
+          }),
         })
       } else {
-        setOpenEMRResult({ success: false, message: res.error || 'Gonderim basarisiz' })
+        setOpenEMRResult({ success: false, message: res.error || t('report_sendFailed') })
       }
     } catch (err) {
       setOpenEMRResult({
         success: false,
-        message: err instanceof Error ? err.message : 'OpenEMR baglanti hatasi',
+        message: err instanceof Error ? err.message : t('report_connectionError'),
       })
     } finally {
       setIsPushingOpenEMR(false)
@@ -161,9 +166,9 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   return (
     <div className="flex flex-col h-full">
       <div className="border-b border-slate-200 bg-white px-4 py-3">
-        <h2 className="text-lg font-semibold text-slate-800">Anamnez Raporu</h2>
+        <h2 className="text-lg font-semibold text-slate-800">{t('report_title')}</h2>
         <p className="text-xs text-slate-500 mt-0.5">
-          {approvedCount}/{totalCount} bölüm onaylandı
+          {t('report_sectionsApproved', { approved: approvedCount, total: totalCount })}
         </p>
       </div>
 
@@ -185,21 +190,21 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
           <div className="flex items-center gap-1">
             <div className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="text-xs text-slate-600 whitespace-nowrap">
-              {approvedCount}/{totalCount} bolum onaylandi
+              {t('report_sectionsApproved', { approved: approvedCount, total: totalCount })}
             </span>
           </div>
           {showSuccess && (
-            <span className="text-xs text-emerald-600">Kaydedildi</span>
+            <span className="text-xs text-emerald-600">{t('report_saved')}</span>
           )}
           {showError && (
-            <span className="text-xs text-red-600">Kaydetme hatasi</span>
+            <span className="text-xs text-red-600">{t('report_saveError')}</span>
           )}
           {icdWarning && (
-            <span className="text-xs text-amber-600 font-medium">ICD-10 tani kodu seciniz</span>
+            <span className="text-xs text-amber-600 font-medium">{t('report_icd10Placeholder')}</span>
           )}
           {pdfWarning && (
             <span className="text-xs text-red-600 font-medium">
-              PDF icin tum bolumleri onaylayin ({approvedCount}/{totalCount})
+              {t('report_pdfWarning', { approved: approvedCount, total: totalCount })}
             </span>
           )}
         </div>
@@ -215,7 +220,9 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
               void handleDownloadPdf()
             }}
             disabled={isDownloadingPdf}
-            title={approvedCount < totalCount ? `${totalCount - approvedCount} bolum henuz onaylanmadi` : 'PDF olarak indir'}
+            title={approvedCount < totalCount
+              ? t('report_sectionsNotApproved', { count: totalCount - approvedCount })
+              : t('report_pdfDownloadTitle')}
             className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
               approvedCount < totalCount
                 ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
@@ -227,7 +234,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             ) : (
               <FileDown className="h-4 w-4" />
             )}
-            PDF Indir
+            {t('report_downloadPdf')}
           </button>
           <button
             type="button"
@@ -240,7 +247,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            Taslagi Kaydet
+            {t('report_saveDraft')}
           </button>
           <button
             type="button"
@@ -253,7 +260,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             ) : (
               <CheckCheck className="h-4 w-4" />
             )}
-            {approvedCount === totalCount ? 'Tumu Onaylandi' : 'Tumunu Onayla'}
+            {approvedCount === totalCount ? t('report_allApproved') : t('report_approveAll')}
           </button>
           <button
             type="button"
@@ -266,7 +273,9 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
               void handlePushToOpenEMR()
             }}
             disabled={isPushingOpenEMR}
-            title={approvedCount < totalCount ? `${totalCount - approvedCount} bolum henuz onaylanmadi` : 'Raporu OpenEMR sistemine gonder'}
+            title={approvedCount < totalCount
+              ? t('report_sectionsNotApproved', { count: totalCount - approvedCount })
+              : t('report_sendTooltip')}
             className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
               approvedCount < totalCount
                 ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
@@ -278,7 +287,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             ) : (
               <Send className="h-4 w-4" />
             )}
-            OpenEMR'e Gonder
+            {t('report_sendToOpenEMR')}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { Pause, Play, Square } from 'lucide-react'
 import { useSessionStore } from '../../stores/sessionStore'
+import { useT } from '../../hooks/useT'
 import { AudioLevelMeter } from './AudioLevelMeter'
 
 interface RecordingControlsProps {
@@ -23,6 +24,7 @@ export function RecordingControls({
   const elapsedTime = useSessionStore((s) => s.elapsedTime)
   const isRecording = recordingState === 'recording'
   const isPaused = recordingState === 'paused'
+  const t = useT()
 
   return (
     <div className="flex items-center justify-between rounded-xl bg-white px-5 py-3.5 shadow-sm ring-1 ring-slate-200/60">
@@ -39,7 +41,7 @@ export function RecordingControls({
             }`}
           />
           <span className="text-sm font-medium text-slate-700">
-            {isRecording ? 'Kayıt yapılıyor' : isPaused ? 'Duraklatıldı' : 'Bekleniyor'}
+            {isRecording ? t('rec_recording') : isPaused ? t('rec_paused') : t('rec_waiting')}
           </span>
         </div>
         <span className="font-mono text-lg font-semibold text-slate-800 tabular-nums">
@@ -56,7 +58,7 @@ export function RecordingControls({
           <button
             onClick={onPause}
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200"
-            title="Duraklat"
+            title={t('rec_pause')}
           >
             <Pause className="h-4 w-4" />
           </button>
@@ -64,7 +66,7 @@ export function RecordingControls({
           <button
             onClick={onResume}
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors hover:bg-blue-100"
-            title="Devam et"
+            title={t('rec_resume')}
           >
             <Play className="h-4 w-4" />
           </button>
@@ -73,7 +75,7 @@ export function RecordingControls({
           onClick={onStop}
           disabled={recordingState === 'idle'}
           className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-          title="Kaydı durdur"
+          title={t('rec_stop')}
         >
           <Square className="h-4 w-4" />
         </button>

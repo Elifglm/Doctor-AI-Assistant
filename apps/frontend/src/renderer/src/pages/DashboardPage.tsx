@@ -6,6 +6,7 @@ import { apiClient } from '../services/apiClient'
 import { StatsBar } from '../components/dashboard/StatsBar'
 import { SessionCard } from '../components/dashboard/SessionCard'
 import { useSessionList } from '../hooks/useSession'
+import { useT } from '../hooks/useT'
 import type { Session, SessionStatus } from '../types/session'
 
 function getSessionRoute(session: Session): string {
@@ -24,20 +25,21 @@ export function DashboardPage(): React.JSX.Element {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const t = useT()
 
   const handleDelete = useCallback(async (sessionId: number) => {
-    if (!confirm('Bu görüşmeyi arşivlemek istediğinizden emin misiniz?')) return
+    if (!confirm(t('dash_archiveConfirm'))) return
     setDeletingId(sessionId)
     try {
       await apiClient.delete(`/api/v1/sessions/${sessionId}`)
       queryClient.invalidateQueries({ queryKey: ['sessions'] })
     } catch (err) {
       console.error('Silme hatasi:', err)
-      alert('Görüşme silinemedi')
+      alert(t('dash_deleteError'))
     } finally {
       setDeletingId(null)
     }
-  }, [queryClient])
+  }, [queryClient, t])
 
   const { data, isLoading, error } = useSessionList({
     limit: 10,
@@ -65,8 +67,8 @@ export function DashboardPage(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Ana Sayfa</h1>
-        <p className="text-sm text-slate-500 mt-1">Gorusme yonetimi ve genel bakis</p>
+        <h1 className="text-2xl font-bold text-slate-800">{t('dash_title')}</h1>
+        <p className="text-sm text-slate-500 mt-1">{t('dash_subtitle')}</p>
       </div>
 
       <StatsBar
@@ -77,13 +79,13 @@ export function DashboardPage(): React.JSX.Element {
       />
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-slate-800">Son Görüşmeler</h2>
+        <h2 className="mb-3 text-lg font-semibold text-slate-800">{t('dash_recentSessions')}</h2>
 
         {isLoading && (
           <div className="flex items-center justify-center rounded-xl bg-white p-12 shadow-sm ring-1 ring-slate-200/60">
             <div className="flex flex-col items-center gap-2">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-              <p className="text-sm text-slate-500">Görüşmeler yükleniyor...</p>
+              <p className="text-sm text-slate-500">{t('dash_loading')}</p>
             </div>
           </div>
         )}
@@ -92,19 +94,19 @@ export function DashboardPage(): React.JSX.Element {
           <div className="flex items-center gap-3 rounded-xl bg-red-50 p-4 ring-1 ring-red-200">
             <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
             <p className="text-sm text-red-700">
-              Görüşmeler yüklenirken hata oluştu: {error instanceof Error ? error.message : 'Bilinmeyen hata'}
+              {t('dash_loadError')} {error instanceof Error ? error.message : t('dash_unknownError')}
             </p>
           </div>
         )}
 
         {!isLoading && !error && sessions.length === 0 && (
           <div className="flex flex-col items-center justify-center rounded-xl bg-white p-12 shadow-sm ring-1 ring-slate-200/60">
-            <p className="text-sm text-slate-500">Henuz gorusme bulunmuyor</p>
+            <p className="text-sm text-slate-500">{t('dash_noSessions')}</p>
             <button
               onClick={() => navigate('/calendar')}
               className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700"
             >
-              Randevularinizi gorun
+              {t('dash_viewAppointments')}
             </button>
           </div>
         )}

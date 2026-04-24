@@ -5,9 +5,11 @@ import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { useAuthStore } from '../../stores/authStore'
 import { useInactivityTimeout } from '../../hooks/useInactivityTimeout'
+import { useT } from '../../hooks/useT'
 import { apiClient } from '../../services/apiClient'
 
 function InactivityWarningDialog({ onDismiss }: { onDismiss: () => void }): React.JSX.Element {
+  const t = useT()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl ring-1 ring-slate-200/60">
@@ -15,18 +17,15 @@ function InactivityWarningDialog({ onDismiss }: { onDismiss: () => void }): Reac
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
             <AlertTriangle className="h-5 w-5 text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold text-slate-800">Oturum Zaman Aşımı</h2>
+          <h2 className="text-lg font-semibold text-slate-800">{t('layout_sessionTimeout')}</h2>
         </div>
-        <p className="mb-6 text-sm text-slate-600">
-          Uzun süredir işlem yapmadınız. 5 dakika içinde otomatik olarak çıkış yapılacaktır.
-          Devam etmek için herhangi bir tuşa basın veya fareyi hareket ettirin.
-        </p>
+        <p className="mb-6 text-sm text-slate-600">{t('layout_sessionTimeoutMsg')}</p>
         <button
           type="button"
           onClick={onDismiss}
           className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
         >
-          Oturuma Devam Et
+          {t('layout_continueSession')}
         </button>
       </div>
     </div>
@@ -38,6 +37,7 @@ export function AppLayout(): React.JSX.Element {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
+  const t = useT()
 
   const [showWarning, setShowWarning] = useState(false)
   const [newDoctorCount, setNewDoctorCount] = useState(0)
@@ -90,7 +90,7 @@ export function AppLayout(): React.JSX.Element {
             <div className="flex items-center gap-2">
               <UserPlus className="h-4 w-4 text-amber-600" />
               <span className="text-sm text-amber-800">
-                OpenEMR'de <strong>{newDoctorCount}</strong> yeni doktor bulundu.
+                {t('layout_newDoctorsFound', { count: newDoctorCount })}
               </span>
               <button
                 onClick={() => {
@@ -99,7 +99,7 @@ export function AppLayout(): React.JSX.Element {
                 }}
                 className="ml-1 rounded bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
               >
-                Rol Ata
+                {t('layout_assignRole')}
               </button>
             </div>
             <button

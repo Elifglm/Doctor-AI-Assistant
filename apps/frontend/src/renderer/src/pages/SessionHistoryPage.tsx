@@ -13,21 +13,8 @@ import {
 } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 import { StatusBadge } from '../components/dashboard/StatusBadge'
+import { useT } from '../hooks/useT'
 import type { Session, SessionListResponse, SessionStatus, VisitType } from '../types/session'
-
-const statusFilterOptions: { value: string; label: string }[] = [
-  { value: '', label: 'Tümü' },
-  { value: 'AWAITING_REVIEW', label: 'Bekleyen' },
-  { value: 'COMPLETED', label: 'Tamamlanan' },
-  { value: 'ARCHIVED', label: 'Arşivlenen' },
-]
-
-const visitTypeLabels: Record<VisitType, string> = {
-  ilk_muayene: 'İlk Muayene',
-  kontrol: 'Kontrol',
-  konsultasyon: 'Konsültasyon',
-  acil: 'Acil',
-}
 
 function formatDateTime(isoString: string): string {
   const date = new Date(isoString)
@@ -39,11 +26,11 @@ function formatDateTime(isoString: string): string {
   return `${day}.${month}.${year} ${hours}:${minutes}`
 }
 
-function formatDuration(seconds: number | null): string {
+function formatDuration(seconds: number | null, minLabel: string, secLabel: string): string {
   if (seconds === null) return '-'
   const mins = Math.floor(seconds / 60)
   const secs = Math.floor(seconds % 60)
-  return `${mins}dk ${secs}sn`
+  return `${mins}${minLabel} ${secs}${secLabel}`
 }
 
 function getSessionRoute(session: Session): string {
@@ -62,21 +49,36 @@ export function SessionHistoryPage(): React.JSX.Element {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const t = useT()
+
+  const statusFilterOptions: { value: string; labelKey: string }[] = [
+    { value: '', labelKey: 'history_all' },
+    { value: 'AWAITING_REVIEW', labelKey: 'history_pending' },
+    { value: 'COMPLETED', labelKey: 'history_completed' },
+    { value: 'ARCHIVED', labelKey: 'history_archived' },
+  ]
+
+  const visitTypeLabelKeys: Record<VisitType, string> = {
+    ilk_muayene: 'history_visitType_ilkMuayene',
+    kontrol: 'history_visitType_kontrol',
+    konsultasyon: 'history_visitType_konsultasyon',
+    acil: 'history_visitType_acil',
+  }
 
   const handleDelete = useCallback(async (e: React.MouseEvent, sessionId: number) => {
-    e.stopPropagation() // Satir tiklamasini engelle
-    if (!confirm('Bu görüşmeyi arşivlemek istediğinizden emin misiniz?')) return
+    e.stopPropagation()
+    if (!confirm(t('history_archiveConfirm'))) return
     setDeletingId(sessionId)
     try {
       await apiClient.delete(`/api/v1/sessions/${sessionId}`)
       queryClient.invalidateQueries({ queryKey: ['sessions-history'] })
     } catch (err) {
       console.error('Silme hatasi:', err)
-      alert('Görüşme silinemedi')
+      alert(t('history_deleteError'))
     } finally {
       setDeletingId(null)
     }
-  }, [queryClient])
+  }, [queryClient, t])
 
   const [statusFilter, setStatusFilter] = useState('')
   const [search, setSearch] = useState('')
@@ -109,8 +111,8 @@ export function SessionHistoryPage(): React.JSX.Element {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Görüşme Geçmişi</h1>
-        <p className="text-sm text-slate-500 mt-1">Tüm görüşmeleri görüntüleyip yönetin</p>
+        <h1 className="text-2xl font-bold text-slate-800">{t('history_title')}</h1>
+        <p className="text-sm text-slate-500 mt-1">{t('history_subtitle')}</p>
       </div>
 
       {/* Filter bar */}
@@ -123,7 +125,7 @@ export function SessionHistoryPage(): React.JSX.Element {
               className="mb-1.5 block text-xs font-medium text-slate-600"
             >
               <Filter className="inline h-3.5 w-3.5 mr-1" />
-              Durum
+              {t('history_status')}
             </label>
             <select
               id="statusFilter"
@@ -136,7 +138,7 @@ export function SessionHistoryPage(): React.JSX.Element {
             >
               {statusFilterOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </option>
               ))}
             </select>
@@ -149,7 +151,7 @@ export function SessionHistoryPage(): React.JSX.Element {
               className="mb-1.5 block text-xs font-medium text-slate-600"
             >
               <Search className="inline h-3.5 w-3.5 mr-1" />
-              Arama
+              {t('history_search')}
             </label>
             <input
               id="searchInput"
@@ -159,7 +161,7 @@ export function SessionHistoryPage(): React.JSX.Element {
                 setSearch(e.target.value)
                 setPage(1)
               }}
-              placeholder="Doktor adı veya hasta ID ara..."
+              placeholder={t('history_searchPlaceholder')}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
@@ -171,7 +173,7 @@ export function SessionHistoryPage(): React.JSX.Element {
               className="mb-1.5 block text-xs font-medium text-slate-600"
             >
               <Calendar className="inline h-3.5 w-3.5 mr-1" />
-              Başlangıç
+              {t('history_startDate')}
             </label>
             <input
               id="fromDate"
@@ -192,7 +194,7 @@ export function SessionHistoryPage(): React.JSX.Element {
               className="mb-1.5 block text-xs font-medium text-slate-600"
             >
               <Calendar className="inline h-3.5 w-3.5 mr-1" />
-              Bitiş
+              {t('history_endDate')}
             </label>
             <input
               id="toDate"
@@ -213,22 +215,21 @@ export function SessionHistoryPage(): React.JSX.Element {
         {/* Table header */}
         <div className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr_0.6fr_auto] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Tarih
+            {t('history_col_date')}
           </span>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Doktor
+            {t('history_col_doctor')}
           </span>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Ziyaret Tipi
+            {t('history_col_visitType')}
           </span>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Durum
+            {t('history_col_status')}
           </span>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Süre
+            {t('history_col_duration')}
           </span>
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-          </span>
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider" />
         </div>
 
         {/* Loading */}
@@ -236,7 +237,7 @@ export function SessionHistoryPage(): React.JSX.Element {
           <div className="flex items-center justify-center p-12">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-              <p className="text-sm text-slate-500">Görüşmeler yükleniyor...</p>
+              <p className="text-sm text-slate-500">{t('history_loading')}</p>
             </div>
           </div>
         )}
@@ -246,8 +247,8 @@ export function SessionHistoryPage(): React.JSX.Element {
           <div className="flex items-center gap-3 p-6">
             <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
             <p className="text-sm text-red-700">
-              Görüşmeler yüklenirken hata oluştu:{' '}
-              {error instanceof Error ? error.message : 'Bilinmeyen hata'}
+              {t('history_loadError')}{' '}
+              {error instanceof Error ? error.message : t('history_unknownError')}
             </p>
           </div>
         )}
@@ -255,8 +256,8 @@ export function SessionHistoryPage(): React.JSX.Element {
         {/* Empty state */}
         {!isLoading && !error && sessions.length === 0 && (
           <div className="flex flex-col items-center justify-center p-12">
-            <p className="text-sm text-slate-500">Görüşme bulunamadı</p>
-            <p className="text-xs text-slate-400 mt-1">Filtrelerinizi değiştirmeyi deneyin</p>
+            <p className="text-sm text-slate-500">{t('history_noSessions')}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('history_noSessionsHint')}</p>
           </div>
         )}
 
@@ -276,18 +277,18 @@ export function SessionHistoryPage(): React.JSX.Element {
                 {session.doctor_name}
               </span>
               <span className="text-sm text-slate-600">
-                {visitTypeLabels[session.visit_type]}
+                {t(visitTypeLabelKeys[session.visit_type])}
               </span>
               <StatusBadge status={session.status} />
               <span className="text-sm text-slate-500">
-                {formatDuration(session.audio_duration_seconds)}
+                {formatDuration(session.audio_duration_seconds, t('history_min'), t('history_sec'))}
               </span>
               <button
                 type="button"
                 onClick={(e) => handleDelete(e, session.id)}
                 disabled={deletingId === session.id}
                 className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                title="Görüşmeyi arşivle"
+                title={t('history_archiveTooltip')}
               >
                 {deletingId === session.id ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -303,7 +304,8 @@ export function SessionHistoryPage(): React.JSX.Element {
       {!isLoading && !error && (data?.total ?? 0) > 0 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-slate-500">
-            Toplam {data?.total ?? 0} görüşme{totalPages > 1 ? `, Sayfa ${page}/${totalPages}` : ''}
+            {t('history_total', { total: data?.total ?? 0 })}
+            {totalPages > 1 ? t('history_page', { page, totalPages }) : ''}
           </p>
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
@@ -314,7 +316,7 @@ export function SessionHistoryPage(): React.JSX.Element {
                 className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Önceki
+                {t('history_prev')}
               </button>
               <button
                 type="button"
@@ -322,7 +324,7 @@ export function SessionHistoryPage(): React.JSX.Element {
                 disabled={page >= totalPages}
                 className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sonraki
+                {t('history_next')}
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>

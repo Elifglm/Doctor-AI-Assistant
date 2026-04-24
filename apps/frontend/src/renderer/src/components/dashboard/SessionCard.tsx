@@ -1,19 +1,20 @@
 import { User, ChevronRight, Trash2, Loader2 } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
+import { useT } from '../../hooks/useT'
 import type { Session, VisitType } from '../../types/session'
-
-const visitTypeLabels: Record<VisitType, string> = {
-  ilk_muayene: 'İlk Muayene',
-  kontrol: 'Kontrol',
-  konsultasyon: 'Konsültasyon',
-  acil: 'Acil',
-}
 
 const visitTypeBadgeColors: Record<VisitType, string> = {
   ilk_muayene: 'bg-blue-50 text-blue-700',
   kontrol: 'bg-slate-100 text-slate-700',
   konsultasyon: 'bg-purple-50 text-purple-700',
   acil: 'bg-red-50 text-red-700',
+}
+
+const visitTypeLabelKeys: Record<VisitType, string> = {
+  ilk_muayene: 'card_firstConsult',
+  kontrol: 'card_followup',
+  konsultasyon: 'card_consultation',
+  acil: 'card_emergency',
 }
 
 interface SessionCardProps {
@@ -34,6 +35,8 @@ function formatDateTime(isoString: string): string {
 }
 
 export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionCardProps): React.JSX.Element {
+  const t = useT()
+
   return (
     <button
       onClick={onClick}
@@ -46,13 +49,13 @@ export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionC
         <div className="space-y-1">
           <p className="text-sm font-medium text-slate-800">{session.doctor_name}</p>
           {session.patient_name && (
-            <p className="text-xs text-slate-500">Hasta: {session.patient_name}</p>
+            <p className="text-xs text-slate-500">{t('card_patient')} {session.patient_name}</p>
           )}
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${visitTypeBadgeColors[session.visit_type]}`}
             >
-              {visitTypeLabels[session.visit_type]}
+              {t(visitTypeLabelKeys[session.visit_type])}
             </span>
             <StatusBadge status={session.status} />
           </div>
@@ -69,7 +72,7 @@ export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionC
             }}
             disabled={isDeleting}
             className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-            title="Görüşmeyi arşivle"
+            title={t('card_archiveTooltip')}
           >
             {isDeleting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

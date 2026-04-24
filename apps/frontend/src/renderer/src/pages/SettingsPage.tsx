@@ -20,66 +20,48 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
 import { useUIStore } from '../stores/uiStore'
 import { apiClient } from '../services/apiClient'
+import { useT } from '../hooks/useT'
 import type { HealthResponse, LLMSettingsResponse, LLMSettingsUpdate } from '../types/api'
 import { cn } from '../lib/utils'
 
 type TabKey = 'profil' | 'ses' | 'llm' | 'sablonlar' | 'goruntu' | 'gizlilik'
 
-interface TabItem {
-  key: TabKey
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-}
-
-const tabs: TabItem[] = [
-  { key: 'profil', label: 'Profil', icon: User },
-  { key: 'ses', label: 'Ses', icon: Mic },
-  { key: 'llm', label: 'LLM', icon: BrainCircuit },
-  { key: 'sablonlar', label: 'Şablonlar', icon: FileText },
-  { key: 'goruntu', label: 'Görüntü', icon: Monitor },
-  { key: 'gizlilik', label: 'Gizlilik', icon: Shield },
-]
-
-interface AudioDevice {
-  deviceId: string
-  label: string
-}
-
 function ProfilTab(): React.JSX.Element {
   const user = useAuthStore((s) => s.user)
+  const t = useT()
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Profil Bilgileri</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_profile_title')}</h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">
-              Görünen Ad
+              {t('settings_displayName')}
             </label>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
-              {user?.display_name ?? 'Bilinmiyor'}
+              {user?.display_name ?? t('settings_unknown')}
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">
-              Kullanıcı Adı
+              {t('settings_username')}
             </label>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
-              {user?.username ?? 'Bilinmiyor'}
+              {user?.username ?? t('settings_unknown')}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Rol</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1">{t('settings_role')}</label>
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
-              {user?.role === 'admin' ? 'Admin' : 'Doktor'}
+              {user?.role === 'admin' ? t('settings_admin') : t('settings_doctor')}
             </div>
           </div>
           {user?.brans && (
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Brans</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">{t('settings_specialty')}</label>
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
-                {user.brans === 'dahiliye' ? 'Dahiliye' : 'Ortopedi'}
+                {user.brans === 'dahiliye' ? t('settings_internalMed') : t('settings_ortho')}
               </div>
             </div>
           )}
@@ -90,9 +72,10 @@ function ProfilTab(): React.JSX.Element {
 }
 
 function SesTab(): React.JSX.Element {
-  const [devices, setDevices] = useState<AudioDevice[]>([])
+  const [devices, setDevices] = useState<{ deviceId: string; label: string }[]>([])
   const [selectedDevice, setSelectedDevice] = useState('')
   const [permissionError, setPermissionError] = useState(false)
+  const t = useT()
 
   const loadDevices = useCallback(async () => {
     try {
@@ -120,21 +103,19 @@ function SesTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Ses Ayarları</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_audio_title')}</h3>
         <div className="space-y-4">
           <div>
             <label
               htmlFor="micSelect"
               className="block text-sm font-medium text-slate-600 mb-1"
             >
-              Mikrofon Seçimi
+              {t('settings_micSelection')}
             </label>
             {permissionError ? (
               <div className="flex items-center gap-2 rounded-lg bg-amber-50 p-3 ring-1 ring-amber-200">
                 <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-                <p className="text-sm text-amber-700">
-                  Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından izin verin.
-                </p>
+                <p className="text-sm text-amber-700">{t('settings_micDenied')}</p>
               </div>
             ) : (
               <select
@@ -149,16 +130,13 @@ function SesTab(): React.JSX.Element {
                   </option>
                 ))}
                 {devices.length === 0 && (
-                  <option value="">Mikrofon bulunamadı</option>
+                  <option value="">{t('settings_micNotFound')}</option>
                 )}
               </select>
             )}
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm text-slate-600">
-              Ses kalitesi: Mono kanal, 16kHz örnekleme oranı. Tıbbi konuşmalar için optimize
-              edilmiştir.
-            </p>
+            <p className="text-sm text-slate-600">{t('settings_audioQuality')}</p>
           </div>
         </div>
       </div>
@@ -168,6 +146,7 @@ function SesTab(): React.JSX.Element {
 
 function LLMTab(): React.JSX.Element {
   const queryClient = useQueryClient()
+  const t = useT()
 
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useQuery<HealthResponse>({
     queryKey: ['health'],
@@ -189,7 +168,6 @@ function LLMTab(): React.JSX.Element {
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  // Sync local state when settings load
   useEffect(() => {
     if (llmSettings) {
       setMode(llmSettings.mode)
@@ -246,12 +224,12 @@ function LLMTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">LLM Ayarları</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_llm_title')}</h3>
 
         <div className="space-y-4">
           {/* Mode selection */}
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-slate-700">LLM Modu</h4>
+            <h4 className="text-sm font-semibold text-slate-700">{t('settings_llmMode')}</h4>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -263,7 +241,7 @@ function LLMTab(): React.JSX.Element {
                     : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
                 )}
               >
-                Yerel (Ollama)
+                {t('settings_local')}
               </button>
               <button
                 type="button"
@@ -275,7 +253,7 @@ function LLMTab(): React.JSX.Element {
                     : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
                 )}
               >
-                API (Google Gemini)
+                {t('settings_api')}
               </button>
             </div>
           </div>
@@ -285,11 +263,8 @@ function LLMTab(): React.JSX.Element {
             <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-4">
               <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-sm font-semibold text-amber-800">KVKK Uyarısı</h4>
-                <p className="text-sm text-amber-700 mt-1">
-                  API modunda hasta verileri (transkript metni) Google sunucularına
-                  gönderilecektir. Hasta onamının alındığından emin olun.
-                </p>
+                <h4 className="text-sm font-semibold text-amber-800">{t('settings_kvkkWarning')}</h4>
+                <p className="text-sm text-amber-700 mt-1">{t('settings_kvkkWarningMsg')}</p>
               </div>
             </div>
           )}
@@ -297,53 +272,53 @@ function LLMTab(): React.JSX.Element {
           {/* Local (Ollama) settings */}
           {mode === 'local' && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-slate-700">Ollama Durumu</h4>
+              <h4 className="text-sm font-semibold text-slate-700">{t('settings_ollamaStatus')}</h4>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Bağlantı</span>
+                  <span className="text-sm text-slate-600">{t('settings_connection')}</span>
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
                   ) : ollamaConnected ? (
                     <div className="flex items-center gap-1.5">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      <span className="text-sm text-emerald-700">Bağlı</span>
+                      <span className="text-sm text-emerald-700">{t('settings_connected')}</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <XCircle className="h-4 w-4 text-red-500" />
-                      <span className="text-sm text-red-700">Bağlı Değil</span>
+                      <span className="text-sm text-red-700">{t('settings_notConnected')}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Model</span>
+                  <span className="text-sm text-slate-600">{t('settings_model')}</span>
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
                   ) : modelLoaded ? (
                     <div className="flex items-center gap-1.5">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                       <span className="text-sm text-emerald-700">
-                        {health?.llm_model_name || 'Yüklü'}
+                        {health?.llm_model_name || t('settings_loaded')}
                       </span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <XCircle className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm text-amber-700">Yüklenmemiş</span>
+                      <span className="text-sm text-amber-700">{t('settings_notLoaded')}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">RAG Belge Sayısı</span>
+                  <span className="text-sm text-slate-600">{t('settings_ragDocs')}</span>
                   <span className="text-sm text-slate-700 font-medium">{ragDocs}</span>
                 </div>
 
                 {health?.gpu_available && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">GPU</span>
+                    <span className="text-sm text-slate-600">{t('settings_gpu')}</span>
                     <span className="text-sm text-slate-700">{health.gpu_name}</span>
                   </div>
                 )}
@@ -352,8 +327,8 @@ function LLMTab(): React.JSX.Element {
               {/* Fallback toggle */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                 <div>
-                  <span className="text-sm text-slate-600">Yedek Model</span>
-                  <p className="text-xs text-slate-400">Ana model hata verirse qwen3:8b dene</p>
+                  <span className="text-sm text-slate-600">{t('settings_fallbackModel')}</span>
+                  <p className="text-xs text-slate-400">{t('settings_fallbackDesc')}</p>
                 </div>
                 <button
                   type="button"
@@ -376,9 +351,9 @@ function LLMTab(): React.JSX.Element {
               {!ollamaConnected && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 mt-2">
                   <p className="text-sm text-amber-700">
-                    Ollama&apos;yı başlatmak için:{' '}
+                    {t('settings_ollamaStartCmd').split(':')[0]}:{' '}
                     <code className="rounded bg-amber-100 px-1 py-0.5 text-xs font-mono">
-                      ollama serve
+                      {t('settings_ollamaStartCmd').split(': ')[1] ?? 'ollama serve'}
                     </code>
                   </p>
                 </div>
@@ -389,28 +364,28 @@ function LLMTab(): React.JSX.Element {
           {/* API (Gemini) settings */}
           {mode === 'api' && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-slate-700">Google Gemini Ayarları</h4>
+              <h4 className="text-sm font-semibold text-slate-700">{t('settings_geminiSettings')}</h4>
 
               <div>
                 <label htmlFor="geminiApiKey" className="block text-sm font-medium text-slate-600 mb-1">
-                  API Key
+                  {t('settings_apiKey')}
                 </label>
                 <input
                   id="geminiApiKey"
                   type="password"
                   value={geminiApiKey}
                   onChange={(e) => setGeminiApiKey(e.target.value)}
-                  placeholder={llmSettings?.gemini_api_key_set ? '••••••••••••••••' : 'API key giriniz'}
+                  placeholder={llmSettings?.gemini_api_key_set ? '••••••••••••••••' : t('settings_apiKeyPlaceholder')}
                   className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                 />
                 {llmSettings?.gemini_api_key_set && !geminiApiKey && (
-                  <p className="text-xs text-slate-400 mt-1">API key zaten tanımlı. Değiştirmek için yeni key girin.</p>
+                  <p className="text-xs text-slate-400 mt-1">{t('settings_apiKeySet')}</p>
                 )}
               </div>
 
               <div>
                 <label htmlFor="geminiModel" className="block text-sm font-medium text-slate-600 mb-1">
-                  Model
+                  {t('settings_model')}
                 </label>
                 <select
                   id="geminiModel"
@@ -426,19 +401,19 @@ function LLMTab(): React.JSX.Element {
 
               {/* Connection status */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                <span className="text-sm text-slate-600">Bağlantı Durumu</span>
+                <span className="text-sm text-slate-600">{t('settings_connectionStatus')}</span>
                 {health?.llm_provider === 'gemini' && health?.ollama_status === 'connected' ? (
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <span className="text-sm text-emerald-700">Bağlı</span>
+                    <span className="text-sm text-emerald-700">{t('settings_connected')}</span>
                   </div>
                 ) : health?.llm_provider === 'gemini' ? (
                   <div className="flex items-center gap-1.5">
                     <XCircle className="h-4 w-4 text-red-500" />
-                    <span className="text-sm text-red-700">Bağlı Değil</span>
+                    <span className="text-sm text-red-700">{t('settings_notConnected')}</span>
                   </div>
                 ) : (
-                  <span className="text-sm text-slate-400">Kaydedilmemiş</span>
+                  <span className="text-sm text-slate-400">{t('settings_notSaved')}</span>
                 )}
               </div>
             </div>
@@ -446,10 +421,10 @@ function LLMTab(): React.JSX.Element {
 
           {/* Common parameters */}
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-slate-700">Parametreler</h4>
+            <h4 className="text-sm font-semibold text-slate-700">{t('settings_params')}</h4>
             <div>
               <label htmlFor="temperatureSlider" className="block text-sm text-slate-600 mb-1">
-                Temperature: {temperature.toFixed(1)}
+                {t('settings_temperature', { value: temperature.toFixed(1) })}
               </label>
               <input
                 id="temperatureSlider"
@@ -462,8 +437,8 @@ function LLMTab(): React.JSX.Element {
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-slate-400 mt-1">
-                <span>0 (Kesin)</span>
-                <span>1 (Yaratıcı)</span>
+                <span>{t('settings_tempDeterministic')}</span>
+                <span>{t('settings_tempCreative')}</span>
               </div>
             </div>
           </div>
@@ -481,7 +456,7 @@ function LLMTab(): React.JSX.Element {
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              Kaydet
+              {t('settings_save')}
             </button>
 
             <button
@@ -495,34 +470,34 @@ function LLMTab(): React.JSX.Element {
               ) : (
                 <BrainCircuit className="h-4 w-4" />
               )}
-              Bağlantı Testi
+              {t('settings_testConnection')}
             </button>
 
             {saveSuccess && (
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span className="text-sm text-emerald-700">Kaydedildi</span>
+                <span className="text-sm text-emerald-700">{t('settings_saved')}</span>
               </div>
             )}
 
             {saveMutation.isError && (
               <div className="flex items-center gap-1.5">
                 <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="text-sm text-red-700">Kaydetme hatası</span>
+                <span className="text-sm text-red-700">{t('settings_saveError')}</span>
               </div>
             )}
 
             {testResult === 'success' && (
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span className="text-sm text-emerald-700">Bağlantı başarılı</span>
+                <span className="text-sm text-emerald-700">{t('settings_connectionSuccess')}</span>
               </div>
             )}
 
             {testResult === 'error' && (
               <div className="flex items-center gap-1.5">
                 <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="text-sm text-red-700">Bağlantı başarısız</span>
+                <span className="text-sm text-red-700">{t('settings_connectionFailed')}</span>
               </div>
             )}
           </div>
@@ -530,9 +505,7 @@ function LLMTab(): React.JSX.Element {
           {/* Privacy note */}
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs text-slate-500">
-              {mode === 'local'
-                ? 'Tüm işlem yerel olarak yapılır. Veriler dışarıya gönderilmez (KVKK uyumlu).'
-                : 'API modunda transkript metni Google sunucularına gönderilir. KVKK kapsamında hasta onamı gereklidir.'}
+              {mode === 'local' ? t('settings_localPrivacy') : t('settings_apiPrivacy')}
             </p>
           </div>
         </div>
@@ -542,18 +515,15 @@ function LLMTab(): React.JSX.Element {
 }
 
 function SablonlarTab(): React.JSX.Element {
+  const t = useT()
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Rapor Şablonları</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_templates_title')}</h3>
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-12">
           <FileText className="h-10 w-10 text-slate-300 mb-3" />
-          <p className="text-sm text-slate-500 text-center">
-            Rapor şablonları yakın zamanda eklenecek
-          </p>
-          <p className="text-xs text-slate-400 mt-1 text-center">
-            Özel anamnez şablonları tanımlayabileceksiniz
-          </p>
+          <p className="text-sm text-slate-500 text-center">{t('settings_templatesComing')}</p>
+          <p className="text-xs text-slate-400 mt-1 text-center">{t('settings_templatesDesc')}</p>
         </div>
       </div>
     </div>
@@ -565,15 +535,16 @@ function GoruntuTab(): React.JSX.Element {
   const setTheme = useUIStore((s) => s.setTheme)
   const fontSize = useUIStore((s) => s.fontSize)
   const setFontSize = useUIStore((s) => s.setFontSize)
+  const t = useT()
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Görüntü Ayarları</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_display_title')}</h3>
         <div className="space-y-6">
           {/* Theme toggle */}
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-2">Tema</label>
+            <label className="block text-sm font-medium text-slate-600 mb-2">{t('settings_theme')}</label>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -586,7 +557,7 @@ function GoruntuTab(): React.JSX.Element {
                 )}
               >
                 <Sun className="h-4 w-4" />
-                Açık
+                {t('settings_light')}
               </button>
               <button
                 type="button"
@@ -599,7 +570,7 @@ function GoruntuTab(): React.JSX.Element {
                 )}
               >
                 <Moon className="h-4 w-4" />
-                Koyu
+                {t('settings_dark')}
               </button>
             </div>
           </div>
@@ -607,7 +578,7 @@ function GoruntuTab(): React.JSX.Element {
           {/* Font size slider */}
           <div>
             <label htmlFor="fontSizeSlider" className="block text-sm font-medium text-slate-600 mb-2">
-              Yazı Boyutu: {fontSize}px
+              {t('settings_fontSize', { size: fontSize })}
             </label>
             <input
               id="fontSizeSlider"
@@ -628,15 +599,13 @@ function GoruntuTab(): React.JSX.Element {
           {/* Preview */}
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-2">
-              Önizleme
+              {t('settings_preview')}
             </label>
             <div
               className="rounded-lg border border-slate-200 bg-white p-4"
               style={{ fontSize: `${fontSize}px` }}
             >
-              <p className="text-slate-700">
-                Bu bir önizleme metnidir. Yazı boyutu değiştikçe bu metin de değişecektir.
-              </p>
+              <p className="text-slate-700">{t('settings_previewText')}</p>
             </div>
           </div>
         </div>
@@ -659,6 +628,7 @@ function GizlilikTab(): React.JSX.Element {
   const [purging, setPurging] = useState(false)
   const [purgeResult, setPurgeResult] = useState<string | null>(null)
   const [purgeError, setPurgeError] = useState<string | null>(null)
+  const t = useT()
 
   const handlePurge = useCallback(async () => {
     setPurging(true)
@@ -686,31 +656,17 @@ function GizlilikTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Gizlilik ve Güvenlik</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_privacy_title')}</h3>
         <div className="space-y-4">
           {/* KVKK info */}
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
-            <h4 className="text-sm font-semibold text-slate-700">KVKK Uyumluluğu</h4>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Bu uygulama, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında
-              geliştirilmiştir. Hasta ses kayıtları ve kişisel sağlık verileri, ilgili
-              mevzuat doğrultusunda işlenmekte ve saklanmaktadır.
-            </p>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Verileriniz şifrelenmiş bağlantı üzerinden iletilmekte ve güvenli sunucularda
-              depolanmaktadır. Her kayıt işlemi öncesinde hasta onamının alınması
-              zorunludur.
-            </p>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Yerel (Ollama) modunda LLM işlemleri tamamen yerel olarak gerçekleştirilir
-              ve hasta verileri dış sunuculara gönderilmez. API modunda ise transkript
-              verileri seçilen sağlayıcıya iletilir; bu durumda hasta onamı zorunludur.
-            </p>
+            <h4 className="text-sm font-semibold text-slate-700">{t('settings_kvkk_title')}</h4>
+            <p className="text-sm text-slate-600 leading-relaxed">{t('settings_kvkk_text')}</p>
           </div>
 
           {/* Delete all data */}
           <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-            <h4 className="text-sm font-semibold text-red-800 mb-2">Tehlikeli Bölge</h4>
+            <h4 className="text-sm font-semibold text-red-800 mb-2">{t('settings_dangerZone')}</h4>
             {!showConfirmation ? (
               <button
                 type="button"
@@ -723,14 +679,11 @@ function GizlilikTab(): React.JSX.Element {
                 ) : (
                   <Trash2 className="h-4 w-4" />
                 )}
-                Tüm verileri sil
+                {t('settings_deleteAll')}
               </button>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-red-700">
-                  Bu işlem geri alınamaz. Tüm görüşme verileriniz, raporlarınız ve kayıtlarınız
-                  kalıcı olarak silinecektir. Devam etmek istediğinizden emin misiniz?
-                </p>
+                <p className="text-sm text-red-700">{t('settings_deleteAllConfirm')}</p>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -738,7 +691,7 @@ function GizlilikTab(): React.JSX.Element {
                     disabled={purging}
                     className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
                   >
-                    İptal
+                    {t('settings_cancel')}
                   </button>
                   <button
                     type="button"
@@ -747,13 +700,12 @@ function GizlilikTab(): React.JSX.Element {
                     className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                   >
                     {purging && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Evet, tüm verileri sil
+                    {t('settings_deleteAllConfirmBtn')}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Success message */}
             {purgeResult && (
               <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 ring-1 ring-emerald-200">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -761,7 +713,6 @@ function GizlilikTab(): React.JSX.Element {
               </div>
             )}
 
-            {/* Error message */}
             {purgeError && (
               <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 p-3 ring-1 ring-red-200">
                 <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
@@ -775,7 +726,7 @@ function GizlilikTab(): React.JSX.Element {
   )
 }
 
-const tabComponents: Record<TabKey, React.ComponentType> = {
+const tabComponentMap: Record<TabKey, React.ComponentType> = {
   profil: ProfilTab,
   ses: SesTab,
   llm: LLMTab,
@@ -784,23 +735,33 @@ const tabComponents: Record<TabKey, React.ComponentType> = {
   gizlilik: GizlilikTab,
 }
 
+const tabDefs: { key: TabKey; labelKey: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: 'profil', labelKey: 'settings_tab_profile', icon: User },
+  { key: 'ses', labelKey: 'settings_tab_audio', icon: Mic },
+  { key: 'llm', labelKey: 'settings_tab_llm', icon: BrainCircuit },
+  { key: 'sablonlar', labelKey: 'settings_tab_templates', icon: FileText },
+  { key: 'goruntu', labelKey: 'settings_tab_display', icon: Monitor },
+  { key: 'gizlilik', labelKey: 'settings_tab_privacy', icon: Shield },
+]
+
 export function SettingsPage(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<TabKey>('profil')
+  const t = useT()
 
-  const ActiveTabComponent = tabComponents[activeTab]
+  const ActiveTabComponent = tabComponentMap[activeTab]
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Ayarlar</h1>
-        <p className="text-sm text-slate-500 mt-1">Uygulama tercihlerinizi yönetin</p>
+        <h1 className="text-2xl font-bold text-slate-800">{t('settings_title')}</h1>
+        <p className="text-sm text-slate-500 mt-1">{t('settings_subtitle')}</p>
       </div>
 
       <div className="flex gap-6">
         {/* Tab navigation */}
         <div className="w-48 shrink-0">
           <nav className="space-y-1">
-            {tabs.map((tab) => (
+            {tabDefs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
@@ -813,7 +774,7 @@ export function SettingsPage(): React.JSX.Element {
                 )}
               >
                 <tab.icon className="h-4 w-4 shrink-0" />
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             ))}
           </nav>

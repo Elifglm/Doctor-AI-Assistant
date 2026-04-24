@@ -1,4 +1,5 @@
 import { Calendar, Clock, CheckCircle, Stethoscope } from 'lucide-react'
+import { useT } from '../../hooks/useT'
 
 interface StatsBarProps {
   todayCount: number
@@ -34,28 +35,29 @@ export function StatsBar({
   completedCount,
   appointmentCount,
 }: StatsBarProps): React.JSX.Element {
+  const t = useT()
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
       <StatCard
-        label="Bugunun Randevulari"
+        label={t('stats_todayAppts')}
         value={appointmentCount}
         icon={<Stethoscope className="h-6 w-6 text-purple-600" />}
         colorClass="bg-purple-50"
       />
       <StatCard
-        label="Bugunun Gorusmeleri"
+        label={t('stats_todaySessions')}
         value={todayCount}
         icon={<Calendar className="h-6 w-6 text-blue-600" />}
         colorClass="bg-blue-50"
       />
       <StatCard
-        label="Bekleyen Inceleme"
+        label={t('stats_pendingReview')}
         value={pendingCount}
         icon={<Clock className="h-6 w-6 text-amber-600" />}
         colorClass="bg-amber-50"
       />
       <StatCard
-        label="Tamamlanan"
+        label={t('stats_completed')}
         value={completedCount}
         icon={<CheckCircle className="h-6 w-6 text-emerald-600" />}
         colorClass="bg-emerald-50"
