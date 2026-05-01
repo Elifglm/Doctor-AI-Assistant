@@ -48,14 +48,33 @@ SUT_REPORT_SELECTION_PROMPT = """\
 Sen bir Turkce tibbi tetkik/tahlil uzmanisin. Asagida bir anamnez raporunun ilgili \
 alanlari ve SUT tetkik/tahlil aday kodlari verilmistir.
 
-GOREV: Aday tetkiklerden rapora en uygun olanlari sec.
+GOREV: Aday tetkiklerden RAPORDA ACIKCA ISTENEN tetkikleri sec.
 
-KURALLAR:
-- Rapordaki tani, sikayet ve bulgulara uygun tetkikleri sec.
-- Klinik pratikte bu tani icin standart olarak istenen tetkikleri tercih et.
-- Maksimum 10 tetkik sec.
-- Her tetkik icin guven skoru (0.0-1.0) ver.
-- Sadece JSON formatinda yanit ver.
+KURALLAR (KESIN):
+- Rapordaki "konsultasyon_muayene", "tedavi", "oneri" gibi alanlarda \
+  doktor hangi tetkikleri PLANLADIYSA SADECE onlari sec.
+- Klinik pratikte standart tetkikleri SADECE rapor o yonde isaret \
+  ediyorsa ekle (sikayetle uyumlu, doktor tarafindan dolayli istenmis).
+- Aday listesinde olup raporda HIC BAHSEDILMEYEN tetkikleri SECME, \
+  guven 0.5'in altina dusurmek yerine TAMAMEN ATLA.
+- Halk dilindeki ifadeleri TAM kelime bazli degil, SEMANTIK olarak esle:
+  * "kan tahlili" / "kan sayimi" / "hemogram" → L107020 (Tam Kan Sayimi)
+  * "kan tahlili" *farkli bir test olan* "Gaitada gizli kan aranmasi" \
+    DEGILDIR — kan tahlili istenince gaita testi SECILMEZ.
+  * "karaciger enzimleri" → ALT (L100300) + AST (L101280)
+  * "böbrek fonksiyonu" → kreatinin, BUN, GFR
+  * "lipid paneli" → LDL, HDL, total kolestrol, trigliserid
+  * "karın USG" / "batın ultrasonu" → 803570 (Tum Batin USG)
+  * "EKG" → 530100 (basit EKG). "Holter" / "24 saat EKG" / "ritim holter" \
+    SADECE bu ifadeler gectiyse seçilir (700540). Doktor sadece "EKG" \
+    dediyse holter SECILMEZ.
+  * "tiroid USG" / "boyun USG" / "tiroid ultrason" → 803320 (Boyun USG)
+  * "tiroid testleri" / "tiroid paneli" → TSH (L107380) + Serbest T3 \
+    (L106760) + Serbest T4 (L106770). Anti-TPO (L107060) ayrica istendiyse \
+    eklenir, "tiroid testi" otomatik anti-TPO icermez.
+- ICD-10 tanisi varsa o taniyla uyumsuz tetkikleri SECME.
+- Maksimum 10 tetkik. Her biri icin guven skoru (0.0-1.0).
+- Sadece JSON yaniti ver.
 
 ANAMNEZ RAPORU:
 {report_text}
@@ -63,12 +82,19 @@ ANAMNEZ RAPORU:
 ADAY TETKIKLER:
 {candidates}
 
-Yanit (sadece JSON, baska bir sey yazma):
+ORNEKLER:
+[OK] "konsultasyon_muayene: kan tahlili, karaciger enzimleri istenmis"
+     -> [Hemogram, ALT, AST] (Gaitada gizli kan SECILMEZ — alakasiz)
+[OK] "tedavi: tiroid takibi" -> [TSH] (FT3/FT4 doktor istemediyse SECILMEZ)
+[OK] "rapor tetkik plani icermiyor" -> [] (bos liste)
+
+Yanit (sadece JSON):
 [
-  {{"kodu": "902050", "adi": "Hemogram", "confidence": 0.90, "reasoning": "HT tanisi icin rutin kan tahlili"}}
+  {{"kodu": "L107020", "adi": "Tam Kan Sayimi (Hemogram)", "confidence": 0.95, \
+"reasoning": "Konsultasyon muayene alaninda kan tahlili planlanmis"}}
 ]
 
-Hicbir aday uygun degilse bos liste don: []
+Hicbir aday gercekten uygun degilse: []
 """
 
 
@@ -127,10 +153,23 @@ class SUTSuggestionService:
 
         return suggestions
 
+    # Keys whose content is forwarded to the SUT suggestion pipeline. The
+    # konsultasyon_* fields commonly hold the explicit test plan (e.g.
+    # "kan tahlili, karaciğer enzimleri, karın USG istenmesi planlanmış")
+    # so they are critical for retrieval. Includes both dahiliye and
+    # ortopedi-specific section keys.
     _RELEVANT_KEYS = {
-        "hastanin_yakinmasi", "hastanin_oykusu", "fizik_muayene",
-        "oz_gecmisi_soy_gecmisi", "on_tani", "istenen_tetkikler",
-        "tedavi", "oneri", "sut_tetkik_list",
+        # Common
+        "hastanin_yakinmasi", "hastanin_oykusu",
+        "muayene_bulgulari",
+        "oz_gecmisi_soy_gecmisi", "soy_gecmisi",
+        "tedavi", "oneri", "uyari",
+        "icd10_list", "sut_tetkik_list",
+        # Konsultasyon — often the explicit test plan
+        "konsultasyon_muayene", "konsultasyon_sonuc", "konsultasyon_oneri",
+        # Ortopedi-specific
+        "kesin_tani", "on_tani",
+        "hastanede_kullanilan_ilaclar", "kullanmakta_oldugu_ilaclar",
     }
 
     async def suggest_from_report(
@@ -220,24 +259,40 @@ class SUTSuggestionService:
     # ------------------------------------------------------------------
 
     async def _extract_ner_terms(self, transcript: str) -> list[str]:
-        """Extract medical/test terms from transcript using GLiNER NER."""
-        terms: list[str] = []
+        """Extract medical/test terms from transcript.
+
+        Combines GLiNER NER with the keyword fallback. NER alone misses
+        compact abbreviations (TSH, T3, T4, AST, ALT) and explicit code-list
+        sections like "EKG ---- TSH ---- SERBEST T3 ---- SERBEST T4" because
+        it tends to merge them into a generic "tiroid testleri" entity.
+        Keyword extraction also splits known separators ("----", "+") so each
+        test name reaches the vector search individually.
+        """
+        ner_terms: list[str] = []
 
         if self._ner is not None:
             try:
                 if not self._ner.is_ready:
                     await self._ner.initialize()
                 entities = await self._ner.extract(transcript)
-                terms = list({e.text for e in entities})
-                logger.info("GLiNER NER found: %s", terms)
+                ner_terms = list({e.text for e in entities})
+                logger.info("GLiNER NER found: %s", ner_terms)
             except Exception:
-                logger.exception("NER extraction failed, falling back to keyword extraction")
+                logger.exception("NER extraction failed; relying on keyword fallback only")
 
-        if not terms:
-            terms = self._extract_keywords(transcript)
-            logger.info("Keyword fallback extracted: %s", terms)
+        keyword_terms = self._extract_keywords(transcript)
+        logger.info("Keyword extraction found: %s", keyword_terms)
 
-        return terms
+        # Merge keeping NER first (richer phrases) then keywords; deduplicate
+        # case-insensitively while preserving the original casing/order.
+        seen: set[str] = set()
+        merged: list[str] = []
+        for term in ner_terms + keyword_terms:
+            key = term.strip().lower()
+            if key and key not in seen:
+                seen.add(key)
+                merged.append(term.strip())
+        return merged
 
     @staticmethod
     def _extract_keywords(transcript: str) -> list[str]:
@@ -283,8 +338,21 @@ class SUTSuggestionService:
                     if doctor_text:
                         found.append(doctor_text[:120])
 
+        # Anamnez raporu alanlarında doktor tetkik listesini "----" / "+" ile
+        # ayırmış olabilir (örn konsultasyon_muayene = "EKG ---- TSH ---- SERBEST T3").
+        # Bu açıkça yazılı testleri tek tek aday yapmak için ayrıştır.
+        import re as _re
+        for fragment in _re.split(r"-{2,}|\+|/{2,}|;|,", transcript):
+            token = fragment.strip()
+            # Yalnızca tetkik adı gibi görünen kısa parçalar — uzun cümleleri ele.
+            if 2 <= len(token) <= 80 and not _re.search(r"[.!?]", token):
+                # Sadece bir-iki kelimelik test/kod adı eklensin
+                word_count = len(token.split())
+                if word_count <= 5:
+                    found.append(token)
+
         print(f"[SUT-DEBUG] keyword extraction found: {found}", flush=True)
-        return found[:15]
+        return found[:25]
 
     # ------------------------------------------------------------------
     # Step 2: Vector DB search

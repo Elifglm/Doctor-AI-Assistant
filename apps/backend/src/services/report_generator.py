@@ -99,13 +99,25 @@ class ReportGenerator:
         grouped: dict[str, list[MedicalEntity]],
         brans: str | None = None,
     ) -> str:
-        """Build a compact prompt — only list field names, let LLM fill from transcript."""
+        """Build the user-message prompt for batch anamnesis generation.
+
+        For dahiliye, uses the rich 26-field template with explicit jargon
+        rules, format examples and self-check section. For other branches
+        (ortopedi for now) falls back to the compact field-list format.
+        """
+        normalized_brans = (brans or "").strip().lower()
+        if normalized_brans == "ortopedi":
+            return self._build_compact_prompt(transcript, brans)
+        # default: dahiliye (richer template)
+        return self._build_dahiliye_prompt(transcript, entities)
+
+    @staticmethod
+    def _build_compact_prompt(transcript: str, brans: str | None) -> str:
+        """Compact field-list prompt used for branches without a rich template."""
         sections = get_anamnesis_sections(brans)
-        # Only send field key: title pairs, no lengthy instructions per field
         fields = ", ".join(
             f'"{k}": "{v["title"]}"' for k, v in sections.items()
         )
-
         return (
             f"<TRANSKRIPT>\n{transcript}\n</TRANSKRIPT>\n\n"
             f"Yukaridaki transkriptten HBYS anamnez raporu olustur.\n"
@@ -117,6 +129,172 @@ class ReportGenerator:
             f"Alanlar: {{{fields}}}\n\n"
             f"SADECE JSON yanit ver: {{\"alan_key\": \"icerik\", ...}}"
         )
+
+    @staticmethod
+    def _build_dahiliye_prompt(
+        transcript: str, entities: list[MedicalEntity]
+    ) -> str:
+        """Rich 26-field anamnez prompt with jargon + format + examples."""
+        if entities:
+            entity_lines = [
+                f"- [{e.label}] {e.text}" for e in entities[:40]
+            ]
+            entities_str = "\n".join(entity_lines)
+        else:
+            entities_str = "(NER ciktisi verilmedi)"
+
+        return f"""<transcript>
+{transcript}
+</transcript>
+
+<entities>
+{entities_str}
+</entities>
+
+<gorev>
+Yukarıdaki dahiliye görüşme transkriptinden 26 alanlı anamnez JSON raporunu \
+üret. 26 alanın tamamı çıktıda yer almalı. Aşağıdaki alan tanımlarını, jargon \
+dönüşümlerini ve format kurallarını uygula.
+</gorev>
+
+<alan_tanimlari>
+1.  hastanin_yakinmasi      — Hastanın baş şikayetleri. BÜYÜK HARF. Birden fazla şikayet `+` ile (örn: BAS AGRISI + BAS DONMESI). Yoksa "BELIRTILMEDI".
+2.  hastanin_oykusu         — Şikayetin başlangıcı, süresi, lokalizasyon, faktörler. BÜYÜK HARF. Her bilgi `----` ile ayrı (örn: 2 HAFTA ONCE BASLAYAN ---- SOL TARAFLI ---- ZONKLAYICI). Yoksa "BELIRTILMEDI".
+3.  oz_gecmisi_soy_gecmisi  — Hastanın kendi kronik hastalıkları/operasyonları. BÜYÜK HARF. Her tanı/operasyon `----`; ilgili ilaç `///` ile (örn: HT (10 YILDIR) /// AMLODIPIN 5 MG 1X1 ---- DM (5 YILDIR) /// METFORMIN 1000 MG 2X1). Yoksa "BELIRTILMEDI".
+4.  soy_gecmisi             — Aile hastalık öyküsü. BÜYÜK HARF. Aile bireyi başına `----` (örn: ANNE HT + DM ---- BABA KAH). Yoksa "BELIRTILMEDI".
+5.  sigara                  — KULLANIYOR (X PAKET/GUN, Y YILDIR) / KULLANMIYOR / BIRAKMIS (X YIL ONCE). Belirtilmediyse "BELIRTILMEDI".
+6.  alkol                   — SOSYAL DUZEYDE / DUZENLI / KULLANMIYOR. Belirtilmediyse "BELIRTILMEDI".
+7.  alerji                  — İlaç adı (reaksiyon) / "BILINEN ALERJISI YOK". Belirtilmediyse "".
+8.  muayene_bulgulari       — BÜYÜK HARF, virgülle ayrı (örn: GD IYI, KOOPERE, BATIN RAHAT, KVS S1-S2 DOGAL). Yoksa "BELIRTILMEDI".
+9.  sistolik                — Sadece sayı (örn: 160). Yoksa "".
+10. diyastolik              — Sadece sayı (örn: 90). Yoksa "".
+11. so2                     — Sadece sayı (örn: 98). Yoksa "".
+12. nabiz                   — Sadece sayı (örn: 78). Yoksa "".
+13. ates                    — Sadece sayı, virgüllü olabilir (örn: 36.4). Yoksa "".
+14. tedavi                  — Reçete/öneri tedavi. BÜYÜK HARF. Her kalem `----`; ilaç + doz + sıklık (örn: RAMIPRIL 5 MG 1X1 ---- METOPROLOL 50 MG 1X1). Yoksa "BELIRTILMEDI".
+15. oneri                   — Yaşam tarzı/diyet önerileri. BÜYÜK HARF. Her öneri `----` (örn: TUZ KISITLAMASI ---- DUZENLI EGZERSIZ). Yoksa "".
+16. uyari                   — İlaç etkileşimi/alerji uyarısı. BÜYÜK HARF. Yoksa "".
+17. kontrol_zamani          — BÜYÜK HARF (örn: 1 HAFTA SONRA TANSIYON KONTROLU). Yoksa "".
+18. agri_skalasi            — Sayı veya "VAS X" (örn: 7 veya VAS 7). Yoksa "".
+19. kilo                    — Sadece sayı (kg). Yoksa "".
+20. boy                     — Sadece sayı (cm). Yoksa "".
+21. sikayet_baslangic_tarihi — BÜYÜK HARF (örn: 2 HAFTA ONCE / 3 GUN ONCE / 1 YILDIR). Yoksa "BELIRTILMEDI".
+22. konsultasyon_muayene    — Doktorun istediği muayene/tetkik (örn: KARDIYOLOJI KONSULTASYONU, ABDOMEN USG). KRITIK ALAN — retrieval bunu kullanır. Yoksa "".
+23. konsultasyon_sonuc      — Konsültasyon sonucu varsa. Yoksa "".
+24. konsultasyon_oneri      — Konsültasyondan gelen öneriler. Yoksa "".
+25. icd10_list              — DAİMA "" boş bırak. Ayrı pipeline doldurur.
+26. sut_tetkik_list         — DAİMA "" boş bırak. Ayrı pipeline doldurur.
+</alan_tanimlari>
+
+<jargon_donusumu>
+KONUŞMA DİLİ → ANAMNEZ JARGONU dönüşümü zorunludur. Aşağıdakiler en sık olanlar:
+
+Aile bireyleri (soy_gecmisi):
+- "annem/annemde"  → ANNE
+- "babam/babamda"  → BABA
+- "kardeşim/abim/ablam" → KARDES
+- "anneannem"      → ANNE TARAFI BUYUKANNE
+- "babaannem"      → BABA TARAFI BUYUKANNE
+- "dedem" (taraf belirsizse) → BUYUKBABA  (taraf belliyse "ANNE TARAFI BUYUKBABA" / "BABA TARAFI BUYUKBABA")
+
+Şikayetler (hastanin_yakinmasi):
+- "başım ağrıyor"           → BAS AGRISI
+- "midem yanıyor"           → EPIGASTRIK YANMA
+- "göğsümde sıkışma"        → RETROSTERNAL SIKISMA
+- "nefes alamıyorum"        → DISPNE
+- "halsizim"                → HALSIZLIK
+- "midem bulanıyor"         → BULANTI
+- "baş dönmesi"             → VERTIGO
+- "bacaklarım şişiyor"      → ALT EKSTREMITE ODEMI
+- "kabızım"                 → KONSTIPASYON
+- "ishal"                   → DIYARE
+
+Kronik hastalıklar (oz_gecmisi_soy_gecmisi, soy_gecmisi):
+- "şeker hastalığı/şekerim" → DM
+- "tansiyon/yüksek tansiyon"→ HT
+- "kalp hastalığı"          → KAH (sadece doktor onaylarsa)
+- "tiroid/guatr"            → TIROID HASTALIGI
+- "böbrek yetmezliği"       → KBY
+- "felç geçirdim"           → INME OYKUSU
+- "astım"/"KOAH"            → ASTIM / KOAH (zaten jargon)
+
+Sayısal ifadeler:
+- "tansiyon yüz altmış sekilen yüz" → sistolik=160, diyastolik=100
+- "bir paket sigara on yıl"         → KULLANIYOR (1 PAKET/GUN, 10 YILDIR)
+- İlaç adı belirtilmemişse: "tansiyon hapı" → ANTIHIPERTANSIF KULLANIYOR (doz uydurma)
+</jargon_donusumu>
+
+<format_kurallari>
+- Birden fazla şikayet: `+` ile ayır. "VE" YASAK.
+  Doğru:   "BAS AGRISI + BAS DONMESI"
+  Yanlış:  "BAS AGRISI VE BAS DONMESI"
+
+- Birden fazla bilgi (öykü, tedavi, soy_gecmisi, oneri): `----` (4 tire) ile ayır.
+  Doğru:   "2 HAFTA ONCE BASLAYAN ---- SOL TARAFLI"
+  Yanlış:  "2 HAFTA ONCE BASLAYAN, SOL TARAFLI"
+
+- Tanı + ilgili ilaç: `///` (3 slash) ile bağla.
+  Doğru:   "HT (10 YILDIR) /// AMLODIPIN 5 MG 1X1"
+
+- Sayısal alanlar (sistolik, diyastolik, nabiz, so2, ates, kilo, boy):
+  Sadece sayı, BIRIM YOK. Doğru: 165 / Yanlış: "165 mmHg"
+
+- icd10_list ve sut_tetkik_list: HER ZAMAN "" (boş string). Asla doldurma.
+</format_kurallari>
+
+<ornekler>
+<example index="1" odak="ASR_hatasi_ve_jargon_donusumu">
+Mini transcript:
+"Hasta: Babamda hipertansiyon vardı, şeker hastalığı da vardı. (ASR çıktısı: 'dedemde' yazıyor olabilir.)
+Doktor: Annenizde ne vardı?
+Hasta: Annemde tiroid var, ilaç kullanıyor."
+
+Doğru çıktı parçası:
+{{
+  "soy_gecmisi": "BABA HT + DM ---- ANNE TIROID HASTALIGI"
+}}
+
+Yanlış çıktı (kaçınılması gereken):
+{{
+  "soy_gecmisi": "DEDEMDE HT VARDI, ANNEMDE TIROID VAR"
+}}
+</example>
+
+<example index="2" odak="bos_alan_ve_format_kuralı">
+Mini transcript:
+"Doktor: Şikayetiniz nedir?
+Hasta: Başım ağrıyor, başım da dönüyor 2 haftadır.
+Doktor: Tansiyonunuz 165 ve 100 olarak ölçüldü.
+Doktor: Sigara kullanıyor musunuz?
+Hasta: Hayır."
+
+Doğru çıktı parçası:
+{{
+  "hastanin_yakinmasi": "BAS AGRISI + BAS DONMESI",
+  "sikayet_baslangic_tarihi": "2 HAFTA ONCE",
+  "sistolik": "165",
+  "diyastolik": "100",
+  "sigara": "KULLANMIYOR",
+  "alkol": "BELIRTILMEDI",
+  "kilo": "",
+  "boy": "",
+  "icd10_list": "",
+  "sut_tetkik_list": ""
+}}
+</example>
+</ornekler>
+
+<son_kontroller>
+JSON'u üretmeden önce kendi çıktını şu kontrollerle doğrula:
+1. Çıktıda 26 anahtarın TAMAMI var mı?
+2. Her metin alanı format kuralına (BÜYÜK HARF, +, ----, ///) uyuyor mu?
+3. Sayısal alanlarda birim/yazı VAR mı? (Olmamalı.)
+4. Transkriptte geçmeyen bir bilgi sızdı mı? (Sızmamalı.)
+5. icd10_list ve sut_tetkik_list "" mi?
+6. Aile/şikayet/kronik hastalık ifadeleri jargon karşılığına çevrildi mi?
+</son_kontroller>
+
+Şimdi 26 alanlı JSON çıktısını üret. Sadece JSON yaz, başka bir şey yazma."""
 
     @staticmethod
     def _parse_batch_response(

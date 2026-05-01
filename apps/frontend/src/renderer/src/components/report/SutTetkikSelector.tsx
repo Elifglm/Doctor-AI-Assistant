@@ -62,9 +62,12 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
   )
   const [searchQuery, setSearchQuery] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  // Same threshold used in handleSuggest below — apply here too so reports
+  // saved before the threshold existed don't surface stale low-confidence picks.
+  const SUT_MIN_CONFIDENCE = 0.85
   const [suggestions, setSuggestions] = useState<SUTSuggestion[]>(() =>
     parsed
-      .filter((p) => p.confidence !== undefined)
+      .filter((p) => p.confidence !== undefined && p.confidence >= SUT_MIN_CONFIDENCE)
       .map((p) => ({
         kodu: p.kodu,
         adi: p.adi,
@@ -134,7 +137,17 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
         report_sections: sectionMap,
         brans: brans || null,
       })
-      setSuggestions([...data.suggestions].sort((a, b) => b.confidence - a.confidence))
+      // Drop low-confidence suggestions (likely false positives like
+      // "Gaitada gizli kan aranması" matching "kan tahlili" by accident).
+      // The LLM's confidence floor is 0.5; we surface only ≥0.85.
+      // REPLACE the suggestion panel on every click — see ICD10Selector for
+      // the rationale (avoids stale picks pinning above corrected ones).
+      // selectedTetkik is stored separately and untouched by this reset.
+      setSuggestions(
+        data.suggestions
+          .filter((s) => s.confidence >= SUT_MIN_CONFIDENCE)
+          .sort((a, b) => b.confidence - a.confidence)
+      )
     } catch {
       setSuggestions([])
     } finally {

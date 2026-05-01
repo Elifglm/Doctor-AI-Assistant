@@ -62,10 +62,14 @@ data/sut_tetkik_chroma/
 data/sut_tetkik.db
 data/rag/
 
-# MariaDB volume + dumps
+# MariaDB volume + dumps (PHI riski — Whatsapp/Drive ile paylas)
 data/mariadb/
+data/dumps/
 *.sql.bak
 *.dump.sql
+
+# Intermediate import artifacts (regenerate via find_missing_sut_codes.py)
+data/missing_sut_codes.csv
 
 # OpenEMR credentials
 .env.openemr

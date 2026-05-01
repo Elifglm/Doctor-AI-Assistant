@@ -64,7 +64,15 @@ class SUTVectorService:
 
         def _query():
             emb = self._model.encode([query]).tolist()
-            where = {"brans": brans} if brans else None
+            # SUT codes are tagged "dahiliye", "ortopedi" or "her ikisi".
+            # When the caller asks for a specific specialty, ALSO include
+            # cross-specialty codes ("her ikisi"); otherwise common tests
+            # like "Akciğer Grafisi" (her ikisi) get filtered out.
+            where: dict | None
+            if brans:
+                where = {"brans": {"$in": [brans, "her ikisi"]}}
+            else:
+                where = None
             return self._collection.query(
                 query_embeddings=emb, n_results=n_results, where=where
             )

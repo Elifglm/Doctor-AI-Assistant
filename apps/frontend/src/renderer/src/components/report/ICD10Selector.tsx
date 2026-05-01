@@ -56,9 +56,13 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
   )
   const [searchQuery, setSearchQuery] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  // Same threshold used in handleSuggest below — apply here too so reports
+  // that were saved before the threshold existed don't surface stale
+  // low-confidence picks.
+  const ICD_MIN_CONFIDENCE = 0.7
   const [suggestions, setSuggestions] = useState<ICD10Suggestion[]>(() =>
     parsed
-      .filter((p) => p.confidence !== undefined)
+      .filter((p) => p.confidence !== undefined && p.confidence >= ICD_MIN_CONFIDENCE)
       .map((p) => ({
         icd_kodu: p.icd_kodu,
         tani: p.tani,
@@ -131,7 +135,21 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
       const data = await apiClient.post<ICD10SuggestResponse>('/api/v1/icd10/suggest', {
         report_sections: sectionMap,
       })
-      setSuggestions([...data.suggestions].sort((a, b) => b.confidence - a.confidence))
+      // Hide low-confidence suggestions. ICD-10 retrieval can return loosely-
+      // related codes (e.g. I20 angina alongside E05.9 thyrotoxicosis when the
+      // patient only has palpitations). The LLM flags those with <0.7
+      // confidence; surfacing them clutters the UI without adding value —
+      // the doctor can search for them manually if needed.
+      // REPLACE the suggestion panel on every "AI Öner" click. Earlier we
+      // tried merging old + new but that pinned outdated picks (e.g. J44.0
+      // from a pre-prompt-fix run kept appearing above the corrected J44.9).
+      // selectedCodes (codes the user has explicitly added to the report)
+      // are stored separately and unaffected by this reset.
+      setSuggestions(
+        data.suggestions
+          .filter((s) => s.confidence >= ICD_MIN_CONFIDENCE)
+          .sort((a, b) => b.confidence - a.confidence)
+      )
     } catch {
       setSuggestions([])
     } finally {

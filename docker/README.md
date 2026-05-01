@@ -143,22 +143,34 @@ Backend kodunda `db/models.py` değişirse:
 
 ### Veri paylaşımı (manuel, dump üzerinden)
 
-**Sen (export):**
+**Helper scriptler ile (önerilen):**
 ```bash
-docker exec klinikasistan-mysql-1 mariadb-dump -uroot -proot \
-  --databases openemr klinikasistan > klinik_dump.sql
-# klinik_dump.sql'i Whatsapp/Drive ile gönder
+# Sen
+./scripts/db-export.sh
+# data/dumps/klinik_dump_TARIH.sql üretilir
+# Whatsapp/Drive ile gönder
+
+# Arkadaşın
+./scripts/db-import.sh data/dumps/klinik_dump_TARIH.sql
+# Sorduğunda 'e' tuşuna bas → onayla
 ```
 
-**Arkadaşın (import):**
+Scriptler:
+- Container çalışıp çalışmadığını kontrol eder
+- Dump dosyasını otomatik timestamp ile `data/dumps/` altına yazar
+- Önce/sonra kayıt sayılarını gösterir
+- Import öncesi onay sorar (overwrite uyarısı)
+
+**`.gitignore`'da:** `data/dumps/` repoya gitmez (PHI riski).
+
+**Manuel komut (yedek):**
 ```bash
-# Önce servislerin ayakta olduğundan emin ol
-docker compose up -d mysql openemr
+# Export
+docker exec klinikasistan-mysql-1 mariadb-dump -uroot -proot \
+  --databases openemr klinikasistan > klinik_dump.sql
 
-# Sonra dump'ı yükle
+# Import
 docker exec -i klinikasistan-mysql-1 mariadb -uroot -proot < klinik_dump.sql
-
-# Backend'i restart et (cache invalidation için)
 ```
 
 ### Tam reset + ekip dump'ı yükleme

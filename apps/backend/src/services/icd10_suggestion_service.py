@@ -65,9 +65,23 @@ KRITIK KURALLAR:
    - Raporun tum alanlarini bir arada degerlendir (sikayet + oykü + muayene + konsultasyon sonucu).
    - Doktorun konsultasyon sonucunda yazdigi taniyi EN YUKSEK guvenle sec.
    - Birden fazla hastalik varsa hepsini listele (ornek: anemi + gastrit ayni anda olabilir).
-3. Maksimum 5 kod sec.
-4. Her kod icin guven skoru (0.0-1.0) ve NEDEN sectigini acikla.
-5. Sadece JSON formatinda yanit ver.
+3. SPESIFIKLIK KURALI — alt-tip secimi:
+   - ICD-10 hiyerarsiktir (ornek: J44 → J44.0, J44.1, J44.8, J44.9).
+   - Spesifik alt-tip kodu (J44.0 "akut enfeksiyonlu", J44.1 "akut alevlenmeli") \
+     SADECE raporda o alt-tipin AYIRICI klinik bulgulari acikca varsa SECILEBILIR.
+   - Yetersiz kanit varsa "tanimlanmamis" alt kodu (.9 ile biten) tercih et.
+   - Ornekler:
+     * KOAH ana tani var, ama akut enfeksiyon (ates, purulan balgam) yok → \
+       J44.9 (KOAH NOS) sec, J44.0 SECME.
+     * "Akut alevlenme" ifadesi rapora yazilmamissa → J44.1 SECME, J44.9 sec.
+     * Diyabet var ama tip belirsiz → E11.9 (Tip 2 NOS) sec, E11.0 (komali) \
+       sadece koma dökümante edilmisse SECILIR.
+     * Hipertansiyon var ama komplikasyon yok → I10 (essansiyel HT) sec, \
+       I11 (HT + kalp tutulumu) SADECE LVH/kalp yetmezligi varsa SECILIR.
+   - Kural ozeti: "SUPHE durumunda DAHA AZ spesifik kod sec."
+4. Maksimum 5 kod sec.
+5. Her kod icin guven skoru (0.0-1.0) ve NEDEN sectigini acikla.
+6. Sadece JSON formatinda yanit ver.
 
 ANAMNEZ RAPORU:
 {report_text}
@@ -130,9 +144,18 @@ class ICD10SuggestionService:
     # Report-based suggestion (structured data → better ICD-10)
     # ------------------------------------------------------------------
 
+    # Anahtar bölümler — LLM'e aktarılan rapor alanları. ICD-10 için tanı
+    # bilgisi ağırlıklı olduğundan kesin/ön tanı, klinik öykü ve muayene
+    # bulguları öncelikli; konsültasyon görüşleri tanıyı netleştirir.
     _RELEVANT_KEYS = {
-        "hastanin_yakinmasi", "hastanin_oykusu", "fizik_muayene",
-        "oz_gecmisi_soy_gecmisi", "on_tani", "konsultasyon_sonuc",
+        # Tanı / klinik durum
+        "hastanin_yakinmasi", "hastanin_oykusu", "muayene_bulgulari",
+        "on_tani", "kesin_tani",
+        # Geçmiş
+        "oz_gecmisi_soy_gecmisi", "soy_gecmisi",
+        # Konsültasyon — uzman görüşü tanıyı sağlamlaştırır
+        "konsultasyon_muayene", "konsultasyon_sonuc", "konsultasyon_oneri",
+        # Plan
         "tedavi",
     }
 
@@ -178,7 +201,16 @@ class ICD10SuggestionService:
             if tc["icd_kodu"] not in seen:
                 seen.add(tc["icd_kodu"])
                 candidates.append(tc)
-        logger.info("Report combined %d candidates (vector + text)", len(candidates))
+
+        # Step 2b: Hierarchical fallback — for every candidate that's a
+        # specific subcode (e.g. J44.0), make sure the "unspecified" sibling
+        # (J44.9) and the bare parent (J44) are also offered to the LLM.
+        # Without this the LLM is forced to pick a specific subtype even when
+        # the report lacks evidence to distinguish among them, leading to
+        # over-coding (e.g. J44.0 chosen when only J44.9 is supported).
+        await self._augment_with_unspecified(candidates, seen)
+
+        logger.info("Report combined %d candidates (vector + text + unspec)", len(candidates))
 
         if not candidates:
             return []
@@ -301,6 +333,61 @@ class ICD10SuggestionService:
                 "source": r.source_term,
             })
         return candidates
+
+    async def _augment_with_unspecified(
+        self,
+        candidates: list[dict[str, Any]],
+        seen: set[str],
+    ) -> None:
+        """Mutate ``candidates`` to also include parent + ".9" siblings.
+
+        For each candidate code (e.g. ``J44.0``), look up the "unspecified"
+        sibling (``J44.9``) and the bare parent (``J44``) and append them to
+        the candidate pool if missing. This gives the LLM the option to
+        downshift to a less-specific code when the report lacks evidence for
+        the specific subtype.
+        """
+        # Collect parent prefixes that need unspecified siblings.
+        wanted: set[str] = set()
+        for c in list(candidates):
+            kodu = (c.get("icd_kodu") or "").strip()
+            if not kodu:
+                continue
+            # Already an unspecified or bare parent — nothing to add.
+            if "." not in kodu:
+                wanted.add(f"{kodu}.9")
+                continue
+            parent = kodu.split(".", 1)[0]
+            wanted.add(parent)
+            wanted.add(f"{parent}.9")
+
+        # Remove anything we already have.
+        wanted -= seen
+        if not wanted:
+            return
+
+        # SQL fetch — single query for all wanted codes.
+        try:
+            rows = await self._icd10.get_by_codes(list(wanted))
+        except AttributeError:
+            # Fallback if the service doesn't expose a batch lookup yet.
+            rows = []
+            for code in wanted:
+                row = await self._icd10.get_by_code(code)
+                if row:
+                    rows.append(row)
+        for row in rows:
+            kodu = row.get("icd_kodu") if isinstance(row, dict) else getattr(row, "icd_kodu", None)
+            tani = row.get("tani") if isinstance(row, dict) else getattr(row, "tani", None)
+            if not kodu or kodu in seen:
+                continue
+            seen.add(kodu)
+            candidates.append({
+                "icd_kodu": kodu,
+                "tani": tani or "",
+                "score": 0.50,  # marked as fallback / hierarchical filler
+                "source": "unspecified-fallback",
+            })
 
     async def _text_search_fallback(
         self, terms: list[str]
