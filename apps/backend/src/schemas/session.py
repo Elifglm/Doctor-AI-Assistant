@@ -19,6 +19,7 @@ class CreateSessionRequest(BaseModel):
     pre_diagnosis: str = Field(default="", max_length=5000)
     location: str = Field(default="", max_length=200)
     kvkk_consent: bool
+    appointment_id: str = Field(default="", max_length=100)
 
 
 class UpdateSessionRequest(BaseModel):
@@ -36,6 +37,7 @@ class SessionResponse(BaseModel):
     patient_id: Optional[str] = None
     patient_name: Optional[str] = None
     doctor_name: str
+    appointment_id: Optional[str] = None
     visit_type: str
     status: str
     pre_diagnosis: Optional[str] = None

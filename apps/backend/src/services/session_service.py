@@ -33,6 +33,7 @@ class SessionService:
             doctor_name=data.doctor_name,
             doctor_username=doctor_username,
             doctor_brans=doctor_brans,
+            appointment_id=getattr(data, "appointment_id", "") or "",
             visit_type=data.visit_type,
             pre_diagnosis=data.pre_diagnosis,
             location=data.location,

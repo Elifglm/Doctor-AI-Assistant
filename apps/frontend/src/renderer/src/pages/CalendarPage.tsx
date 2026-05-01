@@ -10,6 +10,7 @@ import {
   Loader2,
   RefreshCw,
   Mic,
+  CheckCircle2,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { apiClient } from '../services/apiClient'
@@ -41,6 +42,18 @@ interface AppointmentListResponse {
   total: number
   date: string
   filtered_by: string
+}
+
+interface SessionRow {
+  id: number
+  appointment_id: string | null
+  status: string
+  created_at: string
+}
+
+interface SessionListResp {
+  items: SessionRow[]
+  total: number
 }
 
 function formatTime(time: string): string {
@@ -91,6 +104,10 @@ export function CalendarPage(): React.JSX.Element {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [filteredBy, setFilteredBy] = useState('')
+  // Map: appointment_id -> { id, status } of an existing recording for that appt
+  const [sessionByAppt, setSessionByAppt] = useState<
+    Record<string, { id: number; status: string }>
+  >({})
   const user = useAuthStore((s) => s.user)
   const locale = useUIStore((s) => s.locale)
   const navigate = useNavigate()
@@ -117,13 +134,30 @@ export function CalendarPage(): React.JSX.Element {
   const fetchAppointments = useCallback(async (date: string) => {
     setLoading(true)
     try {
-      const data = await apiClient.get<AppointmentListResponse>(
-        `/api/v1/appointments?appointment_date=${date}`
-      )
-      setAppointments(data.appointments)
-      setFilteredBy(data.filtered_by)
+      const [apptData, sessionData] = await Promise.all([
+        apiClient.get<AppointmentListResponse>(
+          `/api/v1/appointments?appointment_date=${date}`
+        ),
+        apiClient
+          .get<SessionListResp>('/api/v1/sessions?limit=100')
+          .catch(() => ({ items: [], total: 0 } as SessionListResp)),
+      ])
+      setAppointments(apptData.appointments)
+      setFilteredBy(apptData.filtered_by)
+
+      // Build appointment_id -> {id, status} map (latest session wins).
+      const map: Record<string, { id: number; status: string }> = {}
+      for (const s of sessionData.items) {
+        if (!s.appointment_id) continue
+        const existing = map[s.appointment_id]
+        if (!existing || s.id > existing.id) {
+          map[s.appointment_id] = { id: s.id, status: s.status }
+        }
+      }
+      setSessionByAppt(map)
     } catch {
       setAppointments([])
+      setSessionByAppt({})
     } finally {
       setLoading(false)
     }
@@ -299,21 +333,47 @@ export function CalendarPage(): React.JSX.Element {
                           </span>
                         </div>
                         {(user?.role === 'admin' || appt.provider_username === user?.username) && (
-                          <button
-                            onClick={() => {
-                              const params = new URLSearchParams({
-                                patient_id: appt.patient_ext_id || appt.patient_id,
-                                patient_name: appt.patient_name,
-                                provider: appt.provider_name,
-                                appointment_id: String(appt.id),
-                              })
-                              navigate(`/session/new?${params.toString()}`)
-                            }}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 transition-colors"
-                          >
-                            <Mic className="h-3.5 w-3.5" />
-                            {t('cal_startRecording')}
-                          </button>
+                          (() => {
+                            const existing = sessionByAppt[String(appt.id)]
+                            if (existing) {
+                              // Recording already exists; label depends on lifecycle.
+                              const isFinalised = existing.status === 'COMPLETED'
+                              const label = isFinalised
+                                ? t('cal_finalised')
+                                : t('cal_recordingDone')
+                              return (
+                                <button
+                                  onClick={() => navigate(`/sessions/${existing.id}`)}
+                                  className={cn(
+                                    'flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
+                                    isFinalised
+                                      ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/60'
+                                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600'
+                                  )}
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                                  {label}
+                                </button>
+                              )
+                            }
+                            return (
+                              <button
+                                onClick={() => {
+                                  const params = new URLSearchParams({
+                                    patient_id: appt.patient_ext_id || appt.patient_id,
+                                    patient_name: appt.patient_name,
+                                    provider: appt.provider_name,
+                                    appointment_id: String(appt.id),
+                                  })
+                                  navigate(`/session/new?${params.toString()}`)
+                                }}
+                                className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 transition-colors"
+                              >
+                                <Mic className="h-3.5 w-3.5" />
+                                {t('cal_startRecording')}
+                              </button>
+                            )
+                          })()
                         )}
                       </div>
                     </div>

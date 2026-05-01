@@ -17,6 +17,7 @@ interface CreateSessionPayload {
   pre_diagnosis?: string
   location?: string
   kvkk_consent: boolean
+  appointment_id?: string
 }
 
 export function useSessionList(params: SessionListParams = {}) {

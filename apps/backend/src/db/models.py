@@ -38,6 +38,9 @@ class Session(Base):
     # Doctor's specialty captured at session-create time. Used by the report
     # pipeline to choose the anamnesis template (dahiliye / ortopedi / ...).
     doctor_brans: str = Column(String(50), nullable=True, default="")
+    # Optional link to OpenEMR appointment that triggered this session.
+    # Used by the calendar to mark appointments as already-recorded.
+    appointment_id: str = Column(String(100), nullable=True, default="")
     visit_type: str = Column(String(50), nullable=False, default="ilk_muayene")
     status: str = Column(String(50), nullable=False, default="NOT_STARTED")
     pre_diagnosis: str = Column(Text, nullable=True, default="")

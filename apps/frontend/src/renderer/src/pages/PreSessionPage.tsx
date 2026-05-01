@@ -17,6 +17,7 @@ export function PreSessionPage(): React.JSX.Element {
   const appointmentPatientId = searchParams.get('patient_id') ?? ''
   const appointmentPatientName = searchParams.get('patient_name') ?? ''
   const appointmentProvider = searchParams.get('provider') ?? ''
+  const appointmentId = searchParams.get('appointment_id') ?? ''
 
   // If no appointment data, redirect to calendar
   const hasAppointment = Boolean(appointmentPatientId && appointmentPatientName)
@@ -49,6 +50,7 @@ export function PreSessionPage(): React.JSX.Element {
         pre_diagnosis: preDiagnosis || undefined,
         location: location || undefined,
         kvkk_consent: kvkkConsent,
+        appointment_id: appointmentId || undefined,
       },
       {
         onSuccess: (session) => {

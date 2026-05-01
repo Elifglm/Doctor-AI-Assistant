@@ -192,7 +192,7 @@ const tr: TranslationMap = {
   transcript_backToLive: 'Canlı metne dön',
 
   // ── Report Editor ─────────────────────────────────────────────────────────────
-  report_title: 'Anamnez Raporu',
+  report_title: 'Anamnez Raporu Taslağı',
   report_sectionsApproved: '{approved}/{total} bölüm onaylandı',
   report_saved: 'Kaydedildi',
   report_saveError: 'Kaydetme hatası',
@@ -217,6 +217,8 @@ const tr: TranslationMap = {
   review_generateHint: 'Transkriptten otomatik veya boş rapor oluşturun',
   review_regenerate: 'AI ile Yeniden Oluştur',
   review_generate: 'AI ile Oluştur',
+  review_showTranscript: 'Transkripti Göster',
+  review_hideTranscript: 'Transkripti Gizle',
 
   // ── Session History Page ──────────────────────────────────────────────────────
   history_title: 'Görüşme Geçmişi',
@@ -352,6 +354,8 @@ const tr: TranslationMap = {
   cal_total: 'Toplam {count} randevu',
   cal_complaint: 'Şikayet:',
   cal_startRecording: 'Kayıt Başlat',
+  cal_recordingDone: 'Kayıt Tamamlandı',
+  cal_finalised: 'Tamamlandı',
   cal_filter: 'Filtre:',
   cal_noPatient: 'Hasta bilgisi yok',
 
@@ -631,7 +635,7 @@ const en: TranslationMap = {
   transcript_backToLive: 'Back to live text',
 
   // ── Report Editor ─────────────────────────────────────────────────────────────
-  report_title: 'Anamnesis Report',
+  report_title: 'Draft Anamnesis Report',
   report_sectionsApproved: '{approved}/{total} sections approved',
   report_saved: 'Saved',
   report_saveError: 'Save error',
@@ -656,6 +660,8 @@ const en: TranslationMap = {
   review_generateHint: 'Generate an automatic or blank report from the transcript',
   review_regenerate: 'Regenerate with AI',
   review_generate: 'Generate with AI',
+  review_showTranscript: 'Show Transcript',
+  review_hideTranscript: 'Hide Transcript',
 
   // ── Session History Page ──────────────────────────────────────────────────────
   history_title: 'Session History',
@@ -791,6 +797,8 @@ const en: TranslationMap = {
   cal_total: 'Total {count} appointments',
   cal_complaint: 'Complaint:',
   cal_startRecording: 'Start Recording',
+  cal_recordingDone: 'Recording Completed',
+  cal_finalised: 'Finalised',
   cal_filter: 'Filter:',
   cal_noPatient: 'No patient information',
 

@@ -238,7 +238,7 @@ ANAMNESIS_SECTIONS: dict[str, dict[str, str]] = {
         ),
     },
     "icd10_list": {
-        "title": "ICD10 TANI LISTESI",
+        "title": "OLASI ICD10 TANI LISTESI",
         "prompt": (
             "Doktorun koydugu tani veya on tanilari ICD-10 koduyla cikar.\n"
             "Format: (KOD) - TANI ADI (On Tani/Kesin Tani)\n"
@@ -247,7 +247,7 @@ ANAMNESIS_SECTIONS: dict[str, dict[str, str]] = {
         ),
     },
     "sut_tetkik_list": {
-        "title": "ISTENEN TETKIK VE TAHLILLER",
+        "title": "OLASI ISTENEN TETKIK VE TAHLILLER",
         "prompt": (
             "Doktorun istedigi tetkik ve tahlilleri cikar.\n"
             "Format: (SUT_KODU) - TETKIK ADI [brans]\n"
