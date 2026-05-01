@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { apiClient } from '../services/apiClient'
 import type { SUTItem, SUTSearchResponse } from '../types/sut_tetkik'
 
@@ -6,7 +6,6 @@ export function useSutTetkikSearch(query: string, brans?: string, debounceMs = 3
   const [results, setResults] = useState<SUTItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const trimmed = query.trim()
@@ -16,30 +15,36 @@ export function useSutTetkikSearch(query: string, brans?: string, debounceMs = 3
       return
     }
 
+    const controller = new AbortController()
+    let cancelled = false
     setIsLoading(true)
-    const timer = setTimeout(async () => {
-      abortRef.current?.abort()
-      abortRef.current = new AbortController()
 
+    const timer = setTimeout(async () => {
       try {
         let url = `/api/v1/sut-tetkik/search?q=${encodeURIComponent(trimmed)}&limit=20`
         if (brans) {
           url += `&brans=${encodeURIComponent(brans)}`
         }
-        const data = await apiClient.get<SUTSearchResponse>(url)
+        const data = await apiClient.get<SUTSearchResponse>(url, { signal: controller.signal })
+        if (cancelled) return
         setResults(data.results)
         setError(null)
       } catch (err) {
+        if (cancelled) return
         if (err instanceof Error && err.name !== 'AbortError') {
           setError(err.message)
           setResults([])
         }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }, debounceMs)
 
-    return () => clearTimeout(timer)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+      controller.abort()
+    }
   }, [query, brans, debounceMs])
 
   return { results, isLoading, error }

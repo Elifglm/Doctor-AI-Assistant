@@ -408,9 +408,9 @@ function LLMTab(): React.JSX.Element {
                   onChange={(e) => setGeminiModel(e.target.value)}
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                 >
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Hızlı)</option>
-                  <option value="gemini-2.5-pro">Gemini 2.5 Pro (Kaliteli)</option>
-                  <option value="gemini-2.0-flash">Gemini 2.0 Flash (Eski)</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash ({t('gemini_fast')})</option>
+                  <option value="gemini-2.5-pro">Gemini 2.5 Pro ({t('gemini_quality')})</option>
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash ({t('gemini_legacy')})</option>
                 </select>
               </div>
 

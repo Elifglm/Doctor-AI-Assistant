@@ -1,5 +1,6 @@
 import { User, Stethoscope } from 'lucide-react'
 import { SpeakerLabel } from './SpeakerLabel'
+import { useT } from '../../hooks/useT'
 import type { TranscriptionSegment } from '../../types/transcription'
 
 interface TranscriptSegmentProps {
@@ -19,23 +20,18 @@ function isDoctor(speaker: string): boolean {
   )
 }
 
-function getSpeakerDisplayLabel(speaker: string, speakerLabel: string): string {
-  if (isDoctor(speaker)) {
-    return speakerLabel || 'Dr.'
-  }
-  return speakerLabel || 'Hasta'
-}
-
 export function TranscriptSegmentItem({
   segment,
   index,
 }: TranscriptSegmentProps): React.JSX.Element {
+  const t = useT()
   const doctor = isDoctor(segment.speaker)
   const borderColor = doctor ? 'border-l-blue-600' : 'border-l-emerald-600'
   const bgColor = index % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-900'
   const IconComponent = doctor ? Stethoscope : User
   const iconColor = doctor ? 'text-blue-600' : 'text-emerald-600'
-  const displayLabel = getSpeakerDisplayLabel(segment.speaker, segment.speaker_label)
+  const displayLabel =
+    segment.speaker_label || (doctor ? t('speaker_doctor_short') : t('speaker_patient_short'))
 
   return (
     <div className={`border-l-[3px] ${borderColor} ${bgColor} px-4 py-3`}>

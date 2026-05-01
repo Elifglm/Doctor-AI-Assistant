@@ -8,6 +8,33 @@ const tr: TranslationMap = {
   datepicker_today: 'Bugün',
   datepicker_clear: 'Temizle',
 
+  // ── Gemini model labels ────────────────────────────────────────────────────
+  gemini_fast: 'Hızlı',
+  gemini_quality: 'Kaliteli',
+  gemini_legacy: 'Eski',
+
+  // ── Audio / Speaker ────────────────────────────────────────────────────────
+  audio_level: 'Ses',
+  speaker_doctor_short: 'Dr.',
+  speaker_patient_short: 'Hasta',
+
+  // ── Service / Hook errors ──────────────────────────────────────────────────
+  err_generic: 'Bir hata oluştu',
+  err_sessionExpired: 'Oturum süresi doldu. Lütfen tekrar giriş yapın.',
+  err_recordingActive: 'Bu görüşme için zaten aktif bir kayıt bağlantısı mevcut.',
+  err_micDenied: 'Mikrofon erişimi reddedildi. Lütfen mikrofon iznini kontrol edin.',
+  err_micNotFound: 'Mikrofon bulunamadı. Lütfen bir mikrofon bağlayıp tekrar deneyin.',
+  err_audioFormat: 'Ses kayıt formatı desteklenmiyor.',
+  err_disconnected: 'Bağlantı kesildi. İşlem tamamlanamadı.',
+  err_recordingStartUnknown: 'Kayıt başlatılırken beklenmeyen hata: {error}',
+  err_audioApiUnsupported: 'Tarayıcı ses kayıt API\'sini desteklemiyor (getUserMedia)',
+  err_recordingUnknown: 'Ses kaydı sırasında beklenmeyen bir hata oluştu.',
+  err_wsAlreadyConnected: 'Bu görüşme için zaten aktif bir WebSocket bağlantısı mevcut',
+  err_wsAlready: 'WebSocket zaten bağlı',
+  err_wsMaxReconnect: 'Bağlantı kurulamadı. Maksimum deneme sayısına ulaşıldı.',
+  err_wsConnect: 'WebSocket bağlantısı kurulamadı: {url}',
+  err_wsDisconnected: 'Bağlantı kesildi. Maksimum yeniden bağlanma denemesi aşıldı.',
+
   // ── Confidence Badge ────────────────────────────────────────────────────────
   confidence_high: 'Yüksek',
   confidence_medium: 'Orta',
@@ -55,6 +82,7 @@ const tr: TranslationMap = {
     'Aktif bir kayıt var. Sayfadan ayrılmak istediğinize emin misiniz? Kayıt durdurulacak.',
   nav_confirmLogout:
     'Aktif bir kayıt var. Çıkış yapmak istediğinize emin misiniz? Kayıt durdurulacak.',
+  nav_confirmLogoutSimple: 'Hesabınızdan çıkmak istediğinize emin misiniz?',
 
   // ── Header ───────────────────────────────────────────────────────────────────
   header_user: 'Kullanıcı',
@@ -419,6 +447,33 @@ const en: TranslationMap = {
   datepicker_today: 'Today',
   datepicker_clear: 'Clear',
 
+  // ── Gemini model labels ────────────────────────────────────────────────────
+  gemini_fast: 'Fast',
+  gemini_quality: 'Quality',
+  gemini_legacy: 'Legacy',
+
+  // ── Audio / Speaker ────────────────────────────────────────────────────────
+  audio_level: 'Audio',
+  speaker_doctor_short: 'Dr.',
+  speaker_patient_short: 'Patient',
+
+  // ── Service / Hook errors ──────────────────────────────────────────────────
+  err_generic: 'An error occurred',
+  err_sessionExpired: 'Session expired. Please log in again.',
+  err_recordingActive: 'A recording connection is already active for this session.',
+  err_micDenied: 'Microphone access denied. Please check microphone permissions.',
+  err_micNotFound: 'Microphone not found. Please connect a microphone and try again.',
+  err_audioFormat: 'Audio recording format not supported.',
+  err_disconnected: 'Connection lost. Operation could not complete.',
+  err_recordingStartUnknown: 'Unexpected error starting recording: {error}',
+  err_audioApiUnsupported: 'Browser does not support audio recording API (getUserMedia)',
+  err_recordingUnknown: 'An unexpected error occurred during audio recording.',
+  err_wsAlreadyConnected: 'A WebSocket connection is already active for this session',
+  err_wsAlready: 'WebSocket is already connected',
+  err_wsMaxReconnect: 'Could not connect. Maximum retry attempts reached.',
+  err_wsConnect: 'WebSocket connection failed: {url}',
+  err_wsDisconnected: 'Connection lost. Maximum reconnection attempts exceeded.',
+
   // ── Confidence Badge ────────────────────────────────────────────────────────
   confidence_high: 'High',
   confidence_medium: 'Medium',
@@ -466,6 +521,7 @@ const en: TranslationMap = {
     'There is an active recording. Are you sure you want to leave? Recording will be stopped.',
   nav_confirmLogout:
     'There is an active recording. Are you sure you want to log out? Recording will be stopped.',
+  nav_confirmLogoutSimple: 'Are you sure you want to log out of your account?',
 
   // ── Header ───────────────────────────────────────────────────────────────────
   header_user: 'User',

@@ -1,4 +1,5 @@
 import { useAudioLevel } from '../../hooks/useAudioLevel'
+import { useT } from '../../hooks/useT'
 
 function getLevelColor(level: number): string {
   if (level < 0.4) return 'bg-emerald-500'
@@ -8,12 +9,13 @@ function getLevelColor(level: number): string {
 
 export function AudioLevelMeter(): React.JSX.Element {
   const audioLevel = useAudioLevel()
+  const t = useT()
   const color = getLevelColor(audioLevel)
   const widthPercent = Math.max(audioLevel * 100, 2) // minimum 2% for visibility
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-slate-400 dark:text-slate-500 w-6 shrink-0">Ses</span>
+      <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">{t('audio_level')}</span>
       <div className="relative h-2.5 w-28 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
         <div
           className={`absolute inset-y-0 left-0 rounded-full transition-all duration-100 ease-out ${color}`}

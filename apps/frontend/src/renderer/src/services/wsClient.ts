@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n'
+
 type MessageHandler = (data: unknown) => void
 
 /**
@@ -32,9 +34,7 @@ export class WSClient {
       const existing = _activeClients.get(this.url)
       if (existing && existing !== this) {
         if (existing.isConnected) {
-          reject(
-            new Error('Bu görüşme için zaten aktif bir WebSocket bağlantısı mevcut')
-          )
+          reject(new Error(t('err_wsAlreadyConnected')))
           return
         }
         // Stale entry -- remove it and proceed
@@ -44,12 +44,12 @@ export class WSClient {
 
       // Guard: this instance is already connected
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        reject(new Error('WebSocket zaten bağlı'))
+        reject(new Error(t('err_wsAlready')))
         return
       }
 
       if (this._reconnectAttempts >= this.maxReconnectAttempts) {
-        reject(new Error('Bağlantı kurulamadı. Maksimum deneme sayısına ulaşıldı.'))
+        reject(new Error(t('err_wsMaxReconnect')))
         return
       }
 
@@ -66,7 +66,7 @@ export class WSClient {
 
       this.ws.onerror = () => {
         _activeClients.delete(this.url)
-        reject(new Error(`WebSocket bağlantısı kurulamadı: ${this.url}`))
+        reject(new Error(t('err_wsConnect', { url: this.url })))
       }
 
       this.ws.onmessage = (event) => {
@@ -112,7 +112,7 @@ export class WSClient {
           closeHandlers.forEach((handler) =>
             handler({
               code: event.code,
-              reason: 'Bağlantı kesildi. Maksimum yeniden bağlanma denemesi aşıldı.',
+              reason: t('err_wsDisconnected'),
             })
           )
         }

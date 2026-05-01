@@ -102,15 +102,14 @@ export function Sidebar(): React.JSX.Element {
 
       <button
         onClick={async () => {
-          if (recordingState !== 'idle') {
-            const accepted = await confirm({
-              title: t('confirm_logoutTitle'),
-              message: t('nav_confirmLogout'),
-              confirmText: t('confirm_logout'),
-              variant: 'danger',
-            })
-            if (!accepted) return
-          }
+          const message = recordingState !== 'idle' ? t('nav_confirmLogout') : t('nav_confirmLogoutSimple')
+          const accepted = await confirm({
+            title: t('confirm_logoutTitle'),
+            message,
+            confirmText: t('confirm_logout'),
+            variant: 'danger',
+          })
+          if (!accepted) return
           logout()
         }}
         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-400 hover:text-white hover:bg-slate-700/50 border-t border-slate-700"

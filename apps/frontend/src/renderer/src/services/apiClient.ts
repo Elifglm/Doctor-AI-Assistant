@@ -1,4 +1,5 @@
 import { useAuthStore } from '../stores/authStore'
+import { t } from '../lib/i18n'
 
 const getBaseUrl = (): string => {
   if (typeof window !== 'undefined' && window.electronAPI) {
@@ -103,7 +104,7 @@ class ApiClient {
     const { tokenExpiresAt, isAuthenticated } = useAuthStore.getState()
     if (isAuthenticated && tokenExpiresAt && Date.now() >= tokenExpiresAt) {
       useAuthStore.getState().logout()
-      throw new Error('Oturum süresi doldu. Lütfen tekrar giriş yapın.')
+      throw new Error(t('err_sessionExpired'))
     }
 
     const url = `${this.baseUrl}${path}`
@@ -116,40 +117,43 @@ class ApiClient {
       if (response.status === 401) {
         useAuthStore.getState().logout()
       }
-      const error = await response.json().catch(() => ({ detail: 'Bir hata oluştu' }))
+      const error = await response.json().catch(() => ({ detail: t('err_generic') }))
       throw new Error(error.detail || `HTTP ${response.status}`)
     }
 
     return response.json()
   }
 
-  get<T>(path: string): Promise<T> {
-    return this.request<T>(path, { method: 'GET' })
+  get<T>(path: string, options: { signal?: AbortSignal } = {}): Promise<T> {
+    return this.request<T>(path, { method: 'GET', signal: options.signal })
   }
 
-  post<T>(path: string, body?: unknown): Promise<T> {
+  post<T>(path: string, body?: unknown, options: { signal?: AbortSignal } = {}): Promise<T> {
     return this.request<T>(path, {
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
+      signal: options.signal,
     })
   }
 
-  put<T>(path: string, body?: unknown): Promise<T> {
+  put<T>(path: string, body?: unknown, options: { signal?: AbortSignal } = {}): Promise<T> {
     return this.request<T>(path, {
       method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
+      signal: options.signal,
     })
   }
 
-  patch<T>(path: string, body?: unknown): Promise<T> {
+  patch<T>(path: string, body?: unknown, options: { signal?: AbortSignal } = {}): Promise<T> {
     return this.request<T>(path, {
       method: 'PATCH',
       body: body ? JSON.stringify(body) : undefined,
+      signal: options.signal,
     })
   }
 
-  delete<T>(path: string): Promise<T> {
-    return this.request<T>(path, { method: 'DELETE' })
+  delete<T>(path: string, options: { signal?: AbortSignal } = {}): Promise<T> {
+    return this.request<T>(path, { method: 'DELETE', signal: options.signal })
   }
 }
 

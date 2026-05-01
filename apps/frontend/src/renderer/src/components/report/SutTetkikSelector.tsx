@@ -123,26 +123,19 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
   }
 
   const handleSuggest = async () => {
-    console.log('[SUT] handleSuggest called, reportSections:', reportSections?.length)
-    if (!reportSections || reportSections.length === 0) {
-      console.log('[SUT] No reportSections, returning')
-      return
-    }
+    if (!reportSections || reportSections.length === 0) return
     setIsSuggesting(true)
     try {
       const sectionMap: Record<string, string> = {}
       for (const s of reportSections) {
         sectionMap[s.key] = s.content
       }
-      console.log('[SUT] Sending request with sections:', Object.keys(sectionMap).length)
       const data = await apiClient.post<SUTSuggestResponse>('/api/v1/sut-tetkik/suggest', {
         report_sections: sectionMap,
         brans: brans || null,
       })
-      console.log('[SUT] Got response:', data.suggestions.length, 'suggestions')
       setSuggestions([...data.suggestions].sort((a, b) => b.confidence - a.confidence))
-    } catch (err) {
-      console.error('[SUT] Error:', err)
+    } catch {
       setSuggestions([])
     } finally {
       setIsSuggesting(false)
@@ -180,10 +173,9 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
         })
       }
     } catch (err) {
-      console.error('[SUT] OpenEMR send error:', err)
       setOpenEMRResult({
         success: false,
-        message: t('report_connectionError'),
+        message: err instanceof Error ? err.message : t('report_connectionError'),
       })
     } finally {
       setIsSendingToOpenEMR(false)

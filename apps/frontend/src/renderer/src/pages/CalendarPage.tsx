@@ -47,15 +47,23 @@ function formatTime(time: string): string {
   return time.slice(0, 5)
 }
 
+// Local-time ISO date (YYYY-MM-DD). toISOString() converts to UTC and would
+// shift the date by one day for users in positive UTC offsets like Turkey.
+function isoDateLocal(d: Date): string {
+  const y = d.getFullYear()
+  const m = (d.getMonth() + 1).toString().padStart(2, '0')
+  const day = d.getDate().toString().padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function getToday(): string {
-  const d = new Date()
-  return d.toISOString().split('T')[0]
+  return isoDateLocal(new Date())
 }
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + 'T00:00:00')
   d.setDate(d.getDate() + days)
-  return d.toISOString().split('T')[0]
+  return isoDateLocal(d)
 }
 
 function getWeekDates(dateStr: string): string[] {
@@ -69,7 +77,7 @@ function getWeekDates(dateStr: string): string[] {
   for (let i = 0; i < 7; i++) {
     const curr = new Date(monday)
     curr.setDate(monday.getDate() + i)
-    dates.push(curr.toISOString().split('T')[0])
+    dates.push(isoDateLocal(curr))
   }
   return dates
 }

@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n'
+
 export class AudioCapture {
   private mediaRecorder: MediaRecorder | null = null
   private stream: MediaStream | null = null
@@ -25,7 +27,7 @@ export class AudioCapture {
 
     // Check if getUserMedia is available
     if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error('Tarayici ses kayit API\'sini desteklemiyor (getUserMedia)')
+      throw new Error(t('err_audioApiUnsupported'))
     }
 
     const audioConstraints: MediaTrackConstraints = {
@@ -81,7 +83,7 @@ export class AudioCapture {
       if (this.onError) {
         // The "error" property is non-standard but supported by Chromium-based browsers (incl. Electron).
         const maybeError = (event as Event & { error?: { message?: string } }).error
-        const message = maybeError?.message || 'Ses kaydı sırasında beklenmeyen bir hata oluştu.'
+        const message = maybeError?.message || t('err_recordingUnknown')
         this.onError(message)
       }
     }

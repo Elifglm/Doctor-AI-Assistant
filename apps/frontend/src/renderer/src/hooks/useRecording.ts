@@ -4,6 +4,7 @@ import { useTranscriptionStore } from '../stores/transcriptionStore'
 import { useUIStore } from '../stores/uiStore'
 import { AudioCapture } from '../services/audioCapture'
 import { WSClient } from '../services/wsClient'
+import { t } from '../lib/i18n'
 import type { WSProgress, WSResult, WSError } from '../types/transcription'
 
 export function useRecording(sessionId: number | null) {
@@ -49,7 +50,7 @@ export function useRecording(sessionId: number | null) {
 
     // Prevent connecting if this hook already has an active WS connection
     if (wsClient.current?.isConnected) {
-      setError('Bu görüşme için zaten aktif bir kayıt bağlantısı mevcut.')
+      setError(t('err_recordingActive'))
       return
     }
 
@@ -157,7 +158,7 @@ export function useRecording(sessionId: number | null) {
           } else {
             // No results at all — something went wrong
             console.warn('WS closed while still processing with no results')
-            setError('Bağlantı kesildi. İşlem tamamlanamadı.')
+            setError(t('err_disconnected'))
             setRecordingState('idle')
           }
         }
@@ -204,17 +205,17 @@ export function useRecording(sessionId: number | null) {
       console.error('Recording start failed:', err)
       let message: string
       if (err instanceof DOMException && err.name === 'NotAllowedError') {
-        message = 'Mikrofon erişimi reddedildi. Lütfen mikrofon iznini kontrol edin.'
+        message = t('err_micDenied')
       } else if (err instanceof DOMException && err.name === 'NotFoundError') {
-        message = 'Mikrofon bulunamadı. Lütfen bir mikrofon bağlayıp tekrar deneyin.'
+        message = t('err_micNotFound')
       } else if (err instanceof DOMException && err.name === 'NotSupportedError') {
-        message = 'Ses kayıt formatı desteklenmiyor.'
+        message = t('err_audioFormat')
       } else if (err instanceof Error) {
         message = err.message
       } else if (err && typeof err === 'object' && 'message' in err) {
         message = String((err as { message: unknown }).message)
       } else {
-        message = `Kayıt başlatılırken beklenmeyen hata: ${String(err)}`
+        message = t('err_recordingStartUnknown', { error: String(err) })
       }
       setError(message)
       setRecordingState('idle')
