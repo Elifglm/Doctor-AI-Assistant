@@ -50,6 +50,11 @@ export function AdminPage(): React.JSX.Element {
   const currentUser = useAuthStore((s) => s.user)
   const t = useT()
 
+  // `t` is intentionally excluded from useCallback deps. `useT()` returns a
+  // new function on every render, which would invalidate these callbacks
+  // (and the mount-effect below) on every render and cause an infinite
+  // fetch loop. The translator is referentially unstable but semantically
+  // pure — capturing it once is safe.
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
@@ -60,7 +65,8 @@ export function AdminPage(): React.JSX.Element {
     } finally {
       setLoading(false)
     }
-  }, [t])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const syncOpenEMR = useCallback(async () => {
     setIsSyncing(true)
@@ -76,7 +82,8 @@ export function AdminPage(): React.JSX.Element {
     } finally {
       setIsSyncing(false)
     }
-  }, [t])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     void fetchUsers()

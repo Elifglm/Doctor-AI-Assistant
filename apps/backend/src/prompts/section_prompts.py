@@ -254,6 +254,54 @@ ANAMNESIS_SECTIONS: dict[str, dict[str, str]] = {
             "Bilgi yoksa bos birak."
         ),
     },
+    # ----- Ortopedi-specific fields -----
+    "hastalik_egitimi": {
+        "title": "HASTALIK EGITIMI VERILDI MI",
+        "prompt": (
+            "Hastaya hastaligi hakkinda egitim verilip verilmedigini cikar.\n"
+            "Format: BUYUK HARF.\n"
+            "Ornek: EVET veya HAYIR\n"
+            "Bilgi yoksa bos birak."
+        ),
+    },
+    "hastanede_kullanilan_ilaclar": {
+        "title": "HASTANEDE KULLANILAN ILACLAR",
+        "prompt": (
+            "Hastanede uygulanan/kullanilan ilaclari cikar.\n"
+            "Format: BUYUK HARF, her ilaci '----' ile ayir.\n"
+            "Ilac adi, dozaj ve uygulama yolu yazilmali.\n"
+            "Ornek: PARASETAMOL 1 GR IV ---- DICLOFENAC 75 MG IM\n"
+            "Bilgi yoksa bos birak."
+        ),
+    },
+    "kullanmakta_oldugu_ilaclar": {
+        "title": "KULLANMAKTA OLDUGU ILACLAR",
+        "prompt": (
+            "Hastanin halen kullanmakta oldugu ilaclari cikar.\n"
+            "Format: BUYUK HARF, her ilaci '----' ile ayir.\n"
+            "Ilac adi, dozaj ve kullanim sikligi yazilmali.\n"
+            "Ornek: ARCOXIA 90 MG 1X1 ---- MYOLAX 1X1\n"
+            "Bilgi yoksa bos birak."
+        ),
+    },
+    "on_tani": {
+        "title": "ON TANI",
+        "prompt": (
+            "Doktorun koydugu on taniyi cikar.\n"
+            "Format: BUYUK HARF.\n"
+            "Ornek: SERVIKAL MIYALJI veya LOMBER DISK HERNISI\n"
+            "Bilgi yoksa bos birak."
+        ),
+    },
+    "kesin_tani": {
+        "title": "KESIN TANI",
+        "prompt": (
+            "Doktorun koydugu kesin taniyi cikar.\n"
+            "Format: BUYUK HARF.\n"
+            "Ornek: SERVIKAL MIYALJI veya OSTEOARTRIT\n"
+            "Bilgi yoksa bos birak."
+        ),
+    },
 }
 
 # Fields where empty string is acceptable (not "BELIRTILMEDI")
@@ -262,12 +310,74 @@ OPTIONAL_FIELDS: set[str] = {
     "konsultasyon_muayene", "konsultasyon_sonuc", "konsultasyon_oneri",
     "sikayet_baslangic_tarihi", "kontrol_zamani", "icd10_list",
     "sut_tetkik_list",
+    # ortopedi
+    "hastalik_egitimi", "hastanede_kullanilan_ilaclar",
+    "kullanmakta_oldugu_ilaclar", "on_tani", "kesin_tani",
 }
 
 # Fields that expect only numeric values
 NUMERIC_FIELDS: set[str] = {
     "sistolik", "diyastolik", "so2", "nabiz", "ates", "kilo", "boy",
 }
+
+# ---------------------------------------------------------------------------
+# Branch-specific section ordering — defines which fields appear (and order)
+# ---------------------------------------------------------------------------
+
+DAHILIYE_SECTION_KEYS: list[str] = [
+    "hastanin_yakinmasi",
+    "hastanin_oykusu",
+    "oz_gecmisi_soy_gecmisi",
+    "soy_gecmisi",
+    "sigara",
+    "alkol",
+    "alerji",
+    "muayene_bulgulari",
+    "sistolik",
+    "diyastolik",
+    "so2",
+    "nabiz",
+    "ates",
+    "tedavi",
+    "oneri",
+    "uyari",
+    "kontrol_zamani",
+    "agri_skalasi",
+    "kilo",
+    "boy",
+    "sikayet_baslangic_tarihi",
+    "konsultasyon_muayene",
+    "konsultasyon_sonuc",
+    "konsultasyon_oneri",
+    "icd10_list",
+    "sut_tetkik_list",
+]
+
+ORTOPEDI_SECTION_KEYS: list[str] = [
+    "hastalik_egitimi",
+    "sikayet_baslangic_tarihi",
+    "hastanede_kullanilan_ilaclar",
+    "hastanin_oykusu",
+    "hastanin_yakinmasi",
+    "kesin_tani",
+    "kontrol_zamani",
+    "kullanmakta_oldugu_ilaclar",
+    "muayene_bulgulari",
+    "on_tani",
+    "tedavi",
+    "icd10_list",
+    "sut_tetkik_list",
+]
+
+
+def get_anamnesis_sections(brans: str | None = None) -> dict[str, dict[str, str]]:
+    """Return ordered section definitions for a given specialty (brans).
+
+    Defaults to dahiliye when brans is unknown or empty.
+    """
+    normalized = (brans or "").strip().lower()
+    keys = ORTOPEDI_SECTION_KEYS if normalized == "ortopedi" else DAHILIYE_SECTION_KEYS
+    return {k: ANAMNESIS_SECTIONS[k] for k in keys}
 
 
 def _format_entities(entities: list[MedicalEntity]) -> str:

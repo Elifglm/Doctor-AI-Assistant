@@ -38,7 +38,9 @@ async def create_session(
 ) -> SessionResponse:
     """Create a new clinical session."""
     svc = SessionService(db)
-    session = await svc.create(body)
+    session = await svc.create(
+        body, doctor_brans=user.brans, doctor_username=user.username
+    )
 
     await audit.log(
         action="CREATE",
@@ -69,18 +71,17 @@ async def list_sessions(
     """Return a filtered, paginated session list."""
     svc = SessionService(db)
 
-    # Doktor sadece kendi oturumlarini gorsun, admin hepsini
-    doctor_filter = None
-    if user.role != "admin":
-        # display_name "Dr. Ahmet Yılmaz" ama session'da "Ahmet Yılmaz" olabilir
-        doctor_filter = user.display_name
+    # Doktor sadece kendi oturumlarini gorsun, admin hepsini.
+    # doctor_username ile filtreliyoruz (canonical owner identifier);
+    # doctor_name serbest metin olabilir, guvenilir degil.
+    doctor_username_filter = None if user.role == "admin" else user.username
 
     items, total = await svc.list_sessions(
         status=status_filter,
         from_date=from_date,
         to_date=to_date,
         search=search,
-        doctor_name=doctor_filter,
+        doctor_username=doctor_username_filter,
         page=page,
         limit=limit,
         sort=sort,
@@ -115,9 +116,22 @@ async def get_session(
             detail=f"Session {session_id} not found",
         )
 
-    # Doktor sadece kendi oturumunu gorebilir
-    name_without_prefix = user.display_name.replace("Dr. ", "").strip()
-    is_own_session = session.doctor_name in (user.display_name, name_without_prefix, f"Dr. {name_without_prefix}")
+    # Doktor sadece kendi oturumunu gorebilir.
+    # Canonical owner = session.doctor_username (set at create time).
+    # Legacy fallback: session.doctor_username yoksa (eski kayit) display_name
+    # eslesmesine bakar — boylece migration oncesi sessions de erisilebilir kalir.
+    is_own_session = (
+        bool(session.doctor_username)
+        and session.doctor_username == user.username
+    )
+    if not is_own_session and not session.doctor_username:
+        # Backward compat for sessions created before doctor_username column
+        name_without_prefix = user.display_name.replace("Dr. ", "").strip()
+        is_own_session = session.doctor_name in (
+            user.display_name,
+            name_without_prefix,
+            f"Dr. {name_without_prefix}",
+        )
     if user.role != "admin" and not is_own_session:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

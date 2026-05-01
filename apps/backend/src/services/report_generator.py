@@ -12,6 +12,7 @@ from apps.backend.src.prompts.section_prompts import (
     NUMERIC_FIELDS,
     OPTIONAL_FIELDS,
     build_section_prompt,
+    get_anamnesis_sections,
 )
 from apps.backend.src.prompts.system_prompt import SYSTEM_PROMPT
 from apps.backend.src.services.llm_base import LLMProvider
@@ -96,11 +97,13 @@ class ReportGenerator:
         transcript: str,
         entities: list[MedicalEntity],
         grouped: dict[str, list[MedicalEntity]],
+        brans: str | None = None,
     ) -> str:
         """Build a compact prompt — only list field names, let LLM fill from transcript."""
+        sections = get_anamnesis_sections(brans)
         # Only send field key: title pairs, no lengthy instructions per field
         fields = ", ".join(
-            f'"{k}": "{v["title"]}"' for k, v in ANAMNESIS_SECTIONS.items()
+            f'"{k}": "{v["title"]}"' for k, v in sections.items()
         )
 
         return (
@@ -176,6 +179,7 @@ class ReportGenerator:
         self,
         segments: list[dict[str, Any]],
         on_progress: ProgressCallback | None = None,
+        brans: str | None = None,
     ) -> dict[str, Any]:
         """Run the complete pipeline and return structured report content."""
 
@@ -202,13 +206,14 @@ class ReportGenerator:
         )
 
         # 3. Batch generation — all sections in a single LLM call
-        section_keys = list(ANAMNESIS_SECTIONS.keys())
+        brans_sections = get_anamnesis_sections(brans)
+        section_keys = list(brans_sections.keys())
         sections: list[dict[str, Any]] = []
 
         await _progress("generating", "Tum alanlar olusturuluyor...", 0.3)
 
         # Build a single prompt for all sections
-        batch_prompt = self._build_batch_prompt(full_text, entities, grouped)
+        batch_prompt = self._build_batch_prompt(full_text, entities, grouped, brans)
         batch_result: dict[str, str] = {}
 
         for attempt in range(3):
@@ -229,7 +234,7 @@ class ReportGenerator:
         await _progress("generating", "Alanlar ayristiriliyor...", 0.7)
 
         for key in section_keys:
-            meta = ANAMNESIS_SECTIONS[key]
+            meta = brans_sections[key]
             content = batch_result.get(key, "").strip()
             # LLM'den boş geldiyse ve sayısal alan değilse BELIRTILMEDI yaz
             if not content and key not in NUMERIC_FIELDS:
@@ -529,6 +534,7 @@ class ReportGenerator:
     async def generate_report_stream(
         self,
         segments: list[dict[str, Any]],
+        brans: str | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream report generation events for SSE."""
 
@@ -556,11 +562,12 @@ class ReportGenerator:
         }
 
         # Section-by-section
-        section_keys = list(ANAMNESIS_SECTIONS.keys())
+        brans_sections = get_anamnesis_sections(brans)
+        section_keys = list(brans_sections.keys())
         sections: list[dict[str, Any]] = []
 
         for i, key in enumerate(section_keys):
-            meta = ANAMNESIS_SECTIONS[key]
+            meta = brans_sections[key]
             progress = 0.2 + (i / len(section_keys)) * 0.6
             section_entities = grouped.get(key, [])
 

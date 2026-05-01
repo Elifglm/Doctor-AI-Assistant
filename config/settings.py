@@ -90,4 +90,5 @@ class AppSettings(BaseSettings):
         env_prefix="ASR_",
         env_nested_delimiter="__",
         populate_by_name=True,
+        extra="ignore",
     )

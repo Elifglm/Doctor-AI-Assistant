@@ -1,4 +1,12 @@
-"""Async database engine and session management using aiosqlite + SQLAlchemy."""
+"""Async database engine and session management.
+
+Supports two backends, selected via the ``DATABASE_URL`` environment variable:
+  * SQLite (default, file-based, single-machine) — ``sqlite+aiosqlite:///...``
+  * MariaDB / MySQL (shared, multi-user) — ``mysql+asyncmy://user:pass@host/db``
+
+When ``DATABASE_URL`` is unset, the historical SQLite location
+(``<project_root>/data/asr.db``) is used to preserve backward compatibility.
+"""
 
 from __future__ import annotations
 
@@ -15,12 +23,26 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[4]  # ASR1/
 _DB_DIR = _PROJECT_ROOT / "data"
 _DB_PATH = _DB_DIR / "asr.db"
 
-DATABASE_URL = f"sqlite+aiosqlite:///{_DB_PATH.as_posix()}"
+# Load DATABASE_URL from .env if present (pydantic-settings does not export it
+# to os.environ, so we read the file directly).
+try:
+    from dotenv import load_dotenv as _load_dotenv
+
+    _load_dotenv(_PROJECT_ROOT / ".env")
+except ImportError:  # python-dotenv optional
+    pass
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"sqlite+aiosqlite:///{_DB_PATH.as_posix()}",
+)
+_IS_SQLITE = DATABASE_URL.startswith("sqlite")
 
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     future=True,
+    pool_pre_ping=not _IS_SQLITE,
 )
 
 async_session_maker = async_sessionmaker(
@@ -32,7 +54,8 @@ async_session_maker = async_sessionmaker(
 
 async def init_db() -> None:
     """Create all tables if they do not exist."""
-    _DB_DIR.mkdir(parents=True, exist_ok=True)
+    if _IS_SQLITE:
+        _DB_DIR.mkdir(parents=True, exist_ok=True)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

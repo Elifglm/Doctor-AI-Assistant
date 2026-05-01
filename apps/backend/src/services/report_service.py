@@ -13,12 +13,15 @@ from apps.backend.src.db.models import Report, Session
 from apps.backend.src.schemas.report import UpdateReportRequest
 
 # Build empty HBYS anamnesis template from the single source of truth
-from apps.backend.src.prompts.section_prompts import ANAMNESIS_SECTIONS as _SECTIONS_DEF
+from apps.backend.src.prompts.section_prompts import get_anamnesis_sections
 
-_ANAMNESIS_SECTIONS = [
-    {"key": k, "title": v["title"], "content": "", "status": "draft", "confidence": "low"}
-    for k, v in _SECTIONS_DEF.items()
-]
+
+def _build_empty_template(brans: str | None) -> list[dict]:
+    sections = get_anamnesis_sections(brans)
+    return [
+        {"key": k, "title": v["title"], "content": "", "status": "draft", "confidence": "low"}
+        for k, v in sections.items()
+    ]
 
 
 class ReportService:
@@ -27,15 +30,18 @@ class ReportService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def generate(self, session_id: int, method: str = "manual") -> Report:
+    async def generate(
+        self, session_id: int, method: str = "manual", brans: str | None = None
+    ) -> Report:
         """Generate a new report for a session.
 
-        For 'manual' method: creates an empty 12-section anamnesis template.
+        For 'manual' method: creates an empty anamnesis template tailored to brans.
         """
+        template_sections = _build_empty_template(brans)
         content = {
-            "sections": list(_ANAMNESIS_SECTIONS),  # shallow copy
+            "sections": template_sections,
             "approved_sections": 0,
-            "total_sections": len(_ANAMNESIS_SECTIONS),
+            "total_sections": len(template_sections),
         }
 
         # Determine the next version number for this session

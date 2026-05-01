@@ -214,6 +214,17 @@ class AudioHandler:
         await self.db.commit()
         return saved
 
+    async def _lookup_doctor_brans(self) -> str:
+        """Return the brans stored on the session (set at session-create time)."""
+        try:
+            session = await self._get_session()
+            if session is None:
+                return ""
+            return getattr(session, "doctor_brans", "") or ""
+        except Exception:
+            logger.exception("Failed to read doctor brans for session %d", self.session_id)
+            return ""
+
     async def _auto_generate_report(self, segments: list[dict]) -> None:
         """Otomatik anamnez raporu olustur."""
         try:
@@ -225,7 +236,8 @@ class AudioHandler:
                 logger.warning("report_generator not available")
                 return
 
-            report_content = await report_generator.generate_report(segments)
+            brans = await self._lookup_doctor_brans()
+            report_content = await report_generator.generate_report(segments, brans=brans)
 
             from apps.backend.src.services.report_service import ReportService
             svc = ReportService(self.db)

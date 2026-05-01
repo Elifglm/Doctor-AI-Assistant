@@ -20,12 +20,19 @@ class SessionService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def create(self, data: CreateSessionRequest) -> Session:
+    async def create(
+        self,
+        data: CreateSessionRequest,
+        doctor_brans: str = "",
+        doctor_username: str = "",
+    ) -> Session:
         """Insert a new session row and return the ORM object."""
         session = Session(
             patient_id=data.patient_id,
             patient_name=data.patient_name,
             doctor_name=data.doctor_name,
+            doctor_username=doctor_username,
+            doctor_brans=doctor_brans,
             visit_type=data.visit_type,
             pre_diagnosis=data.pre_diagnosis,
             location=data.location,
@@ -57,6 +64,7 @@ class SessionService:
         to_date: Optional[datetime] = None,
         search: Optional[str] = None,
         doctor_name: Optional[str] = None,
+        doctor_username: Optional[str] = None,
         page: int = 1,
         limit: int = 20,
         sort: str = "created_at:desc",
@@ -65,13 +73,16 @@ class SessionService:
 
         ``sort`` must be ``"field:asc"`` or ``"field:desc"``.
         ``search`` matches against ``patient_id``, ``patient_name`` or ``doctor_name``.
-        ``doctor_name`` filters by the exact doctor display name.
+        ``doctor_username`` (canonical owner) is preferred for ownership filters;
+        ``doctor_name`` is kept as a legacy/display-text filter.
         """
         base = select(Session)
 
         # -- Filters --------------------------------------------------------
-        if doctor_name:
-            # Match both "Dr. Ahmet Yılmaz" and "Ahmet Yılmaz"
+        if doctor_username:
+            base = base.where(Session.doctor_username == doctor_username)
+        elif doctor_name:
+            # Legacy: match both "Dr. Ahmet Yılmaz" and "Ahmet Yılmaz"
             name_without_prefix = doctor_name.replace("Dr. ", "").strip()
             base = base.where(
                 or_(

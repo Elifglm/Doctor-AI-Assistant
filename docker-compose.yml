@@ -1,4 +1,75 @@
+# =============================================================================
+# KlinikAsistan — Docker Compose Stack
+# =============================================================================
+# Bu compose dosyasi 3 ayri rolu olan servisleri tek MariaDB instance'i
+# uzerinden ayaga kaldirir:
+#
+#   - mysql (MariaDB 10.11)  : Hem OpenEMR hem KlinikAsistan ayni containerda
+#                              ama AYRI databaselerde calisir.
+#                              ├─ openemr        -> OpenEMR'in hastalari/kayitlari
+#                              └─ klinikasistan  -> Backend operasyonel verisi
+#                                                   (users, sessions, reports)
+#   - openemr                : OpenEMR web UI (http://localhost:8300)
+#   - backend                : KlinikAsistan FastAPI (Dockerfile build) [opsiyonel]
+#   - openemr-init           : OpenEMR ICD-10 TR seed (one-shot)
+#   - openemr-sut-init       : OpenEMR SUT tetkik seed (one-shot)
+#
+# Iki DB ayni "openemr_mysql" volume'unu paylasir — yani:
+#   * Volume bir kez initialize edildikten sonra mysql/* init scriptleri
+#     TEKRAR CALISMAZ (Docker davranisi).
+#   * "klinikasistan" database'i ilk kurulumda olusur; sonra sema veya kullanici
+#     degisirse manuel olarak SQL calistirmak gerekir
+#     (docker/README.md "Init scripti tekrar calistirma" bolumune bak).
+#
+# -----------------------------------------------------------------------------
+# Ilk kurulum (yeni makinede)
+# -----------------------------------------------------------------------------
+#   docker compose up -d mysql        # MariaDB ayaga kalkar, init script otomatik
+#   docker compose up -d openemr      # OpenEMR ayaga kalkar (~30sn-1dk wizard)
+#   # (opsiyonel) docker compose up openemr-init openemr-sut-init  # ICD/SUT seed
+#
+# -----------------------------------------------------------------------------
+# Yaygin sorunlar
+# -----------------------------------------------------------------------------
+#   1) "address already in use" port catismasi:
+#      Host'ta zaten MySQL/MariaDB calisiyor olabilir. Cozum:
+#        - Lokal MySQL'i durdur:  brew services stop mysql / mariadb
+#        - VEYA mysql servisindeki "3307:3306" port mapping'ini degistir.
+#
+#   2) "init_klinikasistan.sql" calismadi (database yok):
+#      Volume daha onceden initialize edilmisse Docker init scriptlerini
+#      atlar. Manuel kosma:
+#        docker exec -i klinikasistan-mysql-1 mariadb -uroot -proot \
+#          < docker/mariadb/init_klinikasistan.sql
+#
+#   3) Backend MariaDB'ye baglanamiyor:
+#      .env'de DATABASE_URL ayarli mi kontrol et. Format:
+#        DATABASE_URL=mysql+asyncmy://klinik:klinik@127.0.0.1:3307/klinikasistan
+#      DATABASE_URL bos/yoksa SQLite'a fallback yapar (data/asr.db).
+#
+#   4) OpenEMR'a giris yapamadim ("Database error"):
+#      Volume init sirasinda OpenEMR wizard tamamlanmamis olabilir.
+#      Tam reset (DIKKAT: tum veri silinir):
+#        docker compose down -v
+#        docker compose up -d
+#
+# -----------------------------------------------------------------------------
+# Ekip senkronizasyonu
+# -----------------------------------------------------------------------------
+# Veri (hastalar/raporlar) ekibe aktarmak icin:
+#   docker exec klinikasistan-mysql-1 mariadb-dump -uroot -proot \
+#     --databases openemr klinikasistan > klinik_dump.sql
+# Diger uye import eder:
+#   docker exec -i klinikasistan-mysql-1 mariadb -uroot -proot < klinik_dump.sql
+# =============================================================================
+
 services:
+  # ---------------------------------------------------------------------------
+  # backend — KlinikAsistan FastAPI (Dockerfile build)
+  # NOTE: Gelistirme sirasinda genellikle host'ta `uvicorn` ile direkt
+  # calistiriliyor (venv uzerinden). Bu servis production-benzeri tam stack
+  # testi icin var.
+  # ---------------------------------------------------------------------------
   backend:
     build:
       context: .
@@ -14,17 +85,33 @@ services:
       - ASR_WHISPER__COMPUTE_TYPE=int8
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # mysql — MariaDB instance (hem OpenEMR hem KlinikAsistan kullaniyor)
+  # Port 3307 host'ta acik (3306 catismasi olmasin diye). Container ici 3306.
+  # init_klinikasistan.sql sadece volume bos iken otomatik calisir.
+  # ---------------------------------------------------------------------------
   mysql:
     image: mariadb:10.11
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: openemr
+      MYSQL_DATABASE: openemr        # ilk olusturulan DB (OpenEMR icin)
       MYSQL_USER: openemr
       MYSQL_PASSWORD: openemr
+    ports:
+      - "3307:3306"                  # host:container — host'taki MySQL ile catismaz
     volumes:
       - openemr_mysql:/var/lib/mysql
+      # Init script: ilk kurulumda klinikasistan DB + klinik kullanicisi olusturur.
+      # Sonraki acilislarda bu script CALISMAZ — manuel calistirmak icin
+      # docker/README.md'ye bak.
+      - ./docker/mariadb/init_klinikasistan.sql:/docker-entrypoint-initdb.d/init_klinikasistan.sql:ro
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # openemr — OpenEMR EHR sistem (test/entegrasyon icin)
+  # Web UI: http://localhost:8300  (admin / pass — sadece dev!)
+  # MYSQL_HOST=mysql -> docker network icindeki servis adi
+  # ---------------------------------------------------------------------------
   openemr:
     image: openemr/openemr:7.0.2
     ports:
@@ -44,6 +131,11 @@ services:
       - mysql
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # openemr-init — ICD-10 TR seed (tek seferlik run)
+  # OpenEMR tablo semasi olustuktan sonra Turkce ICD-10 verisini yukler.
+  # `restart: no` -> bir kez calisir, sonra durur (normal davranis).
+  # ---------------------------------------------------------------------------
   openemr-init:
     image: mariadb:10.11
     volumes:
@@ -59,6 +151,9 @@ services:
       - openemr
     restart: "no"
 
+  # ---------------------------------------------------------------------------
+  # openemr-sut-init — SUT tetkik seed (tek seferlik run)
+  # ---------------------------------------------------------------------------
   openemr-sut-init:
     image: mariadb:10.11
     volumes:
@@ -75,5 +170,8 @@ services:
     restart: "no"
 
 volumes:
+  # Kalici MariaDB veri dosyalari. `docker compose down -v` BU VOLUME'U SILER!
+  # OpenEMR + klinikasistan DB'leri bu volume icinde — silersen ekibin
+  # paylasilan dump'i tekrar import etmesi gerekir.
   openemr_mysql:
   openemr_data:

@@ -104,7 +104,9 @@ async def generate_report(
             )
 
         try:
-            content = await report_generator.generate_report(segments_data)
+            content = await report_generator.generate_report(
+                segments_data, brans=user.brans
+            )
         except Exception:
             logger.exception("AI report generation failed")
             raise HTTPException(
@@ -116,7 +118,9 @@ async def generate_report(
             body.session_id, content, method="ai_generated"
         )
     else:
-        report = await svc.generate(body.session_id, method=body.method)
+        report = await svc.generate(
+            body.session_id, method=body.method, brans=user.brans
+        )
 
     await audit.log(
         action="CREATE",
@@ -281,7 +285,9 @@ async def stream_report_generation(
 
     async def event_generator():
         try:
-            async for event in report_generator.generate_report_stream(segments_data):
+            async for event in report_generator.generate_report_stream(
+                segments_data, brans=user.brans
+            ):
                 event_type = event.get("event", "message")
                 event_data = json.dumps(event.get("data", {}), ensure_ascii=False)
                 yield {"event": event_type, "data": event_data}

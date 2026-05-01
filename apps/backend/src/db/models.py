@@ -30,6 +30,14 @@ class Session(Base):
     patient_id: str = Column(String(50), nullable=True, default="")
     patient_name: str = Column(String(200), nullable=True, default="")
     doctor_name: str = Column(String(200), nullable=False)
+    # Canonical owner identifier — the username of the user who created the
+    # session. Used for ownership / permission checks. doctor_name is a
+    # free-text display field (often pre-filled from external systems like
+    # OpenEMR) and is NOT reliable for authorization.
+    doctor_username: str = Column(String(100), nullable=True, default="")
+    # Doctor's specialty captured at session-create time. Used by the report
+    # pipeline to choose the anamnesis template (dahiliye / ortopedi / ...).
+    doctor_brans: str = Column(String(50), nullable=True, default="")
     visit_type: str = Column(String(50), nullable=False, default="ilk_muayene")
     status: str = Column(String(50), nullable=False, default="NOT_STARTED")
     pre_diagnosis: str = Column(Text, nullable=True, default="")
