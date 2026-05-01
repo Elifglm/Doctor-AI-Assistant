@@ -42,7 +42,7 @@ export function TranscriptView({ segments }: TranscriptViewProps): React.JSX.Ele
 
   if (segments.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center text-slate-400">
+      <div className="flex flex-1 items-center justify-center text-slate-400 dark:text-slate-500">
         <p className="text-sm">{t('transcript_empty')}</p>
       </div>
     )
@@ -51,7 +51,7 @@ export function TranscriptView({ segments }: TranscriptViewProps): React.JSX.Ele
   return (
     <div className="relative flex-1 overflow-hidden">
       <div ref={containerRef} className="h-full overflow-y-auto">
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-slate-100 dark:divide-slate-700">
           {segments.map((segment, index) => (
             <TranscriptSegmentItem key={segment.id} segment={segment} index={index} />
           ))}

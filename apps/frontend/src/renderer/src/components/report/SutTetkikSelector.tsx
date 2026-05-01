@@ -164,13 +164,14 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
       )
       if (data.success) {
         const bransLabel = data.doctor_brans === 'dahiliye' ? t('admin_internalMed') : t('admin_ortho')
+        const baseMsg = t('sut_sendSuccess', { count: data.sent_count, brans: bransLabel })
+        const filteredMsg =
+          data.filtered_count > 0
+            ? ` — ${t('sut_sendFiltered', { count: data.filtered_count })}`
+            : ''
         setOpenEMRResult({
           success: true,
-          message: `${data.sent_count} tetkik OpenEMR'e gönderildi (${bransLabel})${
-            data.filtered_count > 0
-              ? ` — ${data.filtered_count} tetkik branş uyumsuzluğu nedeniyle filtrelendi`
-              : ''
-          }`,
+          message: baseMsg + filteredMsg,
         })
       } else {
         setOpenEMRResult({
@@ -190,9 +191,9 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
   }
 
   const confidenceColor = (c: number) => {
-    if (c >= 0.8) return 'text-emerald-700 bg-emerald-50'
-    if (c >= 0.5) return 'text-amber-700 bg-amber-50'
-    return 'text-slate-500 bg-slate-50'
+    if (c >= 0.8) return 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30'
+    if (c >= 0.5) return 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30'
+    return 'text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900'
   }
 
   return (
@@ -217,7 +218,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
       {/* AI Suggestions */}
       {suggestions.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-slate-500">{t('sut_aiSuggestions')}</p>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('sut_aiSuggestions')}</p>
           {suggestions.map((s) => (
             <button
               key={s.kodu}
@@ -227,14 +228,14 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
               className={cn(
                 'flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors',
                 selectedTetkik.some((t) => t.kodu === s.kodu)
-                  ? 'border-emerald-200 bg-emerald-50 opacity-50'
-                  : 'border-slate-200 hover:border-blue-300 hover:bg-blue-50'
+                  ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 opacity-50'
+                  : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
               )}
             >
               <span>
-                <span className="font-mono font-semibold text-blue-700">{s.kodu}</span>
-                <span className="mx-1.5 text-slate-400">—</span>
-                <span className="text-slate-700">{s.adi}</span>
+                <span className="font-mono font-semibold text-blue-700 dark:text-blue-300">{s.kodu}</span>
+                <span className="mx-1.5 text-slate-400 dark:text-slate-500">—</span>
+                <span className="text-slate-700 dark:text-slate-200">{s.adi}</span>
               </span>
               <span
                 className={cn(
@@ -252,7 +253,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
       {/* Search Input */}
       <div className="relative" ref={dropdownRef}>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
             ref={inputRef}
             type="text"
@@ -263,16 +264,16 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
             }}
             onFocus={() => searchQuery.length >= 2 && setIsDropdownOpen(true)}
             placeholder={t('sut_searchPlaceholder')}
-            className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-lg border border-slate-200 dark:border-slate-700 py-2 pl-9 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           {isLoading && (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400 dark:text-slate-500" />
           )}
         </div>
 
         {/* Dropdown Results */}
         {isDropdownOpen && results.length > 0 && (
-          <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
             {results.map((r) => (
               <button
                 key={r.kodu}
@@ -282,21 +283,21 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
                 className={cn(
                   'flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition-colors',
                   selectedTetkik.some((t) => t.kodu === r.kodu)
-                    ? 'bg-emerald-50 opacity-50'
-                    : 'hover:bg-blue-50'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/30 opacity-50'
+                    : 'hover:bg-blue-50 dark:hover:bg-blue-900/30'
                 )}
               >
-                <span className="shrink-0 font-mono font-semibold text-blue-700">
+                <span className="shrink-0 font-mono font-semibold text-blue-700 dark:text-blue-300">
                   {r.kodu}
                 </span>
-                <span className="text-slate-700">{r.adi}</span>
+                <span className="text-slate-700 dark:text-slate-200">{r.adi}</span>
               </button>
             ))}
           </div>
         )}
 
         {isDropdownOpen && searchQuery.length >= 2 && results.length === 0 && !isLoading && (
-          <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-4 text-center text-sm text-slate-500 shadow-lg">
+          <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400 shadow-lg">
             {t('sut_noResults')}
           </div>
         )}
@@ -305,22 +306,22 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
       {/* Selected Tetkik */}
       {selectedTetkik.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-slate-500">{t('sut_selectedTests')}</p>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('sut_selectedTests')}</p>
           {selectedTetkik.map((t) => (
             <div
               key={t.kodu}
-              className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2"
+              className="flex items-center justify-between rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-2"
             >
               <span className="text-sm">
-                <span className="font-mono font-semibold text-emerald-700">{t.kodu}</span>
-                <span className="mx-1.5 text-slate-400">—</span>
-                <span className="text-slate-700">{t.adi}</span>
-                <span className="ml-1.5 text-xs text-slate-400">[{t.brans}]</span>
+                <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-300">{t.kodu}</span>
+                <span className="mx-1.5 text-slate-400 dark:text-slate-500">—</span>
+                <span className="text-slate-700 dark:text-slate-200">{t.adi}</span>
+                <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">[{t.brans}]</span>
               </span>
               <button
                 type="button"
                 onClick={() => removeTetkik(t.kodu)}
-                className="rounded p-0.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                className="rounded p-0.5 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -351,8 +352,8 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
               className={cn(
                 'flex items-start gap-2 rounded-lg border px-3 py-2 text-xs',
                 openEMRResult.success
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : 'border-red-200 bg-red-50 text-red-700'
+                  ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                  : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
               )}
             >
               {openEMRResult.success ? (
@@ -367,7 +368,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
       )}
 
       {selectedTetkik.length === 0 && suggestions.length === 0 && (
-        <p className="text-xs text-slate-400 italic">
+        <p className="text-xs text-slate-400 dark:text-slate-500 italic">
           {t('sut_noTestSelected')}
         </p>
       )}

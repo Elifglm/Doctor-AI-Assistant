@@ -32,7 +32,7 @@ export function LiveSessionPage(): React.JSX.Element {
 
   const { startRecording, pauseRecording, resumeRecording, stopRecording, recordingState, error } =
     useRecording(sessionId)
-  const { segments, processingStage, processingMessage, processingProgress, hasResults, reportFlowDone } =
+  const { processingStage, processingMessage, processingProgress, hasResults, reportFlowDone } =
     useTranscription()
   const recordingStateFromStore = useSessionStore((s) => s.recordingState)
 
@@ -79,9 +79,6 @@ export function LiveSessionPage(): React.JSX.Element {
     100
   )
 
-  // Suppress unused variable warning — segments used by TranscriptView when wired up
-  void segments
-
   return (
     <div className="flex h-full flex-col gap-4">
       {/* Recording controls - visible when recording */}
@@ -91,15 +88,15 @@ export function LiveSessionPage(): React.JSX.Element {
 
       {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-3 rounded-lg bg-red-50 px-4 py-3 ring-1 ring-red-200/60">
+        <div className="flex items-center gap-3 rounded-lg bg-red-50 dark:bg-red-900/30 px-4 py-3 ring-1 ring-red-200/60">
           <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-red-800">{t('live_startFailed')}</p>
+            <p className="text-sm font-medium text-red-800 dark:text-red-200">{t('live_startFailed')}</p>
             <p className="text-sm text-red-600">{error}</p>
           </div>
           <button
             onClick={handleRetry}
-            className="flex items-center gap-1.5 rounded-md bg-red-100 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-200 transition-colors"
+            className="flex items-center gap-1.5 rounded-md bg-red-100 px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-200 transition-colors"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             {t('live_retry')}
@@ -109,9 +106,9 @@ export function LiveSessionPage(): React.JSX.Element {
 
       {/* Info banner while recording */}
       {!error && !isProcessing && (recordingState === 'recording' || recordingState === 'paused') && (
-        <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 ring-1 ring-blue-200/60">
+        <div className="flex items-center gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 px-4 py-2.5 ring-1 ring-blue-200/60">
           <Info className="h-4 w-4 text-blue-600 shrink-0" />
-          <p className="text-sm text-blue-700">{t('live_recordingInProgress')}</p>
+          <p className="text-sm text-blue-700 dark:text-blue-300">{t('live_recordingInProgress')}</p>
         </div>
       )}
 
@@ -120,8 +117,8 @@ export function LiveSessionPage(): React.JSX.Element {
         <div className="flex flex-col items-center justify-center gap-6 py-12">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
           <div className="text-center space-y-1">
-            <h2 className="text-lg font-bold text-slate-800">{t('live_processing')}</h2>
-            <p className="text-sm font-medium text-slate-600">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{t('live_processing')}</h2>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
               {stageLabelKeys[processingStage] ? t(stageLabelKeys[processingStage]) : processingMessage || t('live_preparing')}
             </p>
           </div>
@@ -132,24 +129,24 @@ export function LiveSessionPage(): React.JSX.Element {
               <div
                 key={i}
                 className={`h-2 w-10 rounded-full transition-colors duration-300 ${
-                  i <= stageIndex ? 'bg-blue-600' : 'bg-slate-200'
+                  i <= stageIndex ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'
                 }`}
               />
             ))}
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             {t('live_stage', { index: Math.min(stageIndex + 1, totalStages), total: totalStages })}
           </p>
 
           {/* Progress bar */}
           <div className="w-full max-w-sm space-y-2">
-            <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200">
+            <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
               <div
                 className="absolute inset-y-0 left-0 rounded-full bg-blue-600 transition-all duration-500 ease-out"
                 style={{ width: `${displayProgress}%` }}
               />
             </div>
-            <p className="text-sm font-medium text-slate-500 text-center">%{displayProgress}</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 text-center">%{displayProgress}</p>
           </div>
         </div>
       )}

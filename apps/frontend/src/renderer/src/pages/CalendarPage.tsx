@@ -14,6 +14,7 @@ import {
 import { cn } from '../lib/utils'
 import { apiClient } from '../services/apiClient'
 import { useAuthStore } from '../stores/authStore'
+import { useUIStore } from '../stores/uiStore'
 import { useT } from '../hooks/useT'
 
 interface Appointment {
@@ -83,27 +84,26 @@ export function CalendarPage(): React.JSX.Element {
   const [loading, setLoading] = useState(true)
   const [filteredBy, setFilteredBy] = useState('')
   const user = useAuthStore((s) => s.user)
+  const locale = useUIStore((s) => s.locale)
   const navigate = useNavigate()
   const t = useT()
 
   const weekDates = getWeekDates(selectedDate)
-
-  // Locale-aware date formatting using translation arrays
-  const getDays = () => t('cal_days').split(',')
-  const getShortDays = () => t('cal_shortDays').split(',')
-  const getMonths = () => t('cal_months').split(',')
+  const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
 
   const formatDateLocale = (dateStr: string): string => {
     const d = new Date(dateStr + 'T00:00:00')
-    const days = getDays()
-    const months = getMonths()
-    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${days[d.getDay()]}`
+    return d.toLocaleDateString(intlLocale, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
   }
 
   const getShortDay = (dateStr: string): string => {
-    const shortDays = getShortDays()
     const d = new Date(dateStr + 'T00:00:00')
-    return shortDays[d.getDay()]
+    return d.toLocaleDateString(intlLocale, { weekday: 'short' })
   }
 
   const fetchAppointments = useCallback(async (date: string) => {
@@ -128,15 +128,15 @@ export function CalendarPage(): React.JSX.Element {
   const isToday = selectedDate === getToday()
 
   return (
-    <div className="flex-1 overflow-auto bg-slate-50">
+    <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-900">
       <div className="mx-auto max-w-3xl p-6 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CalendarIcon className="h-7 w-7 text-blue-600" />
             <div>
-              <h1 className="text-xl font-bold text-slate-800">{t('cal_title')}</h1>
-              <p className="text-sm text-slate-500">
+              <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('cal_title')}</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {user?.role === 'admin'
                   ? t('cal_subtitle_all')
                   : t('cal_subtitle_doctor', { name: user?.display_name ?? '' })}
@@ -147,14 +147,14 @@ export function CalendarPage(): React.JSX.Element {
             {!isToday && (
               <button
                 onClick={() => setSelectedDate(getToday())}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50  transition-colors"
               >
                 {t('cal_today')}
               </button>
             )}
             <button
               onClick={() => void fetchAppointments(selectedDate)}
-              className="rounded-lg border border-slate-300 p-2 text-slate-500 hover:bg-slate-50 transition-colors"
+              className="rounded-lg border border-slate-300 dark:border-slate-600 p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50  transition-colors"
               title={t('cal_refresh')}
             >
               <RefreshCw className="h-4 w-4" />
@@ -163,20 +163,20 @@ export function CalendarPage(): React.JSX.Element {
         </div>
 
         {/* Week Navigation */}
-        <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60 p-3">
+        <div className="rounded-xl bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-3">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={() => setSelectedDate(addDays(selectedDate, -7))}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+              className="rounded-lg p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700  hover:text-slate-600 dark:hover:text-slate-200  transition-colors"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <span className="text-sm font-semibold text-slate-700">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               {formatDateLocale(selectedDate)}
             </span>
             <button
               onClick={() => setSelectedDate(addDays(selectedDate, 7))}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+              className="rounded-lg p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700  hover:text-slate-600 dark:hover:text-slate-200  transition-colors"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
@@ -194,8 +194,8 @@ export function CalendarPage(): React.JSX.Element {
                     isSelected
                       ? 'bg-blue-600 text-white'
                       : isTodayDate
-                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                        : 'text-slate-600 hover:bg-slate-100'
+                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 '
                   )}
                 >
                   <span className="font-medium">{getShortDay(d)}</span>
@@ -211,9 +211,9 @@ export function CalendarPage(): React.JSX.Element {
         {/* Filter Badge */}
         {filteredBy && filteredBy !== 'tumu' && (
           <div className="flex items-center gap-2">
-            <Stethoscope className="h-4 w-4 text-slate-400" />
-            <span className="text-xs text-slate-500">
-              {t('cal_filter')} <span className="font-medium text-slate-700">
+            <Stethoscope className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {t('cal_filter')} <span className="font-medium text-slate-700 dark:text-slate-200">
                 {filteredBy === 'dahiliye' ? t('header_internalMed') : t('header_ortho')}
               </span>
             </span>
@@ -223,19 +223,19 @@ export function CalendarPage(): React.JSX.Element {
         {/* Appointment List */}
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-slate-400 dark:text-slate-500" />
           </div>
         ) : appointments.length === 0 ? (
-          <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60 p-12 text-center">
-            <CalendarIcon className="mx-auto h-10 w-10 text-slate-300 mb-3" />
-            <p className="text-sm text-slate-500">{t('cal_noAppts')}</p>
+          <div className="rounded-xl bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-12 text-center">
+            <CalendarIcon className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600 mb-3" />
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('cal_noAppts')}</p>
           </div>
         ) : (
           <div className="space-y-2">
             {appointments.map((appt) => (
               <div
                 key={appt.id}
-                className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60 overflow-hidden"
+                className="rounded-xl bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 overflow-hidden"
               >
                 <div className="flex">
                   {/* Color bar */}
@@ -248,14 +248,14 @@ export function CalendarPage(): React.JSX.Element {
                       <div className="space-y-1">
                         {/* Patient */}
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-slate-400" />
-                          <span className="text-sm font-semibold text-slate-800">
+                          <User className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                             {appt.patient_name || t('cal_noPatient')}
                           </span>
                         </div>
                         {/* Reason / Complaint from reception */}
                         {appt.reason && (
-                          <p className="ml-6 text-xs text-amber-700 bg-amber-50 rounded px-2 py-1 inline-block">
+                          <p className="ml-6 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 rounded px-2 py-1 inline-block">
                             {t('cal_complaint')} {appt.reason}
                           </p>
                         )}
@@ -281,7 +281,7 @@ export function CalendarPage(): React.JSX.Element {
                       </div>
                       {/* Time + Action */}
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5 text-slate-500">
+                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                           <Clock className="h-4 w-4" />
                           <span className="text-sm font-mono font-medium">
                             {formatTime(appt.start_time)}
@@ -318,7 +318,7 @@ export function CalendarPage(): React.JSX.Element {
 
         {/* Summary */}
         {!loading && appointments.length > 0 && (
-          <p className="text-xs text-slate-400 text-center">
+          <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
             {t('cal_total', { count: appointments.length })}
           </p>
         )}

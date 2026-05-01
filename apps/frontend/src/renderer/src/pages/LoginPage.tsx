@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Stethoscope, Loader2 } from 'lucide-react'
+import { Stethoscope, Loader2, Languages, Sun, Moon } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 import { useAuthStore } from '../stores/authStore'
+import { useUIStore } from '../stores/uiStore'
 import { useT } from '../hooks/useT'
 
 interface LoginResponse {
@@ -20,6 +21,10 @@ interface LoginResponse {
 export function LoginPage(): React.JSX.Element {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
+  const locale = useUIStore((s) => s.locale)
+  const setLocale = useUIStore((s) => s.setLocale)
+  const theme = useUIStore((s) => s.theme)
+  const setTheme = useUIStore((s) => s.setTheme)
   const t = useT()
 
   const [username, setUsername] = useState('')
@@ -51,19 +56,41 @@ export function LoginPage(): React.JSX.Element {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg ring-1 ring-slate-200/60">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
+      {/* Top-right toggles: theme + language */}
+      <div className="absolute right-4 top-4 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          aria-label={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        >
+          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => setLocale(locale === 'tr' ? 'en' : 'tr')}
+          title={locale === 'tr' ? 'Switch to English' : "Türkçe'ye geç"}
+          aria-label={locale === 'tr' ? 'Switch to English' : "Türkçe'ye geç"}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        >
+          <Languages className="h-4 w-4" />
+          {locale === 'tr' ? 'TR' : 'EN'}
+        </button>
+      </div>
+
+      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-8 shadow-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30">
             <Stethoscope className="h-7 w-7 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">Doctor AI Assistant</h1>
-          <p className="text-sm text-slate-500">{t('login_subtitle')}</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Doctor AI Assistant</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
               {t('login_username')}
             </label>
             <input
@@ -73,12 +100,12 @@ export function LoginPage(): React.JSX.Element {
               onChange={(e) => setUsername(e.target.value)}
               placeholder={t('login_usernamePlaceholder')}
               required
-              className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
               {t('login_password')}
             </label>
             <input
@@ -88,7 +115,7 @@ export function LoginPage(): React.JSX.Element {
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t('login_passwordPlaceholder')}
               required
-              className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
 

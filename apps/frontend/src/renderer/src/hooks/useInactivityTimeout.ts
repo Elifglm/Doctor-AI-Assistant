@@ -24,11 +24,16 @@ interface UseInactivityTimeoutOptions {
   onWarningChange: (visible: boolean) => void
 }
 
+interface UseInactivityTimeoutReturn {
+  /** Reset both timers manually (e.g. when the user dismisses the warning). */
+  resetTimers: () => void
+}
+
 export function useInactivityTimeout({
   enabled,
   onLogout,
   onWarningChange,
-}: UseInactivityTimeoutOptions): void {
+}: UseInactivityTimeoutOptions): UseInactivityTimeoutReturn {
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const warningVisibleRef = useRef(false)
@@ -92,4 +97,6 @@ export function useInactivityTimeout({
       }
     }
   }, [enabled, resetTimers, clearTimers])
+
+  return { resetTimers }
 }

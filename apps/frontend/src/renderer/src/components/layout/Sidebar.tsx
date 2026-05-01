@@ -14,6 +14,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useSessionStore } from '../../stores/sessionStore'
 import { useT } from '../../hooks/useT'
 import { cn } from '../../lib/utils'
+import { confirm } from '../../stores/confirmStore'
 
 type NavItemDef = {
   path: string
@@ -47,11 +48,17 @@ export function Sidebar(): React.JSX.Element {
     (e: React.MouseEvent, path: string) => {
       if (recordingState !== 'idle') {
         e.preventDefault()
-        const confirmed = window.confirm(t('nav_confirmLeave'))
-        if (confirmed) {
-          useSessionStore.getState().reset()
-          navigate(path)
-        }
+        void confirm({
+          title: t('confirm_leaveTitle'),
+          message: t('nav_confirmLeave'),
+          confirmText: t('confirm_leave'),
+          variant: 'danger',
+        }).then((accepted) => {
+          if (accepted) {
+            useSessionStore.getState().reset()
+            navigate(path)
+          }
+        })
       }
     },
     [recordingState, navigate, t]
@@ -94,10 +101,15 @@ export function Sidebar(): React.JSX.Element {
       </nav>
 
       <button
-        onClick={() => {
+        onClick={async () => {
           if (recordingState !== 'idle') {
-            const confirmed = window.confirm(t('nav_confirmLogout'))
-            if (!confirmed) return
+            const accepted = await confirm({
+              title: t('confirm_logoutTitle'),
+              message: t('nav_confirmLogout'),
+              confirmText: t('confirm_logout'),
+              variant: 'danger',
+            })
+            if (!accepted) return
           }
           logout()
         }}

@@ -3,6 +3,7 @@ import { Save, CheckCheck, Loader2, FileDown, Send, CheckCircle2, AlertCircle } 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ReportSectionCard } from './ReportSection'
 import { apiClient } from '../../services/apiClient'
+import { useAuthStore } from '../../stores/authStore'
 import { useT } from '../../hooks/useT'
 import type { Report, ReportSection } from '../../types/report'
 
@@ -105,16 +106,20 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   }
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
+  const [pdfError, setPdfError] = useState<string | null>(null)
 
   const handleDownloadPdf = async (): Promise<void> => {
     setIsDownloadingPdf(true)
+    setPdfError(null)
     try {
-      const token = (await import('../../stores/authStore')).useAuthStore.getState().token
-      const baseUrl = 'http://127.0.0.1:8700'
+      const token = useAuthStore.getState().token
+      const baseUrl =
+        (typeof window !== 'undefined' && window.electronAPI?.getBackendUrl()) ||
+        'http://127.0.0.1:8700'
       const res = await fetch(`${baseUrl}/api/v1/reports/${report.id}/pdf`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!res.ok) throw new Error('PDF indirilemedi')
+      if (!res.ok) throw new Error(t('report_pdfDownloadError'))
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -125,8 +130,8 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('PDF download error:', err)
-      alert('PDF indirme hatasi')
+      setPdfError(err instanceof Error ? err.message : t('report_pdfDownloadError'))
+      setTimeout(() => setPdfError(null), 5000)
     } finally {
       setIsDownloadingPdf(false)
     }
@@ -165,9 +170,9 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b border-slate-200 bg-white px-4 py-3">
-        <h2 className="text-lg font-semibold text-slate-800">{t('report_title')}</h2>
-        <p className="text-xs text-slate-500 mt-0.5">
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3">
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('report_title')}</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
           {t('report_sectionsApproved', { approved: approvedCount, total: totalCount })}
         </p>
       </div>
@@ -185,11 +190,11 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
         ))}
       </div>
 
-      <div className="border-t border-slate-200 bg-white px-4 py-3 space-y-2">
+      <div className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1">
             <div className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-xs text-slate-600 whitespace-nowrap">
+            <span className="text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
               {t('report_sectionsApproved', { approved: approvedCount, total: totalCount })}
             </span>
           </div>
@@ -206,6 +211,9 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             <span className="text-xs text-red-600 font-medium">
               {t('report_pdfWarning', { approved: approvedCount, total: totalCount })}
             </span>
+          )}
+          {pdfError && (
+            <span className="text-xs text-red-600 font-medium">{pdfError}</span>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -225,8 +233,8 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
               : t('report_pdfDownloadTitle')}
             className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
               approvedCount < totalCount
-                ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
-                : 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                : 'border-blue-300 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100'
             }`}
           >
             {isDownloadingPdf ? (
@@ -240,7 +248,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             type="button"
             onClick={handleSaveDraft}
             disabled={saveMutation.isPending}
-            className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50  transition-colors disabled:opacity-50 whitespace-nowrap"
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -278,7 +286,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
               : t('report_sendTooltip')}
             className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
               approvedCount < totalCount
-                ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                 : 'border-purple-300 bg-purple-600 text-white hover:bg-purple-700'
             }`}
           >
@@ -297,8 +305,8 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
         <div
           className={`flex items-center gap-2 px-4 py-2.5 text-sm border-t ${
             openEMRResult.success
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : 'bg-red-50 text-red-700 border-red-200'
+              ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+              : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
           }`}
         >
           {openEMRResult.success ? (

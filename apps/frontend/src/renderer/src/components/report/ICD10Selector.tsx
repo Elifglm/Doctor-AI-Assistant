@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Search, Sparkles, X, Loader2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useICD10Search } from '../../hooks/useICD10Search'
+import { useT } from '../../hooks/useT'
 import { apiClient } from '../../services/apiClient'
 import type { ICD10ConfirmedCode, ICD10Suggestion, ICD10SuggestResponse } from '../../types/icd10'
 
@@ -48,6 +49,7 @@ function formatCodes(codes: ICD10ConfirmedCode[]): string {
 }
 
 export function ICD10Selector({ value, reportSections, onChange }: ICD10SelectorProps) {
+  const t = useT()
   const parsed = parseExistingCodes(value)
   const [selectedCodes, setSelectedCodes] = useState<ICD10ConfirmedCode[]>(() =>
     parsed.filter((p) => p.confidence === undefined).map(({ confidence: _, ...rest }) => rest)
@@ -138,9 +140,9 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
   }
 
   const confidenceColor = (c: number) => {
-    if (c >= 0.8) return 'text-emerald-700 bg-emerald-50'
-    if (c >= 0.5) return 'text-amber-700 bg-amber-50'
-    return 'text-slate-500 bg-slate-50'
+    if (c >= 0.8) return 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30'
+    if (c >= 0.5) return 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30'
+    return 'text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900'
   }
 
   return (
@@ -158,14 +160,14 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
           ) : (
             <Sparkles className="h-3.5 w-3.5" />
           )}
-          AI ile Öner
+          {t('icd10_aiSuggest')}
         </button>
       )}
 
       {/* AI Suggestions */}
       {suggestions.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-slate-500">AI Önerileri:</p>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('icd10_aiSuggestions')}</p>
           {suggestions.map((s) => (
             <button
               key={s.icd_kodu}
@@ -175,14 +177,14 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
               className={cn(
                 'flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors',
                 selectedCodes.some((c) => c.icd_kodu === s.icd_kodu)
-                  ? 'border-emerald-200 bg-emerald-50 opacity-50'
-                  : 'border-slate-200 hover:border-blue-300 hover:bg-blue-50'
+                  ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 opacity-50'
+                  : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
               )}
             >
               <span>
-                <span className="font-mono font-semibold text-blue-700">{s.icd_kodu}</span>
-                <span className="mx-1.5 text-slate-400">—</span>
-                <span className="text-slate-700">{s.tani}</span>
+                <span className="font-mono font-semibold text-blue-700 dark:text-blue-300">{s.icd_kodu}</span>
+                <span className="mx-1.5 text-slate-400 dark:text-slate-500">—</span>
+                <span className="text-slate-700 dark:text-slate-200">{s.tani}</span>
               </span>
               <span
                 className={cn(
@@ -200,7 +202,7 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
       {/* Search Input */}
       <div className="relative" ref={dropdownRef}>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
             ref={inputRef}
             type="text"
@@ -210,17 +212,17 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
               setIsDropdownOpen(true)
             }}
             onFocus={() => searchQuery.length >= 2 && setIsDropdownOpen(true)}
-            placeholder="ICD-10 kod veya tanı adı yazın..."
-            className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            placeholder={t('icd10_searchPlaceholder')}
+            className="w-full rounded-lg border border-slate-200 dark:border-slate-700 py-2 pl-9 pr-3 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           {isLoading && (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400 dark:text-slate-500" />
           )}
         </div>
 
         {/* Dropdown Results */}
         {isDropdownOpen && results.length > 0 && (
-          <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
             {results.map((r) => (
               <button
                 key={r.icd_kodu}
@@ -230,22 +232,22 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
                 className={cn(
                   'flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition-colors',
                   selectedCodes.some((c) => c.icd_kodu === r.icd_kodu)
-                    ? 'bg-emerald-50 opacity-50'
-                    : 'hover:bg-blue-50'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/30 opacity-50'
+                    : 'hover:bg-blue-50 dark:hover:bg-blue-900/30'
                 )}
               >
-                <span className="shrink-0 font-mono font-semibold text-blue-700">
+                <span className="shrink-0 font-mono font-semibold text-blue-700 dark:text-blue-300">
                   {r.icd_kodu}
                 </span>
-                <span className="text-slate-700">{r.tani}</span>
+                <span className="text-slate-700 dark:text-slate-200">{r.tani}</span>
               </button>
             ))}
           </div>
         )}
 
         {isDropdownOpen && searchQuery.length >= 2 && results.length === 0 && !isLoading && (
-          <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-4 text-center text-sm text-slate-500 shadow-lg">
-            Sonuç bulunamadı
+          <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400 shadow-lg">
+            {t('icd10_noResults')}
           </div>
         )}
       </div>
@@ -253,16 +255,16 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
       {/* Selected Codes */}
       {selectedCodes.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-slate-500">Seçilen tanılar:</p>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('icd10_selected')}</p>
           {selectedCodes.map((c) => (
             <div
               key={c.icd_kodu}
-              className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2"
+              className="flex items-center justify-between rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-2"
             >
               <span className="text-sm">
-                <span className="font-mono font-semibold text-emerald-700">{c.icd_kodu}</span>
-                <span className="mx-1.5 text-slate-400">—</span>
-                <span className="text-slate-700">{c.tani}</span>
+                <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-300">{c.icd_kodu}</span>
+                <span className="mx-1.5 text-slate-400 dark:text-slate-500">—</span>
+                <span className="text-slate-700 dark:text-slate-200">{c.tani}</span>
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -272,15 +274,15 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
                     'rounded-full px-2 py-0.5 text-xs font-medium transition-colors',
                     c.tani_tipi === 'kesin_tani'
                       ? 'bg-emerald-600 text-white'
-                      : 'bg-amber-100 text-amber-700'
+                      : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
                   )}
                 >
-                  {c.tani_tipi === 'kesin_tani' ? 'Kesin Tanı' : 'Ön Tanı'}
+                  {c.tani_tipi === 'kesin_tani' ? t('icd10_definite') : t('icd10_preliminary')}
                 </button>
                 <button
                   type="button"
                   onClick={() => removeCode(c.icd_kodu)}
-                  className="rounded p-0.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                  className="rounded p-0.5 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -291,8 +293,8 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
       )}
 
       {selectedCodes.length === 0 && suggestions.length === 0 && (
-        <p className="text-xs text-slate-400 italic">
-          Tanı kodu seçilmedi. Arama yapın veya AI ile öneri alın.
+        <p className="text-xs text-slate-400 dark:text-slate-500 italic">
+          {t('icd10_emptyHint')}
         </p>
       )}
     </div>

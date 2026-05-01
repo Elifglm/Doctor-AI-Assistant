@@ -4,10 +4,6 @@ import { Loader2, ShieldCheck } from 'lucide-react'
 import { useTranscription } from '../hooks/useTranscription'
 import { useT } from '../hooks/useT'
 
-// TODO: Replace hardcoded value with a real backend endpoint once
-// GET /api/v1/settings/deid is implemented (returns { deid_enabled: boolean }).
-const DEID_ENABLED = true
-
 const stageLabelKeys: Record<string, string> = {
   'Stage 0/4': 'live_validating',
   'Stage 1/4': 'live_noiseReduction',
@@ -56,8 +52,8 @@ export function ProcessingPage(): React.JSX.Element {
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-slate-800">{t('live_processing')}</h2>
-          <p className="text-base font-medium text-slate-600">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('live_processing')}</h2>
+          <p className="text-base font-medium text-slate-600 dark:text-slate-300">
             {stageLabelKeys[processingStage] ? t(stageLabelKeys[processingStage]) : processingMessage || t('live_preparing')}
           </p>
         </div>
@@ -67,37 +63,35 @@ export function ProcessingPage(): React.JSX.Element {
             <div
               key={i}
               className={`h-2 w-12 rounded-full transition-colors duration-300 ${
-                i <= stageIndex ? 'bg-blue-600' : 'bg-slate-200'
+                i <= stageIndex ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'
               }`}
             />
           ))}
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
           {t('live_stage', { index: Math.min(stageIndex + 1, totalStages), total: totalStages })}
         </p>
 
         <div className="space-y-2">
-          <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200">
+          <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
             <div
               className="absolute inset-y-0 left-0 rounded-full bg-blue-600 transition-all duration-500 ease-out"
               style={{ width: `${displayProgress}%` }}
             />
           </div>
-          <p className="text-sm font-medium text-slate-500">%{displayProgress}</p>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">%{displayProgress}</p>
         </div>
 
         {processingMessage && (
-          <p className="text-sm text-slate-400">{processingMessage}</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">{processingMessage}</p>
         )}
 
-        {DEID_ENABLED && (
-          <div className="flex justify-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              {t('live_piiActive')}
-            </span>
-          </div>
-        )}
+        <div className="flex justify-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            {t('live_piiActive')}
+          </span>
+        </div>
       </div>
     </div>
   )

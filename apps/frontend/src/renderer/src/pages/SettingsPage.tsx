@@ -33,34 +33,34 @@ function ProfilTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_profile_title')}</h3>
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">{t('settings_profile_title')}</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
               {t('settings_displayName')}
             </label>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-700 dark:text-slate-200">
               {user?.display_name ?? t('settings_unknown')}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
               {t('settings_username')}
             </label>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-700 dark:text-slate-200">
               {user?.username ?? t('settings_unknown')}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">{t('settings_role')}</label>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">{t('settings_role')}</label>
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-700 dark:text-slate-200">
               {user?.role === 'admin' ? t('settings_admin') : t('settings_doctor')}
             </div>
           </div>
           {user?.brans && (
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">{t('settings_specialty')}</label>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700">
+              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">{t('settings_specialty')}</label>
+              <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-700 dark:text-slate-200">
                 {user.brans === 'dahiliye' ? t('settings_internalMed') : t('settings_ortho')}
               </div>
             </div>
@@ -73,7 +73,8 @@ function ProfilTab(): React.JSX.Element {
 
 function SesTab(): React.JSX.Element {
   const [devices, setDevices] = useState<{ deviceId: string; label: string }[]>([])
-  const [selectedDevice, setSelectedDevice] = useState('')
+  const micDeviceId = useUIStore((s) => s.micDeviceId)
+  const setMicDeviceId = useUIStore((s) => s.setMicDeviceId)
   const [permissionError, setPermissionError] = useState(false)
   const t = useT()
 
@@ -88,13 +89,18 @@ function SesTab(): React.JSX.Element {
           label: d.label || `Mikrofon ${d.deviceId.slice(0, 8)}`,
         }))
       setDevices(audioInputs)
-      if (audioInputs.length > 0 && !selectedDevice) {
-        setSelectedDevice(audioInputs[0].deviceId)
+      // If saved device is no longer available, fall back to first
+      if (audioInputs.length > 0) {
+        const stillAvailable = micDeviceId && audioInputs.some((d) => d.deviceId === micDeviceId)
+        if (!stillAvailable) {
+          setMicDeviceId(audioInputs[0].deviceId)
+        }
       }
+      setPermissionError(false)
     } catch {
       setPermissionError(true)
     }
-  }, [selectedDevice])
+  }, [micDeviceId, setMicDeviceId])
 
   useEffect(() => {
     void loadDevices()
@@ -103,26 +109,35 @@ function SesTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_audio_title')}</h3>
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">{t('settings_audio_title')}</h3>
         <div className="space-y-4">
           <div>
             <label
               htmlFor="micSelect"
-              className="block text-sm font-medium text-slate-600 mb-1"
+              className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1"
             >
               {t('settings_micSelection')}
             </label>
             {permissionError ? (
-              <div className="flex items-center gap-2 rounded-lg bg-amber-50 p-3 ring-1 ring-amber-200">
-                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-                <p className="text-sm text-amber-700">{t('settings_micDenied')}</p>
+              <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 p-3 ring-1 ring-amber-200 dark:ring-amber-800">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">{t('settings_micDenied')}</p>
+                  <button
+                    type="button"
+                    onClick={() => void loadDevices()}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+                  >
+                    {t('settings_micRetry')}
+                  </button>
+                </div>
               </div>
             ) : (
               <select
                 id="micSelect"
-                value={selectedDevice}
-                onChange={(e) => setSelectedDevice(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                value={micDeviceId ?? ''}
+                onChange={(e) => setMicDeviceId(e.target.value || null)}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
                 {devices.map((device) => (
                   <option key={device.deviceId} value={device.deviceId}>
@@ -135,8 +150,8 @@ function SesTab(): React.JSX.Element {
               </select>
             )}
           </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm text-slate-600">{t('settings_audioQuality')}</p>
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
+            <p className="text-sm text-slate-600 dark:text-slate-300">{t('settings_audioQuality')}</p>
           </div>
         </div>
       </div>
@@ -224,12 +239,12 @@ function LLMTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_llm_title')}</h3>
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">{t('settings_llm_title')}</h3>
 
         <div className="space-y-4">
           {/* Mode selection */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-slate-700">{t('settings_llmMode')}</h4>
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 space-y-3">
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('settings_llmMode')}</h4>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -237,8 +252,8 @@ function LLMTab(): React.JSX.Element {
                 className={cn(
                   'flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors text-center',
                   mode === 'local'
-                    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
-                    : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 '
                 )}
               >
                 {t('settings_local')}
@@ -249,8 +264,8 @@ function LLMTab(): React.JSX.Element {
                 className={cn(
                   'flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors text-center',
                   mode === 'api'
-                    ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200'
-                    : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+                    ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 ring-1 ring-violet-200 dark:ring-violet-800'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 '
                 )}
               >
                 {t('settings_api')}
@@ -260,87 +275,87 @@ function LLMTab(): React.JSX.Element {
 
           {/* KVKK warning for API mode */}
           {mode === 'api' && (
-            <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-4">
               <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-sm font-semibold text-amber-800">{t('settings_kvkkWarning')}</h4>
-                <p className="text-sm text-amber-700 mt-1">{t('settings_kvkkWarningMsg')}</p>
+                <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200">{t('settings_kvkkWarning')}</h4>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">{t('settings_kvkkWarningMsg')}</p>
               </div>
             </div>
           )}
 
           {/* Local (Ollama) settings */}
           {mode === 'local' && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-slate-700">{t('settings_ollamaStatus')}</h4>
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 space-y-3">
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('settings_ollamaStatus')}</h4>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">{t('settings_connection')}</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-300">{t('settings_connection')}</span>
                   {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-400 dark:text-slate-500" />
                   ) : ollamaConnected ? (
                     <div className="flex items-center gap-1.5">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      <span className="text-sm text-emerald-700">{t('settings_connected')}</span>
+                      <span className="text-sm text-emerald-700 dark:text-emerald-300">{t('settings_connected')}</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <XCircle className="h-4 w-4 text-red-500" />
-                      <span className="text-sm text-red-700">{t('settings_notConnected')}</span>
+                      <span className="text-sm text-red-700 dark:text-red-300">{t('settings_notConnected')}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">{t('settings_model')}</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-300">{t('settings_model')}</span>
                   {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-400 dark:text-slate-500" />
                   ) : modelLoaded ? (
                     <div className="flex items-center gap-1.5">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      <span className="text-sm text-emerald-700">
+                      <span className="text-sm text-emerald-700 dark:text-emerald-300">
                         {health?.llm_model_name || t('settings_loaded')}
                       </span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <XCircle className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm text-amber-700">{t('settings_notLoaded')}</span>
+                      <span className="text-sm text-amber-700 dark:text-amber-300">{t('settings_notLoaded')}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">{t('settings_ragDocs')}</span>
-                  <span className="text-sm text-slate-700 font-medium">{ragDocs}</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-300">{t('settings_ragDocs')}</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-200 font-medium">{ragDocs}</span>
                 </div>
 
                 {health?.gpu_available && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">{t('settings_gpu')}</span>
-                    <span className="text-sm text-slate-700">{health.gpu_name}</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">{t('settings_gpu')}</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-200">{health.gpu_name}</span>
                   </div>
                 )}
               </div>
 
               {/* Fallback toggle */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
                 <div>
-                  <span className="text-sm text-slate-600">{t('settings_fallbackModel')}</span>
-                  <p className="text-xs text-slate-400">{t('settings_fallbackDesc')}</p>
+                  <span className="text-sm text-slate-600 dark:text-slate-300">{t('settings_fallbackModel')}</span>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">{t('settings_fallbackDesc')}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setFallbackEnabled(!fallbackEnabled)}
                   className={cn(
                     'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-                    fallbackEnabled ? 'bg-blue-600' : 'bg-slate-200'
+                    fallbackEnabled ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'
                   )}
                 >
                   <span
                     className={cn(
-                      'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform',
+                      'pointer-events-none inline-block h-5 w-5 rounded-full bg-white dark:bg-slate-800 shadow transition-transform',
                       fallbackEnabled ? 'translate-x-5' : 'translate-x-0'
                     )}
                   />
@@ -349,10 +364,10 @@ function LLMTab(): React.JSX.Element {
 
               {/* Help text */}
               {!ollamaConnected && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 mt-2">
-                  <p className="text-sm text-amber-700">
+                <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-3 mt-2">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
                     {t('settings_ollamaStartCmd').split(':')[0]}:{' '}
-                    <code className="rounded bg-amber-100 px-1 py-0.5 text-xs font-mono">
+                    <code className="rounded bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 text-xs font-mono">
                       {t('settings_ollamaStartCmd').split(': ')[1] ?? 'ollama serve'}
                     </code>
                   </p>
@@ -363,11 +378,11 @@ function LLMTab(): React.JSX.Element {
 
           {/* API (Gemini) settings */}
           {mode === 'api' && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-slate-700">{t('settings_geminiSettings')}</h4>
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 space-y-3">
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('settings_geminiSettings')}</h4>
 
               <div>
-                <label htmlFor="geminiApiKey" className="block text-sm font-medium text-slate-600 mb-1">
+                <label htmlFor="geminiApiKey" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
                   {t('settings_apiKey')}
                 </label>
                 <input
@@ -376,22 +391,22 @@ function LLMTab(): React.JSX.Element {
                   value={geminiApiKey}
                   onChange={(e) => setGeminiApiKey(e.target.value)}
                   placeholder={llmSettings?.gemini_api_key_set ? '••••••••••••••••' : t('settings_apiKeyPlaceholder')}
-                  className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                 />
                 {llmSettings?.gemini_api_key_set && !geminiApiKey && (
-                  <p className="text-xs text-slate-400 mt-1">{t('settings_apiKeySet')}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('settings_apiKeySet')}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="geminiModel" className="block text-sm font-medium text-slate-600 mb-1">
+                <label htmlFor="geminiModel" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
                   {t('settings_model')}
                 </label>
                 <select
                   id="geminiModel"
                   value={geminiModel}
                   onChange={(e) => setGeminiModel(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                 >
                   <option value="gemini-2.5-flash">Gemini 2.5 Flash (Hızlı)</option>
                   <option value="gemini-2.5-pro">Gemini 2.5 Pro (Kaliteli)</option>
@@ -400,30 +415,30 @@ function LLMTab(): React.JSX.Element {
               </div>
 
               {/* Connection status */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                <span className="text-sm text-slate-600">{t('settings_connectionStatus')}</span>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+                <span className="text-sm text-slate-600 dark:text-slate-300">{t('settings_connectionStatus')}</span>
                 {health?.llm_provider === 'gemini' && health?.ollama_status === 'connected' ? (
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <span className="text-sm text-emerald-700">{t('settings_connected')}</span>
+                    <span className="text-sm text-emerald-700 dark:text-emerald-300">{t('settings_connected')}</span>
                   </div>
                 ) : health?.llm_provider === 'gemini' ? (
                   <div className="flex items-center gap-1.5">
                     <XCircle className="h-4 w-4 text-red-500" />
-                    <span className="text-sm text-red-700">{t('settings_notConnected')}</span>
+                    <span className="text-sm text-red-700 dark:text-red-300">{t('settings_notConnected')}</span>
                   </div>
                 ) : (
-                  <span className="text-sm text-slate-400">{t('settings_notSaved')}</span>
+                  <span className="text-sm text-slate-400 dark:text-slate-500">{t('settings_notSaved')}</span>
                 )}
               </div>
             </div>
           )}
 
           {/* Common parameters */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-slate-700">{t('settings_params')}</h4>
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 space-y-3">
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('settings_params')}</h4>
             <div>
-              <label htmlFor="temperatureSlider" className="block text-sm text-slate-600 mb-1">
+              <label htmlFor="temperatureSlider" className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
                 {t('settings_temperature', { value: temperature.toFixed(1) })}
               </label>
               <input
@@ -436,7 +451,7 @@ function LLMTab(): React.JSX.Element {
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
                 className="w-full accent-blue-600"
               />
-              <div className="flex justify-between text-xs text-slate-400 mt-1">
+              <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mt-1">
                 <span>{t('settings_tempDeterministic')}</span>
                 <span>{t('settings_tempCreative')}</span>
               </div>
@@ -463,7 +478,7 @@ function LLMTab(): React.JSX.Element {
               type="button"
               onClick={() => void handleTestConnection()}
               disabled={isTesting}
-              className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50  transition-colors disabled:opacity-50"
             >
               {isTesting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -476,35 +491,35 @@ function LLMTab(): React.JSX.Element {
             {saveSuccess && (
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span className="text-sm text-emerald-700">{t('settings_saved')}</span>
+                <span className="text-sm text-emerald-700 dark:text-emerald-300">{t('settings_saved')}</span>
               </div>
             )}
 
             {saveMutation.isError && (
               <div className="flex items-center gap-1.5">
                 <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="text-sm text-red-700">{t('settings_saveError')}</span>
+                <span className="text-sm text-red-700 dark:text-red-300">{t('settings_saveError')}</span>
               </div>
             )}
 
             {testResult === 'success' && (
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span className="text-sm text-emerald-700">{t('settings_connectionSuccess')}</span>
+                <span className="text-sm text-emerald-700 dark:text-emerald-300">{t('settings_connectionSuccess')}</span>
               </div>
             )}
 
             {testResult === 'error' && (
               <div className="flex items-center gap-1.5">
                 <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="text-sm text-red-700">{t('settings_connectionFailed')}</span>
+                <span className="text-sm text-red-700 dark:text-red-300">{t('settings_connectionFailed')}</span>
               </div>
             )}
           </div>
 
           {/* Privacy note */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs text-slate-500">
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {mode === 'local' ? t('settings_localPrivacy') : t('settings_apiPrivacy')}
             </p>
           </div>
@@ -519,11 +534,11 @@ function SablonlarTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_templates_title')}</h3>
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-12">
-          <FileText className="h-10 w-10 text-slate-300 mb-3" />
-          <p className="text-sm text-slate-500 text-center">{t('settings_templatesComing')}</p>
-          <p className="text-xs text-slate-400 mt-1 text-center">{t('settings_templatesDesc')}</p>
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">{t('settings_templates_title')}</h3>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-12">
+          <FileText className="h-10 w-10 text-slate-300 dark:text-slate-600 mb-3" />
+          <p className="text-sm text-slate-500 dark:text-slate-400 text-center">{t('settings_templatesComing')}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 text-center">{t('settings_templatesDesc')}</p>
         </div>
       </div>
     </div>
@@ -540,11 +555,11 @@ function GoruntuTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_display_title')}</h3>
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">{t('settings_display_title')}</h3>
         <div className="space-y-6">
           {/* Theme toggle */}
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-2">{t('settings_theme')}</label>
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">{t('settings_theme')}</label>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -552,8 +567,8 @@ function GoruntuTab(): React.JSX.Element {
                 className={cn(
                   'flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors',
                   theme === 'light'
-                    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 '
                 )}
               >
                 <Sun className="h-4 w-4" />
@@ -565,8 +580,8 @@ function GoruntuTab(): React.JSX.Element {
                 className={cn(
                   'flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors',
                   theme === 'dark'
-                    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 '
                 )}
               >
                 <Moon className="h-4 w-4" />
@@ -577,7 +592,7 @@ function GoruntuTab(): React.JSX.Element {
 
           {/* Font size slider */}
           <div>
-            <label htmlFor="fontSizeSlider" className="block text-sm font-medium text-slate-600 mb-2">
+            <label htmlFor="fontSizeSlider" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
               {t('settings_fontSize', { size: fontSize })}
             </label>
             <input
@@ -590,22 +605,9 @@ function GoruntuTab(): React.JSX.Element {
               onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
               className="w-full accent-blue-600"
             />
-            <div className="flex justify-between text-xs text-slate-400 mt-1">
+            <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mt-1">
               <span>14px</span>
               <span>24px</span>
-            </div>
-          </div>
-
-          {/* Preview */}
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-2">
-              {t('settings_preview')}
-            </label>
-            <div
-              className="rounded-lg border border-slate-200 bg-white p-4"
-              style={{ fontSize: `${fontSize}px` }}
-            >
-              <p className="text-slate-700">{t('settings_previewText')}</p>
             </div>
           </div>
         </div>
@@ -637,15 +639,19 @@ function GizlilikTab(): React.JSX.Element {
     try {
       const result = await apiClient.delete<PurgeResponse>('/api/v1/data/purge')
       setPurgeResult(
-        `${result.total_deleted} kayıt silindi (${result.deleted_sessions} görüşme, ` +
-        `${result.deleted_segments} segment, ${result.deleted_reports} rapor, ` +
-        `${result.deleted_audit_logs} denetim kaydı).`
+        t('settings_purgeResult', {
+          total: result.total_deleted,
+          sessions: result.deleted_sessions,
+          segments: result.deleted_segments,
+          reports: result.deleted_reports,
+          audits: result.deleted_audit_logs,
+        }),
       )
     } catch (err: unknown) {
       if (err instanceof Error) {
         setPurgeError(err.message)
       } else {
-        setPurgeError('Veriler silinirken bir hata oluştu')
+        setPurgeError(t('settings_purgeError'))
       }
     } finally {
       setPurging(false)
@@ -656,23 +662,23 @@ function GizlilikTab(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">{t('settings_privacy_title')}</h3>
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">{t('settings_privacy_title')}</h3>
         <div className="space-y-4">
           {/* KVKK info */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
-            <h4 className="text-sm font-semibold text-slate-700">{t('settings_kvkk_title')}</h4>
-            <p className="text-sm text-slate-600 leading-relaxed">{t('settings_kvkk_text')}</p>
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 space-y-2">
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('settings_kvkk_title')}</h4>
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{t('settings_kvkk_text')}</p>
           </div>
 
           {/* Delete all data */}
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-            <h4 className="text-sm font-semibold text-red-800 mb-2">{t('settings_dangerZone')}</h4>
+          <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 p-4">
+            <h4 className="text-sm font-semibold text-red-800 dark:text-red-200 mb-2">{t('settings_dangerZone')}</h4>
             {!showConfirmation ? (
               <button
                 type="button"
                 onClick={() => setShowConfirmation(true)}
                 disabled={purging}
-                className="flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg border border-red-300 dark:border-red-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
               >
                 {purging ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -683,13 +689,13 @@ function GizlilikTab(): React.JSX.Element {
               </button>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-red-700">{t('settings_deleteAllConfirm')}</p>
+                <p className="text-sm text-red-700 dark:text-red-300">{t('settings_deleteAllConfirm')}</p>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setShowConfirmation(false)}
                     disabled={purging}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                    className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50  transition-colors disabled:opacity-50"
                   >
                     {t('settings_cancel')}
                   </button>
@@ -707,16 +713,16 @@ function GizlilikTab(): React.JSX.Element {
             )}
 
             {purgeResult && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 p-3 ring-1 ring-emerald-200">
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 p-3 ring-1 ring-emerald-200 dark:ring-emerald-800">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                <p className="text-sm text-emerald-700">{purgeResult}</p>
+                <p className="text-sm text-emerald-700 dark:text-emerald-300">{purgeResult}</p>
               </div>
             )}
 
             {purgeError && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 p-3 ring-1 ring-red-200">
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/30 p-3 ring-1 ring-red-200 dark:ring-red-800">
                 <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
-                <p className="text-sm text-red-700">{purgeError}</p>
+                <p className="text-sm text-red-700 dark:text-red-300">{purgeError}</p>
               </div>
             )}
           </div>
@@ -753,8 +759,8 @@ export function SettingsPage(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">{t('settings_title')}</h1>
-        <p className="text-sm text-slate-500 mt-1">{t('settings_subtitle')}</p>
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t('settings_title')}</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('settings_subtitle')}</p>
       </div>
 
       <div className="flex gap-6">
@@ -769,8 +775,8 @@ export function SettingsPage(): React.JSX.Element {
                 className={cn(
                   'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left',
                   activeTab === tab.key
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700  hover:text-slate-800 dark:hover:text-slate-100 '
                 )}
               >
                 <tab.icon className="h-4 w-4 shrink-0" />
@@ -781,7 +787,7 @@ export function SettingsPage(): React.JSX.Element {
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200/60">
+        <div className="flex-1 rounded-xl bg-white dark:bg-slate-800 p-6 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60">
           <div
             key={activeTab}
             className="animate-fade-in"

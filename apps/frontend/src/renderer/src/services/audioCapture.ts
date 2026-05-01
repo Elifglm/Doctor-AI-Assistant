@@ -11,7 +11,8 @@ export class AudioCapture {
   async start(
     onChunk: (data: Blob) => void,
     onLevel?: (level: number) => void,
-    onError?: (error: string) => void
+    onError?: (error: string) => void,
+    deviceId?: string | null,
   ): Promise<void> {
     // Stop any existing recording first
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
@@ -27,12 +28,17 @@ export class AudioCapture {
       throw new Error('Tarayici ses kayit API\'sini desteklemiyor (getUserMedia)')
     }
 
+    const audioConstraints: MediaTrackConstraints = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      sampleRate: 16000,
+    }
+    if (deviceId) {
+      audioConstraints.deviceId = { exact: deviceId }
+    }
+
     this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        sampleRate: 16000,
-      },
+      audio: audioConstraints,
     })
 
     // Audio level analysis
@@ -72,10 +78,10 @@ export class AudioCapture {
     }
 
     this.mediaRecorder.onerror = (event) => {
-      console.error('MediaRecorder error:', event)
       if (this.onError) {
-        const errorEvent = event as MediaRecorderErrorEvent
-        const message = errorEvent.error?.message || 'Ses kaydı sırasında beklenmeyen bir hata oluştu.'
+        // The "error" property is non-standard but supported by Chromium-based browsers (incl. Electron).
+        const maybeError = (event as Event & { error?: { message?: string } }).error
+        const message = maybeError?.message || 'Ses kaydı sırasında beklenmeyen bir hata oluştu.'
         this.onError(message)
       }
     }

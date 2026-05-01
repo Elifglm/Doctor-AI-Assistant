@@ -7,6 +7,7 @@ import { StatsBar } from '../components/dashboard/StatsBar'
 import { SessionCard } from '../components/dashboard/SessionCard'
 import { useSessionList } from '../hooks/useSession'
 import { useT } from '../hooks/useT'
+import { confirm } from '../stores/confirmStore'
 import type { Session, SessionStatus } from '../types/session'
 
 function getSessionRoute(session: Session): string {
@@ -25,17 +26,25 @@ export function DashboardPage(): React.JSX.Element {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const t = useT()
 
   const handleDelete = useCallback(async (sessionId: number) => {
-    if (!confirm(t('dash_archiveConfirm'))) return
+    const accepted = await confirm({
+      title: t('confirm_archiveTitle'),
+      message: t('dash_archiveConfirm'),
+      confirmText: t('confirm_delete'),
+      variant: 'danger',
+    })
+    if (!accepted) return
     setDeletingId(sessionId)
+    setDeleteError(null)
     try {
       await apiClient.delete(`/api/v1/sessions/${sessionId}`)
       queryClient.invalidateQueries({ queryKey: ['sessions'] })
     } catch (err) {
-      console.error('Silme hatasi:', err)
-      alert(t('dash_deleteError'))
+      setDeleteError(err instanceof Error ? err.message : t('dash_deleteError'))
+      setTimeout(() => setDeleteError(null), 5000)
     } finally {
       setDeletingId(null)
     }
@@ -59,16 +68,16 @@ export function DashboardPage(): React.JSX.Element {
   const [appointmentCount, setAppointmentCount] = useState(0)
   useEffect(() => {
     apiClient
-      .get<{ total: number }>(`/api/v1/appointments?appointment_date=${todayStr}`)
-      .then((res) => setAppointmentCount(res.total))
+      .get<{ total: number; appointments: unknown[] }>(`/api/v1/appointments?appointment_date=${todayStr}`)
+      .then((res) => setAppointmentCount(res.total ?? res.appointments?.length ?? 0))
       .catch(() => setAppointmentCount(0))
   }, [todayStr])
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">{t('dash_title')}</h1>
-        <p className="text-sm text-slate-500 mt-1">{t('dash_subtitle')}</p>
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t('dash_title')}</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('dash_subtitle')}</p>
       </div>
 
       <StatsBar
@@ -79,32 +88,39 @@ export function DashboardPage(): React.JSX.Element {
       />
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-slate-800">{t('dash_recentSessions')}</h2>
+        <h2 className="mb-3 text-lg font-semibold text-slate-800 dark:text-slate-100">{t('dash_recentSessions')}</h2>
 
         {isLoading && (
-          <div className="flex items-center justify-center rounded-xl bg-white p-12 shadow-sm ring-1 ring-slate-200/60">
+          <div className="flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 p-12 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60">
             <div className="flex flex-col items-center gap-2">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-              <p className="text-sm text-slate-500">{t('dash_loading')}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('dash_loading')}</p>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="flex items-center gap-3 rounded-xl bg-red-50 p-4 ring-1 ring-red-200">
+          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/30 p-4 ring-1 ring-red-200 dark:ring-red-800">
             <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
-            <p className="text-sm text-red-700">
+            <p className="text-sm text-red-700 dark:text-red-300">
               {t('dash_loadError')} {error instanceof Error ? error.message : t('dash_unknownError')}
             </p>
           </div>
         )}
 
+        {deleteError && (
+          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/30 p-3 ring-1 ring-red-200 dark:ring-red-800">
+            <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+            <p className="text-sm text-red-700 dark:text-red-300">{deleteError}</p>
+          </div>
+        )}
+
         {!isLoading && !error && sessions.length === 0 && (
-          <div className="flex flex-col items-center justify-center rounded-xl bg-white p-12 shadow-sm ring-1 ring-slate-200/60">
-            <p className="text-sm text-slate-500">{t('dash_noSessions')}</p>
+          <div className="flex flex-col items-center justify-center rounded-xl bg-white dark:bg-slate-800 p-12 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60">
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('dash_noSessions')}</p>
             <button
               onClick={() => navigate('/calendar')}
-              className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-700 dark:hover:text-blue-300"
             >
               {t('dash_viewAppointments')}
             </button>

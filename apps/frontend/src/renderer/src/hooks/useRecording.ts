@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useSessionStore } from '../stores/sessionStore'
 import { useTranscriptionStore } from '../stores/transcriptionStore'
+import { useUIStore } from '../stores/uiStore'
 import { AudioCapture } from '../services/audioCapture'
 import { WSClient } from '../services/wsClient'
 import type { WSProgress, WSResult, WSError } from '../types/transcription'
@@ -9,9 +10,17 @@ export function useRecording(sessionId: number | null) {
   const audioCapture = useRef<AudioCapture | null>(null)
   const wsClient = useRef<WSClient | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const reportTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const elapsedTimeOffset = useRef(0)
   const callGeneration = useRef(0)
   const [error, setError] = useState<string | null>(null)
+
+  const clearReportTimeout = (): void => {
+    if (reportTimeoutRef.current) {
+      clearTimeout(reportTimeoutRef.current)
+      reportTimeoutRef.current = null
+    }
+  }
 
   const { setRecordingState, setElapsedTime, setAudioLevel, recordingState } = useSessionStore()
   const {
@@ -28,6 +37,7 @@ export function useRecording(sessionId: number | null) {
       clearInterval(timerRef.current)
       timerRef.current = null
     }
+    clearReportTimeout()
     audioCapture.current?.stop()
     audioCapture.current = null
     wsClient.current?.close()
@@ -95,27 +105,23 @@ export function useRecording(sessionId: number | null) {
         // Do NOT close the WS yet — wait for report_ready or report_warning
         // from the backend's auto-report generation step.
         // A safety timeout ensures we don't hang forever if backend fails silently.
-        const reportTimeout = setTimeout(() => {
+        clearReportTimeout()
+        reportTimeoutRef.current = setTimeout(() => {
           if (!useTranscriptionStore.getState().reportFlowDone) {
-            console.warn('Report generation timed out, proceeding without auto-report')
             setReportFlowDone()
             setRecordingState('idle')
             wsClient.current?.close()
             wsClient.current = null
           }
+          reportTimeoutRef.current = null
         }, 60_000)
-
-        // Store the timeout so report_ready/report_warning handlers can clear it
-        ;(wsClient.current as unknown as Record<string, unknown>).__reportTimeout = reportTimeout
       })
 
       wsClient.current.on('report_ready', (data) => {
         const msg = data as { report_id: number; session_id: number }
         setAutoReportReady(msg.report_id)
         setRecordingState('idle')
-        // Clear the safety timeout
-        const timeout = (wsClient.current as unknown as Record<string, unknown>)?.__reportTimeout
-        if (timeout) clearTimeout(timeout as ReturnType<typeof setTimeout>)
+        clearReportTimeout()
         wsClient.current?.close()
         wsClient.current = null
       })
@@ -124,8 +130,7 @@ export function useRecording(sessionId: number | null) {
         // Auto-report failed but we can proceed without it
         setReportFlowDone()
         setRecordingState('idle')
-        const timeout = (wsClient.current as unknown as Record<string, unknown>)?.__reportTimeout
-        if (timeout) clearTimeout(timeout as ReturnType<typeof setTimeout>)
+        clearReportTimeout()
         wsClient.current?.close()
         wsClient.current = null
       })
@@ -163,8 +168,9 @@ export function useRecording(sessionId: number | null) {
       // If this call was superseded while connecting, bail out
       if (thisCall !== callGeneration.current) return
 
-      // Start audio capture
+      // Start audio capture using the user-selected mic (falls back to default)
       audioCapture.current = new AudioCapture()
+      const selectedMicId = useUIStore.getState().micDeviceId
       await audioCapture.current.start(
         (chunk) => {
           wsClient.current?.sendBinary(chunk)
@@ -176,7 +182,8 @@ export function useRecording(sessionId: number | null) {
           setError(errorMsg)
           setRecordingState('idle')
           cleanup()
-        }
+        },
+        selectedMicId,
       )
 
       // Check again after audio setup

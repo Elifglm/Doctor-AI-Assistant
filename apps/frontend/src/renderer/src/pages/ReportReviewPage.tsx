@@ -87,7 +87,7 @@ export function ReportReviewPage(): React.JSX.Element {
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-sm text-slate-500">{t('review_loading')}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{t('review_loading')}</p>
         </div>
       </div>
     )
@@ -96,10 +96,10 @@ export function ReportReviewPage(): React.JSX.Element {
   if (error || !session) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="flex items-center gap-3 rounded-xl bg-red-50 p-6 ring-1 ring-red-200">
+        <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-900/30 p-6 ring-1 ring-red-200 dark:ring-red-800">
           <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-red-800">{t('review_loadError')}</p>
+            <p className="text-sm font-medium text-red-800 dark:text-red-200">{t('review_loadError')}</p>
             <p className="text-sm text-red-600 mt-1">
               {error instanceof Error ? error.message : t('review_unknownError')}
             </p>
@@ -116,19 +116,19 @@ export function ReportReviewPage(): React.JSX.Element {
   return (
     <div className="flex flex-col h-full -m-6">
       {/* Header bar */}
-      <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2.5 shrink-0">
+      <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 shrink-0">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+          className="rounded-lg p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700  hover:text-slate-700 dark:hover:text-slate-100  transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-sm font-bold text-slate-800">
+          <h1 className="text-sm font-bold text-slate-800 dark:text-slate-100">
             {t('review_title', { doctorName: session.doctor_name })}
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {t('review_patient')} {session.patient_name || session.patient_id || t('review_notSpecified')}
           </p>
         </div>
@@ -157,12 +157,12 @@ export function ReportReviewPage(): React.JSX.Element {
       >
         {/* Left panel - Transcript */}
         <div
-          className="flex flex-col overflow-hidden border-r border-slate-200 bg-slate-50"
+          className="flex flex-col overflow-hidden border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
           style={{ width: `${dividerPosition}%` }}
         >
-          <div className="border-b border-slate-200 bg-white px-4 py-3 shrink-0">
-            <h2 className="text-lg font-semibold text-slate-800">{t('review_transcript')}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+          <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 shrink-0">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('review_transcript')}</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {t('review_segments', { count: segments.length })}
             </p>
           </div>
@@ -170,10 +170,10 @@ export function ReportReviewPage(): React.JSX.Element {
           <div className="flex-1 overflow-auto">
             {segments.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <p className="text-sm text-slate-500">{t('review_transcriptNotFound')}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('review_transcriptNotFound')}</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-700">
                 {segments.map((segment, index) => (
                   <button
                     key={segment.id}
@@ -199,26 +199,26 @@ export function ReportReviewPage(): React.JSX.Element {
         {/* Resizable divider */}
         <div
           onMouseDown={handleMouseDown}
-          className="flex items-center justify-center w-2 bg-slate-200 hover:bg-blue-300 cursor-col-resize transition-colors shrink-0"
+          className="flex items-center justify-center w-2 bg-slate-200 dark:bg-slate-700 hover:bg-blue-300 cursor-col-resize transition-colors shrink-0"
         >
-          <GripVertical className="h-4 w-4 text-slate-400" />
+          <GripVertical className="h-4 w-4 text-slate-400 dark:text-slate-500" />
         </div>
 
         {/* Right panel - Report */}
         <div
-          className="flex flex-col overflow-hidden bg-slate-50"
+          className="flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900"
           style={{ width: `${100 - dividerPosition}%` }}
         >
           {report ? (
             <ReportEditor report={report} />
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-                <FileText className="h-8 w-8 text-slate-400" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
+                <FileText className="h-8 w-8 text-slate-400 dark:text-slate-500" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-700">{t('review_noReport')}</p>
-                <p className="text-xs text-slate-500 mt-1">{t('review_generateHint')}</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('review_noReport')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('review_generateHint')}</p>
               </div>
 
               {/* AI Generate button */}
@@ -237,9 +237,9 @@ export function ReportReviewPage(): React.JSX.Element {
               </button>
 
               {segments.length === 0 && (
-                <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-2 ring-1 ring-amber-200">
+                <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 px-4 py-2 ring-1 ring-amber-200 dark:ring-amber-800">
                   <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                  <p className="text-xs text-amber-700">{t('review_transcriptRequired')}</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300">{t('review_transcriptRequired')}</p>
                 </div>
               )}
 
@@ -248,7 +248,7 @@ export function ReportReviewPage(): React.JSX.Element {
                 type="button"
                 onClick={() => generateReport.mutate()}
                 disabled={generateReport.isPending}
-                className="flex items-center gap-2 rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 px-5 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50  disabled:opacity-50"
               >
                 {generateReport.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -257,9 +257,9 @@ export function ReportReviewPage(): React.JSX.Element {
               </button>
 
               {(generateReport.isError || generateAIReport.isError) && (
-                <div className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 ring-1 ring-red-200">
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/30 px-4 py-2 ring-1 ring-red-200 dark:ring-red-800">
                   <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
-                  <p className="text-xs text-red-700">
+                  <p className="text-xs text-red-700 dark:text-red-300">
                     {(generateAIReport.error ?? generateReport.error) instanceof Error
                       ? ((generateAIReport.error ?? generateReport.error) as Error).message
                       : t('review_reportFailed')}

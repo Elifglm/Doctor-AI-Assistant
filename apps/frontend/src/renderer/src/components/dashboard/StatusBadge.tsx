@@ -3,12 +3,12 @@ import { useT } from '../../hooks/useT'
 import type { SessionStatus } from '../../types/session'
 
 const statusClassMap: Record<SessionStatus, string> = {
-  NOT_STARTED: 'bg-slate-100 text-slate-700 ring-slate-200',
-  RECORDING: 'bg-red-50 text-red-700 ring-red-200',
-  PROCESSING: 'bg-amber-50 text-amber-700 ring-amber-200',
-  AWAITING_REVIEW: 'bg-yellow-50 text-yellow-700 ring-yellow-200',
-  COMPLETED: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  ARCHIVED: 'bg-gray-100 text-gray-600 ring-gray-200',
+  NOT_STARTED: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 ring-slate-200',
+  RECORDING: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 ring-red-200 dark:ring-red-800',
+  PROCESSING: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-800',
+  AWAITING_REVIEW: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 ring-yellow-200',
+  COMPLETED: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-800',
+  ARCHIVED: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 ring-gray-200',
 }
 
 const statusKeyMap: Record<SessionStatus, string> = {

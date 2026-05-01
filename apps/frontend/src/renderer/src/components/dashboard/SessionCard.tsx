@@ -4,10 +4,10 @@ import { useT } from '../../hooks/useT'
 import type { Session, VisitType } from '../../types/session'
 
 const visitTypeBadgeColors: Record<VisitType, string> = {
-  ilk_muayene: 'bg-blue-50 text-blue-700',
-  kontrol: 'bg-slate-100 text-slate-700',
-  konsultasyon: 'bg-purple-50 text-purple-700',
-  acil: 'bg-red-50 text-red-700',
+  ilk_muayene: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+  kontrol: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200',
+  konsultasyon: 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+  acil: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300',
 }
 
 const visitTypeLabelKeys: Record<VisitType, string> = {
@@ -38,18 +38,26 @@ export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionC
   const t = useT()
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="flex w-full items-center justify-between rounded-xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-200/60 transition-colors hover:bg-slate-50"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      className="flex w-full items-center justify-between rounded-xl bg-white dark:bg-slate-800 p-4 text-left shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
       <div className="flex items-center gap-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
-          <User className="h-5 w-5 text-slate-500" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
+          <User className="h-5 w-5 text-slate-500 dark:text-slate-400" />
         </div>
         <div className="space-y-1">
-          <p className="text-sm font-medium text-slate-800">{session.doctor_name}</p>
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{session.doctor_name}</p>
           {session.patient_name && (
-            <p className="text-xs text-slate-500">{t('card_patient')} {session.patient_name}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('card_patient')} {session.patient_name}</p>
           )}
           <div className="flex items-center gap-2">
             <span
@@ -62,7 +70,7 @@ export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionC
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-xs text-slate-400">{formatDateTime(session.created_at)}</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500">{formatDateTime(session.created_at)}</span>
         {onDelete && (
           <button
             type="button"
@@ -71,7 +79,7 @@ export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionC
               onDelete(session.id)
             }}
             disabled={isDeleting}
-            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-md text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
             title={t('card_archiveTooltip')}
           >
             {isDeleting ? (
@@ -81,8 +89,8 @@ export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionC
             )}
           </button>
         )}
-        <ChevronRight className="h-4 w-4 text-slate-400" />
+        <ChevronRight className="h-4 w-4 text-slate-400 dark:text-slate-500" />
       </div>
-    </button>
+    </div>
   )
 }

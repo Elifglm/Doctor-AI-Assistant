@@ -3,6 +3,7 @@ import { Outlet, Navigate, useNavigate } from 'react-router-dom'
 import { AlertTriangle, UserPlus, X } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { useAuthStore } from '../../stores/authStore'
 import { useInactivityTimeout } from '../../hooks/useInactivityTimeout'
 import { useT } from '../../hooks/useT'
@@ -12,14 +13,14 @@ function InactivityWarningDialog({ onDismiss }: { onDismiss: () => void }): Reac
   const t = useT()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl ring-1 ring-slate-200/60">
+      <div className="w-full max-w-sm rounded-xl bg-white dark:bg-slate-800 p-6 shadow-xl ring-1 ring-slate-200/60 dark:ring-slate-700/60">
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
             <AlertTriangle className="h-5 w-5 text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold text-slate-800">{t('layout_sessionTimeout')}</h2>
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('layout_sessionTimeout')}</h2>
         </div>
-        <p className="mb-6 text-sm text-slate-600">{t('layout_sessionTimeoutMsg')}</p>
+        <p className="mb-6 text-sm text-slate-600 dark:text-slate-300">{t('layout_sessionTimeoutMsg')}</p>
         <button
           type="button"
           onClick={onDismiss}
@@ -51,11 +52,16 @@ export function AppLayout(): React.JSX.Element {
     setShowWarning(visible)
   }, [])
 
-  useInactivityTimeout({
+  const { resetTimers: resetInactivityTimers } = useInactivityTimeout({
     enabled: isAuthenticated,
     onLogout: handleLogout,
     onWarningChange: handleWarningChange,
   })
+
+  const handleDismissWarning = useCallback(() => {
+    setShowWarning(false)
+    resetInactivityTimers()
+  }, [resetInactivityTimers])
 
   // Startup check: admin kullanicisi icin OpenEMR'de yeni doktor var mi
   useEffect(() => {
@@ -80,16 +86,16 @@ export function AppLayout(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header />
         {/* New doctor notification banner */}
         {showDoctorBanner && newDoctorCount > 0 && (
-          <div className="flex items-center justify-between bg-amber-50 border-b border-amber-200 px-4 py-2.5">
+          <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 px-4 py-2.5">
             <div className="flex items-center gap-2">
               <UserPlus className="h-4 w-4 text-amber-600" />
-              <span className="text-sm text-amber-800">
+              <span className="text-sm text-amber-800 dark:text-amber-200">
                 {t('layout_newDoctorsFound', { count: newDoctorCount })}
               </span>
               <button
@@ -115,8 +121,9 @@ export function AppLayout(): React.JSX.Element {
         </main>
       </div>
       {showWarning && (
-        <InactivityWarningDialog onDismiss={() => setShowWarning(false)} />
+        <InactivityWarningDialog onDismiss={handleDismissWarning} />
       )}
+      <ConfirmDialog />
     </div>
   )
 }

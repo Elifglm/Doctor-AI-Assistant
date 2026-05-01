@@ -3,6 +3,47 @@ export type Locale = 'tr' | 'en'
 type TranslationMap = Record<string, string>
 
 const tr: TranslationMap = {
+  // ── Date Picker ─────────────────────────────────────────────────────────────
+  datepicker_placeholder: 'Tarih seçin',
+  datepicker_today: 'Bugün',
+  datepicker_clear: 'Temizle',
+
+  // ── Confidence Badge ────────────────────────────────────────────────────────
+  confidence_high: 'Yüksek',
+  confidence_medium: 'Orta',
+  confidence_low: 'Düşük',
+
+  // ── ICD-10 Selector ────────────────────────────────────────────────────────
+  icd10_aiSuggest: 'AI ile Öner',
+  icd10_aiSuggestions: 'AI Önerileri:',
+  icd10_searchPlaceholder: 'ICD-10 kod veya tanı adı yazın...',
+  icd10_noResults: 'Sonuç bulunamadı',
+  icd10_selected: 'Seçilen tanılar:',
+  icd10_definite: 'Kesin Tanı',
+  icd10_preliminary: 'Ön Tanı',
+  icd10_emptyHint: 'Tanı kodu seçilmedi. Arama yapın veya AI ile öneri alın.',
+
+  // ── SUT Tetkik (additions) ─────────────────────────────────────────────────
+  sut_sendSuccess: '{count} tetkik OpenEMR\'e gönderildi ({brans})',
+  sut_sendFiltered: '{count} tetkik branş uyumsuzluğu nedeniyle filtrelendi',
+
+  // ── Settings purge ──────────────────────────────────────────────────────────
+  settings_purgeResult:
+    '{total} kayıt silindi ({sessions} görüşme, {segments} segment, {reports} rapor, {audits} denetim kaydı).',
+  settings_purgeError: 'Veriler silinirken bir hata oluştu',
+
+  // ── Confirm dialog defaults ─────────────────────────────────────────────────
+  confirm_ok: 'Evet',
+  confirm_cancel: 'İptal',
+  confirm_delete: 'Sil',
+  confirm_leave: 'Çık',
+  confirm_logout: 'Çıkış Yap',
+  confirm_archiveTitle: 'Görüşmeyi Arşivle',
+  confirm_leaveTitle: 'Sayfadan Ayrıl',
+  confirm_logoutTitle: 'Çıkış Yap',
+  confirm_deleteUserTitle: 'Kullanıcıyı Sil',
+  confirm_deleteUserMessage: '{username} kullanıcısını silmek istediğinizden emin misiniz?',
+
   // ── Navigation ──────────────────────────────────────────────────────────────
   nav_home: 'Ana Sayfa',
   nav_appointments: 'Randevular',
@@ -30,7 +71,6 @@ const tr: TranslationMap = {
   layout_assignRole: 'Rol Ata',
 
   // ── Login ────────────────────────────────────────────────────────────────────
-  login_subtitle: 'Devam etmek için giriş yapın',
   login_username: 'Kullanıcı Adı',
   login_usernamePlaceholder: 'Kullanıcı adı',
   login_password: 'Şifre',
@@ -209,6 +249,7 @@ const tr: TranslationMap = {
   settings_micSelection: 'Mikrofon Seçimi',
   settings_micDenied:
     'Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından izin verin.',
+  settings_micRetry: 'Tekrar Dene',
   settings_micNotFound: 'Mikrofon bulunamadı',
   settings_audioQuality:
     'Ses kalitesi: Mono kanal, 16kHz örnekleme oranı. Tıbbi konuşmalar için optimize edilmiştir.',
@@ -259,9 +300,6 @@ const tr: TranslationMap = {
   settings_light: 'Açık',
   settings_dark: 'Koyu',
   settings_fontSize: 'Yazı Boyutu: {size}px',
-  settings_preview: 'Önizleme',
-  settings_previewText:
-    'Bu bir önizleme metnidir. Yazı boyutu değiştikçe bu metin de değişecektir.',
   settings_privacy_title: 'Gizlilik ve Güvenlik',
   settings_kvkk_title: 'KVKK Uyumluluğu',
   settings_kvkk_text:
@@ -288,9 +326,6 @@ const tr: TranslationMap = {
   cal_startRecording: 'Kayıt Başlat',
   cal_filter: 'Filtre:',
   cal_noPatient: 'Hasta bilgisi yok',
-  cal_days: 'Pazar,Pazartesi,Salı,Çarşamba,Perşembe,Cuma,Cumartesi',
-  cal_shortDays: 'Paz,Pzt,Sal,Çar,Per,Cum,Cmt',
-  cal_months: 'Ocak,Şubat,Mart,Nisan,Mayıs,Haziran,Temmuz,Ağustos,Eylül,Ekim,Kasım,Aralık',
 
   // ── Admin Page ────────────────────────────────────────────────────────────────
   admin_title: 'Kullanıcı Yönetimi',
@@ -359,6 +394,14 @@ const tr: TranslationMap = {
   report_approveAll: 'Tümünü Onayla',
   report_pdfWarning: 'PDF için tüm bölümleri onaylayın ({approved}/{total})',
   report_pdfDownloadTitle: 'PDF olarak indir',
+  report_pdfDownloadError: 'PDF indirme hatası',
+  report_section_draft: 'Taslak',
+  report_section_edited: 'Düzenlendi',
+  report_section_approved: 'Onaylandı',
+  report_section_edit: 'Düzenle',
+  report_section_approve: 'Onayla',
+  report_section_placeholder: 'Bu bölüm için içerik giriniz...',
+  report_section_icd10Required: 'ICD-10 tanı kodu seçiniz',
 
   // ── SUT Tetkik Selector ───────────────────────────────────────────────────────
   sut_aiSuggest: 'AI ile Tetkik Öner',
@@ -371,6 +414,47 @@ const tr: TranslationMap = {
 }
 
 const en: TranslationMap = {
+  // ── Date Picker ─────────────────────────────────────────────────────────────
+  datepicker_placeholder: 'Pick date',
+  datepicker_today: 'Today',
+  datepicker_clear: 'Clear',
+
+  // ── Confidence Badge ────────────────────────────────────────────────────────
+  confidence_high: 'High',
+  confidence_medium: 'Medium',
+  confidence_low: 'Low',
+
+  // ── ICD-10 Selector ────────────────────────────────────────────────────────
+  icd10_aiSuggest: 'Suggest with AI',
+  icd10_aiSuggestions: 'AI Suggestions:',
+  icd10_searchPlaceholder: 'Type ICD-10 code or diagnosis name...',
+  icd10_noResults: 'No results found',
+  icd10_selected: 'Selected diagnoses:',
+  icd10_definite: 'Definite Diagnosis',
+  icd10_preliminary: 'Preliminary Diagnosis',
+  icd10_emptyHint: 'No diagnosis code selected. Search or use AI suggestions.',
+
+  // ── SUT Tetkik (additions) ─────────────────────────────────────────────────
+  sut_sendSuccess: '{count} test sent to OpenEMR ({brans})',
+  sut_sendFiltered: '{count} test(s) filtered out due to specialty mismatch',
+
+  // ── Settings purge ──────────────────────────────────────────────────────────
+  settings_purgeResult:
+    '{total} records deleted ({sessions} sessions, {segments} segments, {reports} reports, {audits} audit logs).',
+  settings_purgeError: 'An error occurred while deleting data',
+
+  // ── Confirm dialog defaults ─────────────────────────────────────────────────
+  confirm_ok: 'Yes',
+  confirm_cancel: 'Cancel',
+  confirm_delete: 'Delete',
+  confirm_leave: 'Leave',
+  confirm_logout: 'Log Out',
+  confirm_archiveTitle: 'Archive Session',
+  confirm_leaveTitle: 'Leave Page',
+  confirm_logoutTitle: 'Log Out',
+  confirm_deleteUserTitle: 'Delete User',
+  confirm_deleteUserMessage: 'Are you sure you want to delete user {username}?',
+
   // ── Navigation ──────────────────────────────────────────────────────────────
   nav_home: 'Home',
   nav_appointments: 'Appointments',
@@ -398,7 +482,6 @@ const en: TranslationMap = {
   layout_assignRole: 'Assign Role',
 
   // ── Login ────────────────────────────────────────────────────────────────────
-  login_subtitle: 'Sign in to continue',
   login_username: 'Username',
   login_usernamePlaceholder: 'Username',
   login_password: 'Password',
@@ -577,6 +660,7 @@ const en: TranslationMap = {
   settings_micSelection: 'Microphone Selection',
   settings_micDenied:
     'Microphone access denied. Please allow access in browser settings.',
+  settings_micRetry: 'Try Again',
   settings_micNotFound: 'No microphone found',
   settings_audioQuality:
     'Audio quality: Mono channel, 16kHz sample rate. Optimized for medical conversations.',
@@ -627,9 +711,6 @@ const en: TranslationMap = {
   settings_light: 'Light',
   settings_dark: 'Dark',
   settings_fontSize: 'Font Size: {size}px',
-  settings_preview: 'Preview',
-  settings_previewText:
-    'This is a preview text. It will change as the font size changes.',
   settings_privacy_title: 'Privacy & Security',
   settings_kvkk_title: 'KVKK Compliance',
   settings_kvkk_text:
@@ -656,9 +737,6 @@ const en: TranslationMap = {
   cal_startRecording: 'Start Recording',
   cal_filter: 'Filter:',
   cal_noPatient: 'No patient information',
-  cal_days: 'Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday',
-  cal_shortDays: 'Sun,Mon,Tue,Wed,Thu,Fri,Sat',
-  cal_months: 'January,February,March,April,May,June,July,August,September,October,November,December',
 
   // ── Admin Page ────────────────────────────────────────────────────────────────
   admin_title: 'User Management',
@@ -727,6 +805,14 @@ const en: TranslationMap = {
   report_approveAll: 'Approve All',
   report_pdfWarning: 'Approve all sections for PDF ({approved}/{total})',
   report_pdfDownloadTitle: 'Download as PDF',
+  report_pdfDownloadError: 'PDF download failed',
+  report_section_draft: 'Draft',
+  report_section_edited: 'Edited',
+  report_section_approved: 'Approved',
+  report_section_edit: 'Edit',
+  report_section_approve: 'Approve',
+  report_section_placeholder: 'Enter content for this section...',
+  report_section_icd10Required: 'Select an ICD-10 diagnosis code',
 
   // ── SUT Tetkik Selector ───────────────────────────────────────────────────────
   sut_aiSuggest: 'Suggest Tests with AI',

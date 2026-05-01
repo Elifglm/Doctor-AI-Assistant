@@ -32,7 +32,7 @@ export function TranscriptSegmentItem({
 }: TranscriptSegmentProps): React.JSX.Element {
   const doctor = isDoctor(segment.speaker)
   const borderColor = doctor ? 'border-l-blue-600' : 'border-l-emerald-600'
-  const bgColor = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
+  const bgColor = index % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-900'
   const IconComponent = doctor ? Stethoscope : User
   const iconColor = doctor ? 'text-blue-600' : 'text-emerald-600'
   const displayLabel = getSpeakerDisplayLabel(segment.speaker, segment.speaker_label)
@@ -42,11 +42,11 @@ export function TranscriptSegmentItem({
       <div className="flex items-center gap-2 mb-1.5">
         <IconComponent className={`h-4 w-4 ${iconColor} shrink-0`} />
         <SpeakerLabel speaker={segment.speaker} speakerLabel={displayLabel} />
-        <span className="font-mono text-xs text-slate-400 ml-auto">
+        <span className="font-mono text-xs text-slate-400 dark:text-slate-500 ml-auto">
           {formatTimestamp(segment.start_time)} - {formatTimestamp(segment.end_time)}
         </span>
       </div>
-      <p className="text-sm text-slate-700 leading-relaxed pl-6">{segment.text}</p>
+      <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed pl-6">{segment.text}</p>
     </div>
   )
 }

@@ -27,7 +27,7 @@ export function RecordingControls({
   const t = useT()
 
   return (
-    <div className="flex items-center justify-between rounded-xl bg-white px-5 py-3.5 shadow-sm ring-1 ring-slate-200/60">
+    <div className="flex items-center justify-between rounded-xl bg-white dark:bg-slate-800 px-5 py-3.5 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60">
       {/* Left: Recording indicator and timer */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
@@ -40,11 +40,11 @@ export function RecordingControls({
                   : 'bg-slate-300'
             }`}
           />
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {isRecording ? t('rec_recording') : isPaused ? t('rec_paused') : t('rec_waiting')}
           </span>
         </div>
-        <span className="font-mono text-lg font-semibold text-slate-800 tabular-nums">
+        <span className="font-mono text-lg font-semibold text-slate-800 dark:text-slate-100 tabular-nums">
           {formatTime(elapsedTime)}
         </span>
       </div>
@@ -57,7 +57,7 @@ export function RecordingControls({
         {isRecording ? (
           <button
             onClick={onPause}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-600 "
             title={t('rec_pause')}
           >
             <Pause className="h-4 w-4" />
@@ -65,7 +65,7 @@ export function RecordingControls({
         ) : isPaused ? (
           <button
             onClick={onResume}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors hover:bg-blue-100"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 transition-colors hover:bg-blue-100"
             title={t('rec_resume')}
           >
             <Play className="h-4 w-4" />
@@ -74,7 +74,7 @@ export function RecordingControls({
         <button
           onClick={onStop}
           disabled={recordingState === 'idle'}
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
           title={t('rec_stop')}
         >
           <Square className="h-4 w-4" />

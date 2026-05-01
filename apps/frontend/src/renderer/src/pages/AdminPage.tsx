@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, KeyRound, Loader2, X, Check, ShieldCheck, Refresh
 import { cn } from '../lib/utils'
 import { apiClient } from '../services/apiClient'
 import { useAuthStore } from '../stores/authStore'
+import { confirm } from '../stores/confirmStore'
 import { useT } from '../hooks/useT'
 
 interface UserData {
@@ -83,10 +84,9 @@ export function AdminPage(): React.JSX.Element {
   }, [fetchUsers, syncOpenEMR])
 
   useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 4000)
-      return () => clearTimeout(timer)
-    }
+    if (!message) return undefined
+    const timer = setTimeout(() => setMessage(null), 4000)
+    return () => clearTimeout(timer)
   }, [message])
 
   const bransLabel = (brans: string): string => {
@@ -101,22 +101,22 @@ export function AdminPage(): React.JSX.Element {
   }
 
   return (
-    <div className="flex-1 overflow-auto bg-slate-50 p-6">
+    <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-900 p-6">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-7 w-7 text-blue-600" />
             <div>
-              <h1 className="text-xl font-bold text-slate-800">{t('admin_title')}</h1>
-              <p className="text-sm text-slate-500">{t('admin_subtitle')}</p>
+              <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('admin_title')}</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('admin_subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => void syncOpenEMR()}
               disabled={isSyncing}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50  transition-colors disabled:opacity-50"
             >
               {isSyncing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -146,8 +146,8 @@ export function AdminPage(): React.JSX.Element {
             className={cn(
               'rounded-lg border px-4 py-3 text-sm',
               message.type === 'success'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-red-200 bg-red-50 text-red-700'
+                ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
             )}
           >
             {message.text}
@@ -156,27 +156,27 @@ export function AdminPage(): React.JSX.Element {
 
         {/* New OpenEMR Doctors Banner */}
         {newOpenEMRDoctors.length > 0 && (
-          <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4 space-y-3">
+          <div className="rounded-xl border-2 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-4 space-y-3">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-600" />
-              <h3 className="text-sm font-semibold text-amber-800">
+              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
                 {t('admin_newDoctorsFound', { count: newOpenEMRDoctors.length })}
               </h3>
             </div>
-            <p className="text-xs text-amber-700">{t('admin_newDoctorsDesc')}</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300">{t('admin_newDoctorsDesc')}</p>
             <div className="space-y-2">
               {newOpenEMRDoctors.map((doc) => (
                 <div
                   key={doc.username}
-                  className="flex items-center justify-between rounded-lg bg-white border border-amber-200 px-4 py-3"
+                  className="flex items-center justify-between rounded-lg bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800 px-4 py-3"
                 >
                   <div className="flex items-center gap-3">
                     <UserPlus className="h-5 w-5 text-amber-600" />
                     <div>
-                      <p className="text-sm font-medium text-slate-800">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
                         {doc.fname} {doc.lname}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {t('admin_userLabel')} <span className="font-mono">{doc.username}</span>
                         {doc.specialty && (
                           <> — {t('admin_specialtyLabel')} <span className="font-medium">{doc.specialty}</span></>
@@ -249,32 +249,32 @@ export function AdminPage(): React.JSX.Element {
         {/* User List */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-slate-400 dark:text-slate-500" />
           </div>
         ) : (
-          <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60 overflow-hidden">
+          <div className="rounded-xl bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50">
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">{t('admin_col_user')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">{t('admin_col_displayName')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">{t('admin_col_role')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">{t('admin_col_specialty')}</th>
-                  <th className="px-4 py-3 text-right font-medium text-slate-600">{t('admin_col_actions')}</th>
+                <tr className="border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                  <th className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-300">{t('admin_col_user')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-300">{t('admin_col_displayName')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-300">{t('admin_col_role')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-300">{t('admin_col_specialty')}</th>
+                  <th className="px-4 py-3 text-right font-medium text-slate-600 dark:text-slate-300">{t('admin_col_actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                    <td className="px-4 py-3 font-mono text-slate-800">{u.username}</td>
-                    <td className="px-4 py-3 text-slate-700">{u.display_name}</td>
+                  <tr key={u.id} className="border-b border-slate-50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50  dark:hover:bg-slate-800/60">
+                    <td className="px-4 py-3 font-mono text-slate-800 dark:text-slate-100">{u.username}</td>
+                    <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{u.display_name}</td>
                     <td className="px-4 py-3">
                       <span
                         className={cn(
                           'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
                           u.role === 'admin'
-                            ? 'bg-purple-50 text-purple-700'
-                            : 'bg-blue-50 text-blue-700'
+                            ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                            : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                         )}
                       >
                         {roleLabel(u.role)}
@@ -286,19 +286,19 @@ export function AdminPage(): React.JSX.Element {
                           className={cn(
                             'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
                             u.brans === 'dahiliye'
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : 'bg-amber-50 text-amber-700'
+                              ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
                           )}
                         >
                           {bransLabel(u.brans)}
                         </span>
                       ) : (
-                        <span className="text-slate-400">-</span>
+                        <span className="text-slate-400 dark:text-slate-500">-</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {u.username === currentUser?.username ? (
-                        <span className="text-xs text-slate-400 italic">{t('admin_currentAccount')}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 italic">{t('admin_currentAccount')}</span>
                       ) : (
                         <div className="flex items-center justify-end gap-1">
                           <button
@@ -307,7 +307,7 @@ export function AdminPage(): React.JSX.Element {
                               setShowCreateForm(false)
                               setPasswordUserId(null)
                             }}
-                            className="rounded p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                            className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 transition-colors"
                             title={t('admin_edit')}
                           >
                             <Pencil className="h-4 w-4" />
@@ -318,14 +318,20 @@ export function AdminPage(): React.JSX.Element {
                               setEditingUser(null)
                               setShowCreateForm(false)
                             }}
-                            className="rounded p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                            className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-600 transition-colors"
                             title={t('admin_changePassword')}
                           >
                             <KeyRound className="h-4 w-4" />
                           </button>
                           <button
                             onClick={async () => {
-                              if (!window.confirm(t('admin_deleteConfirm', { username: u.username }))) return
+                              const accepted = await confirm({
+                                title: t('confirm_deleteUserTitle'),
+                                message: t('confirm_deleteUserMessage', { username: u.username }),
+                                confirmText: t('confirm_delete'),
+                                variant: 'danger',
+                              })
+                              if (!accepted) return
                               try {
                                 await apiClient.delete(`/api/v1/admin/users/${u.id}`)
                                 setMessage({ type: 'success', text: t('admin_deleted', { username: u.username }) })
@@ -334,7 +340,7 @@ export function AdminPage(): React.JSX.Element {
                                 setMessage({ type: 'error', text: t('admin_deleteFailed') })
                               }
                             }}
-                            className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            className="rounded p-1.5 text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors"
                             title={t('admin_delete')}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -366,7 +372,7 @@ function CreateUserForm({
 }): React.JSX.Element {
   const t = useT()
   const [username, setUsername] = useState(prefill?.username ?? '')
-  const [password, setPassword] = useState(prefill?.username ?? '')
+  const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState(
     prefill ? `Dr. ${prefill.fname} ${prefill.lname}`.trim() : ''
   )
@@ -412,59 +418,59 @@ function CreateUserForm({
   }
 
   return (
-    <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200/60 p-5">
+    <div className="rounded-xl bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-slate-800">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
           {prefill
             ? t('admin_addOpenEMR', { name: `${prefill.fname} ${prefill.lname}` })
             : t('admin_createUser')}
         </h3>
-        <button onClick={onCancel} className="rounded p-1 text-slate-400 hover:text-slate-600">
+        <button onClick={onCancel} className="rounded p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 ">
           <X className="h-4 w-4" />
         </button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_username')}</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_username')}</label>
             <input
               type="text"
               required
               minLength={3}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="ornek: doktor3"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_password')}</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_password')}</label>
             <input
               type="password"
               required
               minLength={3}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_displayName')}</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_displayName')}</label>
             <input
               type="text"
               required
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="Dr. Mehmet Oz"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_role')}</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_role')}</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               {roleOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -473,11 +479,11 @@ function CreateUserForm({
           </div>
           {role === 'doctor' && (
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_specialty')}</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_specialty')}</label>
               <select
                 value={brans}
                 onChange={(e) => setBrans(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
                 {bransOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -491,7 +497,7 @@ function CreateUserForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 "
           >
             {t('admin_cancel')}
           </button>
@@ -558,33 +564,33 @@ function EditUserForm({
   }
 
   return (
-    <div className="rounded-xl bg-white shadow-sm ring-1 ring-blue-200 p-5">
+    <div className="rounded-xl bg-white dark:bg-slate-800 shadow-sm ring-1 ring-blue-200 dark:ring-blue-800 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-slate-800">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
           {t('admin_editUser')} <span className="font-mono text-blue-600">{user.username}</span>
         </h3>
-        <button onClick={onCancel} className="rounded p-1 text-slate-400 hover:text-slate-600">
+        <button onClick={onCancel} className="rounded p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 ">
           <X className="h-4 w-4" />
         </button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_displayName')}</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_displayName')}</label>
             <input
               type="text"
               required
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_role')}</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_role')}</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               {roleOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -593,11 +599,11 @@ function EditUserForm({
           </div>
           {role === 'doctor' && (
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_specialty')}</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_specialty')}</label>
               <select
                 value={brans}
                 onChange={(e) => setBrans(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
                 {bransOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -606,11 +612,11 @@ function EditUserForm({
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_status')}</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_status')}</label>
             <select
               value={isActive ? 'active' : 'inactive'}
               onChange={(e) => setIsActive(e.target.value === 'active')}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               <option value="active">{t('settings_active')}</option>
               <option value="inactive">{t('settings_inactive')}</option>
@@ -622,7 +628,7 @@ function EditUserForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 "
           >
             {t('admin_cancel')}
           </button>
@@ -675,25 +681,25 @@ function PasswordChangeForm({
   }
 
   return (
-    <div className="rounded-xl bg-white shadow-sm ring-1 ring-amber-200 p-5">
+    <div className="rounded-xl bg-white dark:bg-slate-800 shadow-sm ring-1 ring-amber-200 dark:ring-amber-800 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-slate-800">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
           {t('admin_changePasswordTitle')} <span className="font-mono text-amber-600">{username}</span>
         </h3>
-        <button onClick={onCancel} className="rounded p-1 text-slate-400 hover:text-slate-600">
+        <button onClick={onCancel} className="rounded p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 ">
           <X className="h-4 w-4" />
         </button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">{t('admin_form_newPassword')}</label>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{t('admin_form_newPassword')}</label>
           <input
             type="password"
             required
             minLength={3}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
         {error && <p className="text-xs text-red-600">{error}</p>}
@@ -701,7 +707,7 @@ function PasswordChangeForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 "
           >
             {t('admin_cancel')}
           </button>

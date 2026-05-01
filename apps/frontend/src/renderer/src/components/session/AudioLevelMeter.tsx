@@ -13,8 +13,8 @@ export function AudioLevelMeter(): React.JSX.Element {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-slate-400 w-6 shrink-0">Ses</span>
-      <div className="relative h-2.5 w-28 overflow-hidden rounded-full bg-slate-200">
+      <span className="text-xs text-slate-400 dark:text-slate-500 w-6 shrink-0">Ses</span>
+      <div className="relative h-2.5 w-28 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
         <div
           className={`absolute inset-y-0 left-0 rounded-full transition-all duration-100 ease-out ${color}`}
           style={{ width: `${widthPercent}%` }}
