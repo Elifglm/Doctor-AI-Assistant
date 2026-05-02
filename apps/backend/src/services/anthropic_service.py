@@ -1,9 +1,15 @@
-"""Anthropic Claude API client -- async interface for text generation."""
+"""Anthropic Claude API client -- async interface for text generation.
+
+Supports prompt caching: when a `system` prompt is supplied, it's wrapped as a
+structured block with `cache_control: ephemeral` so the static instructional
+prefix can be served from cache on repeat calls. Haiku 4.5 minimum cacheable
+prefix is 4096 tokens; below that the API silently won't cache.
+"""
 
 from __future__ import annotations
 
 import logging
-from typing import AsyncIterator
+from typing import Any, AsyncIterator
 
 import httpx
 
@@ -74,6 +80,26 @@ class AnthropicLLMService:
         except Exception:
             return False
 
+    @staticmethod
+    def _wrap_system_for_cache(system: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "type": "text",
+                "text": system,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
+
+    @staticmethod
+    def _log_cache_usage(usage: dict[str, Any]) -> None:
+        cc = usage.get("cache_creation_input_tokens", 0) or 0
+        cr = usage.get("cache_read_input_tokens", 0) or 0
+        if cc or cr:
+            logger.info(
+                "anthropic cache usage: creation=%d read=%d input=%d",
+                cc, cr, usage.get("input_tokens", 0) or 0,
+            )
+
     async def generate(self, prompt: str, system: str = "") -> str:
         if self._client is None:
             raise RuntimeError("AnthropicLLMService not initialized.")
@@ -85,13 +111,13 @@ class AnthropicLLMService:
             "messages": [{"role": "user", "content": prompt}],
         }
         if system:
-            body["system"] = system
+            body["system"] = self._wrap_system_for_cache(system)
 
         try:
             resp = await self._client.post("/messages", json=body)
             resp.raise_for_status()
             data = resp.json()
-            # Extract text from content blocks
+            self._log_cache_usage(data.get("usage", {}))
             content_blocks = data.get("content", [])
             return "".join(
                 block.get("text", "") for block in content_blocks if block.get("type") == "text"
@@ -116,7 +142,7 @@ class AnthropicLLMService:
             "stream": True,
         }
         if system:
-            body["system"] = system
+            body["system"] = self._wrap_system_for_cache(system)
 
         try:
             async with self._client.stream("POST", "/messages", json=body) as resp:
@@ -128,10 +154,15 @@ class AnthropicLLMService:
                     if payload == "[DONE]":
                         break
                     chunk = json.loads(payload)
-                    if chunk.get("type") == "content_block_delta":
+                    chunk_type = chunk.get("type")
+                    if chunk_type == "content_block_delta":
                         text = chunk.get("delta", {}).get("text", "")
                         if text:
                             yield text
+                    elif chunk_type == "message_delta":
+                        usage = chunk.get("usage")
+                        if usage:
+                            self._log_cache_usage(usage)
         except Exception:
             logger.exception("Anthropic streaming failed")
             raise

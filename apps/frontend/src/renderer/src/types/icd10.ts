@@ -15,6 +15,7 @@ export interface ICD10Suggestion {
   tani: string
   confidence: number
   reasoning: string
+  source?: 'tani' | 'semptom' | 'cikarim'
 }
 
 export interface ICD10SuggestResponse {

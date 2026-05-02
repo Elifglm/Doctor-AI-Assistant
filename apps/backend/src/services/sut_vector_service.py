@@ -4,14 +4,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from apps.backend.src.services.embedding_config import get_profile
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[4]
-_CHROMA_DIR = _PROJECT_ROOT / "data" / "sut_tetkik_chroma"
-_EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -31,23 +28,29 @@ class SUTVectorService:
     def __init__(self) -> None:
         self._model: Any = None
         self._collection: Any = None
+        self._profile = get_profile()
 
     async def initialize(self) -> None:
         """Load embedding model and ChromaDB collection."""
         import asyncio
 
+        profile = self._profile
+
         def _load():
             from sentence_transformers import SentenceTransformer
             import chromadb
 
-            model = SentenceTransformer(_EMBEDDING_MODEL)
-            client = chromadb.PersistentClient(path=str(_CHROMA_DIR))
+            model = SentenceTransformer(profile.model_id)
+            client = chromadb.PersistentClient(path=str(profile.sut_chroma_dir))
             collection = client.get_collection("sut_tetkik_vectors")
             return model, collection
 
         self._model, self._collection = await asyncio.to_thread(_load)
         count = self._collection.count()
-        logger.info("SUTVectorService initialized (%d tetkik)", count)
+        logger.info(
+            "SUTVectorService initialized (profile=%s, %d tetkik)",
+            profile.name, count,
+        )
 
     @property
     def is_ready(self) -> bool:
@@ -61,9 +64,12 @@ class SUTVectorService:
             return []
 
         import asyncio
+        prefixed_query = self._profile.query_prefix + query
 
         def _query():
-            emb = self._model.encode([query]).tolist()
+            emb = self._model.encode(
+                [prefixed_query], normalize_embeddings=True,
+            ).tolist()
             # SUT codes are tagged "dahiliye", "ortopedi" or "her ikisi".
             # When the caller asks for a specific specialty, ALSO include
             # cross-specialty codes ("her ikisi"); otherwise common tests

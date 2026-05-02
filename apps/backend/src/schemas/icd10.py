@@ -27,6 +27,9 @@ class ICD10Suggestion(BaseModel):
     tani: str
     confidence: float
     reasoning: str = ""
+    # 3-stage source: "tani" (explicit diagnosis), "semptom" (symptom code,
+    # no diagnosis stated), "cikarim" (inferred from treatment/consultation).
+    source: str = "tani"
 
 
 class ICD10SuggestResponse(BaseModel):

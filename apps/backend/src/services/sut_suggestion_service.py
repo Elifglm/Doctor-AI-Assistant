@@ -48,33 +48,45 @@ SUT_REPORT_SELECTION_PROMPT = """\
 Sen bir Turkce tibbi tetkik/tahlil uzmanisin. Asagida bir anamnez raporunun ilgili \
 alanlari ve SUT tetkik/tahlil aday kodlari verilmistir.
 
-GOREV: Aday tetkiklerden RAPORDA ACIKCA ISTENEN tetkikleri sec.
+GOREV: ADAY TETKIKLER listesinden RAPORDA ACIKCA ISTENEN tetkikleri sec.
 
-KURALLAR (KESIN):
-- Rapordaki "konsultasyon_muayene", "tedavi", "oneri" gibi alanlarda \
-  doktor hangi tetkikleri PLANLADIYSA SADECE onlari sec.
-- Klinik pratikte standart tetkikleri SADECE rapor o yonde isaret \
-  ediyorsa ekle (sikayetle uyumlu, doktor tarafindan dolayli istenmis).
-- Aday listesinde olup raporda HIC BAHSEDILMEYEN tetkikleri SECME, \
-  guven 0.5'in altina dusurmek yerine TAMAMEN ATLA.
-- Halk dilindeki ifadeleri TAM kelime bazli degil, SEMANTIK olarak esle:
-  * "kan tahlili" / "kan sayimi" / "hemogram" → L107020 (Tam Kan Sayimi)
-  * "kan tahlili" *farkli bir test olan* "Gaitada gizli kan aranmasi" \
-    DEGILDIR — kan tahlili istenince gaita testi SECILMEZ.
-  * "karaciger enzimleri" → ALT (L100300) + AST (L101280)
-  * "böbrek fonksiyonu" → kreatinin, BUN, GFR
-  * "lipid paneli" → LDL, HDL, total kolestrol, trigliserid
-  * "karın USG" / "batın ultrasonu" → 803570 (Tum Batin USG)
-  * "EKG" → 530100 (basit EKG). "Holter" / "24 saat EKG" / "ritim holter" \
-    SADECE bu ifadeler gectiyse seçilir (700540). Doktor sadece "EKG" \
-    dediyse holter SECILMEZ.
-  * "tiroid USG" / "boyun USG" / "tiroid ultrason" → 803320 (Boyun USG)
-  * "tiroid testleri" / "tiroid paneli" → TSH (L107380) + Serbest T3 \
-    (L106760) + Serbest T4 (L106770). Anti-TPO (L107060) ayrica istendiyse \
-    eklenir, "tiroid testi" otomatik anti-TPO icermez.
-- ICD-10 tanisi varsa o taniyla uyumsuz tetkikleri SECME.
-- Maksimum 10 tetkik. Her biri icin guven skoru (0.0-1.0).
-- Sadece JSON yaniti ver.
+KRITIK KURAL — KOD KAYNAGI:
+SADECE asagidaki "ADAY TETKIKLER" listesinde gecen kodlari ve adlari kullan. \
+Aday listesinde olmayan bir kodu/adi UYDURMA, ASLA. Bilmediğin kodu yazma.
+
+ZORUNLU SECIM KURALI:
+Eger bir tetkik/tahlil adi raporun "konsultasyon_muayene", "tedavi" veya "oneri" \
+alanlarinda ACIKCA gecmisse VE aday listesinde semantik karsiligi VARSA → o tetkiki \
+MUTLAKA SEC, confidence >= 0.90. ATLAMA, eleme, "yeterli match degil" deme.
+
+SEMANTIK ESLESME (ADAY LISTESI ICINDEN):
+- "TAM KAN SAYIMI" / "kan sayimi" / "hemogram" → adaylarda "Tam Kan Sayımı" varsa sec.
+- "TROPONIN" → adaylarda "Troponin I" ve/veya "Troponin T" varsa HEPSINI sec.
+- "BNP" → adaylarda "B natriüretik peptid" ve/veya "NT-ProBNP" varsa HEPSINI sec.
+- "EKOKARDIYOGRAFI" / "EKO" → adaylarda "Ekokardiyografi" varsa sec.
+- "EKG" → adaylarda basit "EKG" varsa sec. "Holter" SADECE rapor "holter" \
+  derse seçilir, "EKG" denildi diye otomatik holter SECILMEZ.
+- "BIYOKIMYA" / "biyokimya paneli" → adaylarda glukoz, ure, kreatinin, ALT, AST, \
+  sodyum, potasyum gibi panel komponentleri varsa HEPSINI sec. \
+  Yoksa biyokimya icin uydurma, atla.
+- "KARACIGER ENZIMLERI" → adaylarda ALT ve AST varsa HEPSINI sec.
+- "BOBREK FONKSIYONU" → adaylarda kreatinin, BUN/ure varsa hepsini sec.
+- "LIPID PANELI" → adaylarda LDL, HDL, total kolesterol, trigliserid varsa hepsini sec.
+- "TIROID TESTLERI" → adaylarda TSH, sT3, sT4 varsa hepsini sec.
+- "KARIN USG" → adaylarda Tum Batin USG varsa sec.
+- "TIROID USG" / "boyun USG" → adaylarda Boyun USG varsa sec.
+
+NEGATIF KURALLAR (bu sinirlari koru):
+- Aday listesinde olup raporda HIC BAHSEDILMEYEN tetkikleri SECME.
+- Aday listesinde OLMAYAN bir kod/adi ASLA UYDURMA — kod bilmiyorsan o tetkiki ATLA.
+- "kan tahlili" istenince yanlis "Gaitada gizli kan" SECILMEZ.
+- "EKG" denilince "Holter" SECILMEZ.
+- ICD-10 tanisi verilmisse o taniyla CELISEN tetkikleri SECME.
+
+CIKTI:
+- Maksimum 10 tetkik.
+- Her tetkik icin confidence (0.0-1.0). Raporda ismen gecen tetkikler >= 0.90.
+- SADECE JSON. Markdown fence yok, aciklama yok.
 
 ANAMNEZ RAPORU:
 {report_text}
@@ -83,18 +95,61 @@ ADAY TETKIKLER:
 {candidates}
 
 ORNEKLER:
-[OK] "konsultasyon_muayene: kan tahlili, karaciger enzimleri istenmis"
-     -> [Hemogram, ALT, AST] (Gaitada gizli kan SECILMEZ — alakasiz)
-[OK] "tedavi: tiroid takibi" -> [TSH] (FT3/FT4 doktor istemediyse SECILMEZ)
-[OK] "rapor tetkik plani icermiyor" -> [] (bos liste)
 
-Yanit (sadece JSON):
+[ORNEK 1 — coklu tetkik, ADAY LISTESINDE olanlari sec]
+konsultasyon_muayene: "TAM KAN SAYIMI ---- TROPONIN ---- BNP ---- EKOKARDIYOGRAFI"
+Adaylarda Tam Kan Sayimi, Troponin I, Troponin T, BNP, Ekokardiyografi varsa:
 [
-  {{"kodu": "L107020", "adi": "Tam Kan Sayimi (Hemogram)", "confidence": 0.95, \
-"reasoning": "Konsultasyon muayene alaninda kan tahlili planlanmis"}}
+  {{"kodu":"<adaydan>","adi":"Tam Kan Sayımı","confidence":0.95,"reasoning":"Raporda 'TAM KAN SAYIMI' ismen gecti, adayda var"}},
+  {{"kodu":"<adaydan>","adi":"Troponin I","confidence":0.95,"reasoning":"Raporda 'TROPONIN' ismen gecti"}},
+  {{"kodu":"<adaydan>","adi":"Troponin T","confidence":0.92,"reasoning":"Raporda 'TROPONIN' ismen gecti, T varyanti da adayda"}},
+  {{"kodu":"<adaydan>","adi":"BNP","confidence":0.95,"reasoning":"Raporda 'BNP' ismen gecti"}},
+  {{"kodu":"<adaydan>","adi":"Ekokardiyografi","confidence":0.95,"reasoning":"Raporda 'EKOKARDIYOGRAFI' ismen gecti"}}
 ]
+("<adaydan>" yerine ADAY TETKIKLER listesindeki gerçek kodu yaz.)
 
-Hicbir aday gercekten uygun degilse: []
+[ORNEK 2 — semantic mapping, halk dili]
+konsultasyon_muayene: "kan tahlili ve karaciger enzimleri istenmis"
+Adaylarda Hemogram, ALT, AST varsa: bu uclunu sec. Gaitada gizli kan ADAYDA OLSA BILE SECILMEZ \
+(rapor "gaita" demedi).
+
+[ORNEK 3 — biyokimya panel, ama aday listesi sadece 2 komponenti iceriyor]
+konsultasyon_muayene: "BIYOKIMYA istendi"
+Adaylar sadece "Glukoz (Serum/Plazma)" ve "Kreatinin (Serum/Plazma)" iceriyor. \
+SECIM: bu iki kodu sec. Aday listesinde olmayan ALT/AST/Ure icin SECME, UYDURMA.
+
+[ORNEK 4 — bos rapor]
+"rapor tetkik plani icermiyor" → [] (bos liste, asla uydurma)
+
+Yanit (sadece JSON, kod fence yok):
+"""
+
+
+EXPLICIT_TEST_EXTRACTION_PROMPT = """\
+Asagidaki tibbi rapor metninde DOKTOR TARAFINDAN ACIKCA ISTENMIS \
+tetkik/tahlil/goruntuleme isimlerini cikar. Sadece tetkik adlarini listele, kod yazma.
+
+KURALLAR:
+- Sadece raporda ACIKCA gecen tetkik isimlerini listele.
+- Tetkik adlarini DOGRU TURKCE karakterleriyle yaz: ı→İ donusumu yapilmissa duzgun \
+  Turkce yaziya geri cevir. Ornek: "EKOKARDIYOGRAFI" YANLIS → "EKOKARDİYOGRAFİ" DOGRU. \
+  "TIROID USG" YANLIS → "TİROİD USG" DOGRU. \
+  "BIYOKIMYA" YANLIS → "BİYOKİMYA" DOGRU.
+- Eger panel adi varsa (BIYOKIMYA, LIPID PANELI, KARACIGER ENZIMLERI, BOBREK \
+  FONKSIYONU, TIROID TESTLERI), panel adini birak ama ek olarak bilinen alt-testlerini \
+  de listeye ekle:
+  * BIYOKIMYA → glukoz, üre, kreatinin, sodyum, potasyum, ALT, AST
+  * KARACIGER ENZIMLERI → ALT, AST
+  * BOBREK FONKSIYONU → kreatinin, üre
+  * LIPID PANELI → LDL kolesterol, HDL kolesterol, total kolesterol, trigliserid
+  * TIROID TESTLERI → TSH, sT3, sT4
+- Hicbir tetkik istenmemisse bos liste don.
+- Sadece JSON array, baska aciklama yok.
+
+RAPOR:
+{report_text}
+
+Yanit (sadece JSON array):
 """
 
 
@@ -208,12 +263,22 @@ class SUTSuggestionService:
 
         candidates = await self._find_vector_candidates(ner_terms, brans=brans)
         text_candidates = await self._text_search_fallback(ner_terms, brans=brans)
+        explicit_candidates = await self._llm_extract_and_search(report_text, brans=brans)
         seen = {c["kodu"] for c in candidates}
-        for tc in text_candidates:
-            if tc["kodu"] not in seen:
-                seen.add(tc["kodu"])
-                candidates.append(tc)
-        logger.info("Report combined %d candidates (vector + text)", len(candidates))
+        for src in (text_candidates, explicit_candidates):
+            for tc in src:
+                if tc["kodu"] not in seen:
+                    seen.add(tc["kodu"])
+                    candidates.append(tc)
+        logger.info(
+            "Report combined %d candidates (vector + text + llm-explicit)",
+            len(candidates),
+        )
+        print(
+            f"[SUT-DEBUG] candidate sources: vector={len(candidates) - len(text_candidates) - len(explicit_candidates)} "
+            f"text={len(text_candidates)} llm-explicit={len(explicit_candidates)}",
+            flush=True,
+        )
 
         if not candidates:
             return []
@@ -237,8 +302,16 @@ class SUTSuggestionService:
             candidates=candidates_text,
         )
 
+        # Temporary debug — confirm exactly what the LLM sees and returns.
+        print(f"[SUT-DEBUG] LLM report-select: {len(candidates)} candidates", flush=True)
+        for c in candidates:
+            print(f"[SUT-DEBUG]   cand: ({c.get('kodu')}) {c.get('adi')[:50]} skor={c.get('score',0):.2f}", flush=True)
+        tks_in = any(c.get("kodu") == "L107020" for c in candidates)
+        print(f"[SUT-DEBUG]   L107020 (Tam Kan Sayimi) in candidates: {tks_in}", flush=True)
+
         try:
             raw = await self._llm.generate(prompt, "")
+            print(f"[SUT-DEBUG] LLM RAW RESPONSE FULL:\n{raw}", flush=True)
         except Exception:
             logger.exception("LLM SUT tetkik report selection failed")
             return [
@@ -252,7 +325,7 @@ class SUTSuggestionService:
                 for c in candidates[:10]
             ]
 
-        return self._parse_llm_selection(raw)
+        return self._parse_llm_selection(raw, candidates)
 
     # ------------------------------------------------------------------
     # Step 1: NER extraction
@@ -342,7 +415,7 @@ class SUTSuggestionService:
         # ayırmış olabilir (örn konsultasyon_muayene = "EKG ---- TSH ---- SERBEST T3").
         # Bu açıkça yazılı testleri tek tek aday yapmak için ayrıştır.
         import re as _re
-        for fragment in _re.split(r"-{2,}|\+|/{2,}|;|,", transcript):
+        for fragment in _re.split(r"-{2,}|\+|/{2,}|;|,|\n", transcript):
             token = fragment.strip()
             # Yalnızca tetkik adı gibi görünen kısa parçalar — uzun cümleleri ele.
             if 2 <= len(token) <= 80 and not _re.search(r"[.!?]", token):
@@ -382,13 +455,62 @@ class SUTSuggestionService:
             })
         return candidates
 
+    async def _llm_extract_and_search(
+        self, report_text: str, brans: str | None = None
+    ) -> list[dict[str, Any]]:
+        """LLM extracts explicit test names from report, then text-search each.
+
+        Bypasses vector embedding limitations and Turkish-character normalization
+        bugs by relying on the LLM to produce proper Turkish forms (e.g.
+        "EKOKARDIYOGRAFI" → "EKOKARDİYOGRAFİ") that match the SUT DB exactly.
+        """
+        prompt = EXPLICIT_TEST_EXTRACTION_PROMPT.format(report_text=report_text)
+        try:
+            raw = await self._llm.generate(prompt, "")
+        except Exception:
+            logger.exception("LLM explicit test extraction failed")
+            return []
+
+        cleaned = raw.strip()
+        if "```" in cleaned:
+            cleaned = re.sub(r"```(?:json)?\s*", "", cleaned).strip()
+        match = re.search(r"\[.*\]", cleaned, re.DOTALL)
+        if not match:
+            return []
+        try:
+            names = json.loads(match.group(0))
+        except (json.JSONDecodeError, ValueError):
+            return []
+        if not isinstance(names, list):
+            return []
+
+        print(f"[SUT-DEBUG] LLM-extracted explicit test names: {names}", flush=True)
+
+        candidates: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for name in names[:20]:
+            if not isinstance(name, str) or not name.strip():
+                continue
+            results = await self._sut.search(name.strip(), limit=3, brans=brans)
+            for r in results:
+                if r.kodu not in seen:
+                    seen.add(r.kodu)
+                    candidates.append({
+                        "kodu": r.kodu,
+                        "adi": r.adi,
+                        "brans": r.brans,
+                        "score": 0.95,
+                        "source": f"llm_explicit:{name}",
+                    })
+        return candidates
+
     async def _text_search_fallback(
         self, terms: list[str], brans: str | None = None
     ) -> list[dict[str, Any]]:
         """Fallback: text-based SUT search when vector DB is unavailable."""
         candidates = []
         seen: set[str] = set()
-        for term in terms[:5]:
+        for term in terms[:25]:
             results = await self._sut.search(term, limit=3, brans=brans)
             for r in results:
                 if r.kodu not in seen:
@@ -443,11 +565,17 @@ class SUTSuggestionService:
                 for c in candidates[:10]
             ]
 
-        return self._parse_llm_selection(raw)
+        return self._parse_llm_selection(raw, candidates)
 
     @staticmethod
-    def _parse_llm_selection(raw: str) -> list[SUTSuggestion]:
-        """Parse LLM's JSON selection response."""
+    def _parse_llm_selection(
+        raw: str, candidates: list[dict[str, Any]] | None = None
+    ) -> list[SUTSuggestion]:
+        """Parse LLM's JSON selection response.
+
+        If candidates is provided, drops any code not in the candidates list
+        (LLM hallucination guard — codes must exist in the SUT DB).
+        """
         cleaned = raw.strip()
         if "```" in cleaned:
             cleaned = re.sub(r"```(?:json)?\s*", "", cleaned).strip()
@@ -460,15 +588,37 @@ class SUTSuggestionService:
             logger.warning("Failed to parse LLM SUT tetkik selection: %s", raw[:200])
             return []
 
+        valid_codes: set[str] | None = None
+        cand_by_code: dict[str, dict[str, Any]] = {}
+        if candidates is not None:
+            cand_by_code = {str(c.get("kodu", "")): c for c in candidates}
+            valid_codes = set(cand_by_code.keys())
+
         suggestions: list[SUTSuggestion] = []
+        dropped: list[str] = []
         for item in parsed[:10]:
+            kodu = str(item.get("kodu", ""))
+            if valid_codes is not None and kodu not in valid_codes:
+                dropped.append(kodu)
+                continue
+            adi = item.get("adi", "")
+            brans = item.get("brans", "")
+            if kodu in cand_by_code:
+                cand = cand_by_code[kodu]
+                adi = cand.get("adi", adi)
+                brans = cand.get("brans", brans)
             suggestions.append(
                 SUTSuggestion(
-                    kodu=item.get("kodu", ""),
-                    adi=item.get("adi", ""),
-                    brans=item.get("brans", ""),
+                    kodu=kodu,
+                    adi=adi,
+                    brans=brans,
                     confidence=float(item.get("confidence", 0.5)),
                     reasoning=item.get("reasoning", ""),
                 )
+            )
+        if dropped:
+            logger.warning(
+                "Dropped %d hallucinated SUT code(s) not in candidates: %s",
+                len(dropped), dropped,
             )
         return suggestions

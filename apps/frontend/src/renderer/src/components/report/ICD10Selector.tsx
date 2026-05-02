@@ -59,7 +59,7 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
   // Same threshold used in handleSuggest below — apply here too so reports
   // that were saved before the threshold existed don't surface stale
   // low-confidence picks.
-  const ICD_MIN_CONFIDENCE = 0.7
+  const ICD_MIN_CONFIDENCE = 0.5
   const [suggestions, setSuggestions] = useState<ICD10Suggestion[]>(() =>
     parsed
       .filter((p) => p.confidence !== undefined && p.confidence >= ICD_MIN_CONFIDENCE)
@@ -68,6 +68,7 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
         tani: p.tani,
         confidence: p.confidence ?? 0.5,
         reasoning: '',
+        source: (p as ICD10Suggestion).source,
       }))
       .sort((a, b) => b.confidence - a.confidence)
   )
@@ -199,10 +200,20 @@ export function ICD10Selector({ value, reportSections, onChange }: ICD10Selector
                   : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
               )}
             >
-              <span>
+              <span className="flex items-center gap-2">
                 <span className="font-mono font-semibold text-blue-700 dark:text-blue-300">{s.icd_kodu}</span>
-                <span className="mx-1.5 text-slate-400 dark:text-slate-500">—</span>
+                <span className="text-slate-400 dark:text-slate-500">—</span>
                 <span className="text-slate-700 dark:text-slate-200">{s.tani}</span>
+                {s.source === 'semptom' && (
+                  <span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                    semptom
+                  </span>
+                )}
+                {s.source === 'cikarim' && (
+                  <span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
+                    çıkarım
+                  </span>
+                )}
               </span>
               <span
                 className={cn(
