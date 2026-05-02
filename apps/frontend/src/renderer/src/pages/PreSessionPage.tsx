@@ -93,7 +93,7 @@ export function PreSessionPage(): React.JSX.Element {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Patient Info (read-only, from appointment) */}
-          <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 p-4 space-y-2">
+          <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20 p-4 space-y-2">
             <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">
               {t('pre_patientInfo')}
             </p>

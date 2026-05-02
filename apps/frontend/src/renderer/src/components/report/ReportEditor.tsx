@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Save, CheckCheck, Loader2, FileDown, Send, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Save, CheckCheck, Loader2, FileText, Send, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ReportSectionCard } from './ReportSection'
+import { PdfPreviewModal } from './PdfPreviewModal'
 import { apiClient } from '../../services/apiClient'
-import { useAuthStore } from '../../stores/authStore'
 import { useT } from '../../hooks/useT'
 import type { Report, ReportSection } from '../../types/report'
 
@@ -19,7 +19,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   const [showSuccess, setShowSuccess] = useState(false)
   const [showError, setShowError] = useState(false)
   const [icdWarning, setIcdWarning] = useState(false)
-  const [pdfWarning, setPdfWarning] = useState(false)
+  const [openEmrWarning, setOpenEmrWarning] = useState(false)
   const [isPushingOpenEMR, setIsPushingOpenEMR] = useState(false)
   const [openEMRResult, setOpenEMRResult] = useState<{ success: boolean; message: string } | null>(null)
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -74,6 +74,16 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
     )
   }, [])
 
+  // Revert an approved section back to "edited" so the doctor can change it.
+  // Without this, clicking "Düzenle" on an approved section did nothing — the
+  // old handler routed through onContentChange which short-circuits when the
+  // text hasn't changed.
+  const handleUnapprove = useCallback((key: string) => {
+    setSections((prev) =>
+      prev.map((s) => (s.key === key ? { ...s, status: 'edited' as const } : s))
+    )
+  }, [])
+
   const handleSaveDraft = (): void => {
     const approved = sections.filter((s) => s.status === 'approved').length
     saveMutation.mutate({
@@ -105,35 +115,28 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
     })
   }
 
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
+  const [showPdfPreview, setShowPdfPreview] = useState(false)
+  const [isOpeningPreview, setIsOpeningPreview] = useState(false)
   const [pdfError, setPdfError] = useState<string | null>(null)
 
-  const handleDownloadPdf = async (): Promise<void> => {
-    setIsDownloadingPdf(true)
+  const handleOpenPdfPreview = async (): Promise<void> => {
+    // Save current state silently first so the preview reflects latest edits.
+    setIsOpeningPreview(true)
     setPdfError(null)
     try {
-      const token = useAuthStore.getState().token
-      const baseUrl =
-        (typeof window !== 'undefined' && window.electronAPI?.getBackendUrl()) ||
-        'http://127.0.0.1:8700'
-      const res = await fetch(`${baseUrl}/api/v1/reports/${report.id}/pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
+      await apiClient.put<Report>(`/api/v1/reports/${report.id}`, {
+        content: {
+          sections,
+          approved_sections: sections.filter((s) => s.status === 'approved').length,
+          total_sections: sections.length,
+        },
       })
-      if (!res.ok) throw new Error(t('report_pdfDownloadError'))
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `anamnez_rapor_${report.id}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      setShowPdfPreview(true)
     } catch (err) {
       setPdfError(err instanceof Error ? err.message : t('report_pdfDownloadError'))
       setTimeout(() => setPdfError(null), 5000)
     } finally {
-      setIsDownloadingPdf(false)
+      setIsOpeningPreview(false)
     }
   }
 
@@ -184,6 +187,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             section={section}
             onContentChange={handleContentChange}
             onApprove={handleApprove}
+            onUnapprove={handleUnapprove}
             allSections={sections}
             sessionId={report.session_id}
           />
@@ -207,42 +211,29 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
           {icdWarning && (
             <span className="text-xs text-amber-600 font-medium">{t('report_icd10Placeholder')}</span>
           )}
-          {pdfWarning && (
-            <span className="text-xs text-red-600 font-medium">
-              {t('report_pdfWarning', { approved: approvedCount, total: totalCount })}
-            </span>
-          )}
           {pdfError && (
             <span className="text-xs text-red-600 font-medium">{pdfError}</span>
+          )}
+          {openEmrWarning && (
+            <span className="text-xs text-red-600 font-medium">
+              {t('report_sectionsNotApproved', { count: totalCount - approvedCount })}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => {
-              if (approvedCount < totalCount) {
-                setPdfWarning(true)
-                setTimeout(() => setPdfWarning(false), 5000)
-                return
-              }
-              void handleDownloadPdf()
-            }}
-            disabled={isDownloadingPdf}
-            title={approvedCount < totalCount
-              ? t('report_sectionsNotApproved', { count: totalCount - approvedCount })
-              : t('report_pdfDownloadTitle')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
-              approvedCount < totalCount
-                ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 cursor-not-allowed'
-                : 'border-blue-300 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100'
-            }`}
+            onClick={() => void handleOpenPdfPreview()}
+            disabled={isOpeningPreview}
+            title={t('report_pdfPreviewTitle')}
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
           >
-            {isDownloadingPdf ? (
+            {isOpeningPreview ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <FileDown className="h-4 w-4" />
+              <FileText className="h-4 w-4" />
             )}
-            {t('report_downloadPdf')}
+            {t('report_pdfPreview')}
           </button>
           <button
             type="button"
@@ -274,8 +265,8 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             type="button"
             onClick={() => {
               if (approvedCount < totalCount) {
-                setPdfWarning(true)
-                setTimeout(() => setPdfWarning(false), 5000)
+                setOpenEmrWarning(true)
+                setTimeout(() => setOpenEmrWarning(false), 5000)
                 return
               }
               void handlePushToOpenEMR()
@@ -316,6 +307,13 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
           )}
           <span>{openEMRResult.message}</span>
         </div>
+      )}
+
+      {showPdfPreview && (
+        <PdfPreviewModal
+          reportId={report.id}
+          onClose={() => setShowPdfPreview(false)}
+        />
       )}
     </div>
   )

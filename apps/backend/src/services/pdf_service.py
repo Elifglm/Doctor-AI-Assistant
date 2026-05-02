@@ -46,10 +46,18 @@ def _register_fonts() -> None:
     else:
         font_dirs.extend(["/usr/share/fonts/truetype/dejavu", "/usr/share/fonts"])
 
-    # Try Arial first, then DejaVu as fallback
+    # Filename casing varies by OS. Windows commonly uses "arial.ttf",
+    # "arialbd.ttf"; Linux/Mac may use the spaced names. List several
+    # candidates so any one match works.
     font_map = {
-        "HastaneFont": ["Arial.ttf", "DejaVuSans.ttf"],
-        "HastaneFont-Bold": ["Arial Bold.ttf", "DejaVuSans-Bold.ttf"],
+        "HastaneFont": [
+            "arial.ttf", "Arial.ttf",
+            "DejaVuSans.ttf",
+        ],
+        "HastaneFont-Bold": [
+            "arialbd.ttf", "Arial Bold.ttf", "ArialBd.ttf", "Arial-Bold.ttf",
+            "DejaVuSans-Bold.ttf",
+        ],
     }
 
     for font_name, candidates in font_map.items():
@@ -84,9 +92,12 @@ def _build_styles() -> dict[str, ParagraphStyle]:
     font = "HastaneFont"
     font_bold = "HastaneFont-Bold"
 
-    # Check if fonts registered, fallback to Helvetica
+    # Check both regular AND bold are registered. Falling back only when the
+    # regular font is missing leaves us in a broken state if just the bold
+    # variant failed to register (reportlab raises on first paragraph render).
     try:
         pdfmetrics.getFont(font)
+        pdfmetrics.getFont(font_bold)
     except KeyError:
         font = "Helvetica"
         font_bold = "Helvetica-Bold"
