@@ -302,16 +302,10 @@ class SUTSuggestionService:
             candidates=candidates_text,
         )
 
-        # Temporary debug — confirm exactly what the LLM sees and returns.
         print(f"[SUT-DEBUG] LLM report-select: {len(candidates)} candidates", flush=True)
-        for c in candidates:
-            print(f"[SUT-DEBUG]   cand: ({c.get('kodu')}) {c.get('adi')[:50]} skor={c.get('score',0):.2f}", flush=True)
-        tks_in = any(c.get("kodu") == "L107020" for c in candidates)
-        print(f"[SUT-DEBUG]   L107020 (Tam Kan Sayimi) in candidates: {tks_in}", flush=True)
 
         try:
             raw = await self._llm.generate(prompt, "")
-            print(f"[SUT-DEBUG] LLM RAW RESPONSE FULL:\n{raw}", flush=True)
         except Exception:
             logger.exception("LLM SUT tetkik report selection failed")
             return [
