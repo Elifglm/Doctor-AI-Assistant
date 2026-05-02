@@ -1,0 +1,13 @@
+Doktor: Geçmiş olsun, anlatın bakalım.
+Hasta: Hocam her yerim dökülüyor. Kaslarım, kemiklerim sızlıyor. Hiç enerjim yok.
+Doktor: Güneş görüyor musunuz? Sigara, alkol var mı?
+Hasta: Hiç güneş görmüyorum, bankada çalışıyorum. Sigara yok, alkol ayda bir.
+Doktor: Geçmiş hastalık veya ameliyat?
+Hasta: 2 yıl önce guatr (tiroid) ameliyatı oldum, tiroidimin bir kısmını aldılar.
+Doktor: İlaç kullanıyor musunuz şu an?
+Hasta: Levotiron kullanıyorum her sabah aç karnına.
+Doktor: Ailede kemik erimesi olan var mı?
+Hasta: Annemde ve ananemde bel bükülmesi ve kemik erimesi vardı.
+Doktor: Tansiyon 130/85, nabız 64, SpO2 %97. Kaval kemiğinize bastırınca ağrı oluyor.
+Hasta: Tiroid ilacından mı oluyor bu ağrılar?
+Doktor: Sanmam, daha çok D vitamini ve Kalsiyum dengesiyle ilgili olabilir. TSH, 25-OH Vitamin D, Kalsiyum ve ALP bakalım.

@@ -1,0 +1,13 @@
+Doktor: Buyurun, sizi dinliyorum.
+Hasta: Hocam bacaklarımda, özellikle kaval kemiğimde kırmızı lekeler çıktı ve dokununca çok ağrıyor. Bir de halsizim.
+Doktor: Sigara, alkol?
+Hasta: Sigara yok, alkol çok nadir.
+Doktor: Geçmiş hastalık veya ameliyat?
+Hasta: Kronik bir hastalığım yok. Geçen ay ağır bir farenjit (boğaz enfeksiyonu) geçirmiştim, antibiyotik kullandım.
+Doktor: Aile öyküsü?
+Hasta: Babamda sedef hastalığı var.
+Doktor: Şu an kullandığınız ilaç?
+Hasta: Hiç yok.
+Doktor: Tansiyon 120/75, nabız 84, SpO2 %98. Ateşiniz 37.8. Bacaklarınızdaki sertliklere bakalım... "Eritema nodosum"a benziyor.
+Hasta: Antibiyotik mi yaptı bunu?
+Doktor: Olabilir ya da geçirdiğiniz enfeksiyonun bir tepkisi. Göğüs hastalıkları ile ortak bakmamız gerekebilir. Akciğer grafisi ve ACE düzeyi, bir de rutin kan tahlilleri isteyeceğim.

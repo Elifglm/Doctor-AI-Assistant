@@ -1,0 +1,15 @@
+Doktor: Merhaba, şikayetiniz nedir?
+Hasta: Hocam boynumda ve koltuk altlarımda elime gelen şişlikler var. Geceleri o kadar çok terliyorum ki çarşafı değiştiriyoruz.
+Doktor: Kaşıntı veya kilo kaybı var mı?
+Hasta: Evet, son 3 ayda 10 kilo verdim istemeden. Vücudumda genel bir kaşıntı da var.
+Doktor: Sigara, alkol?
+Hasta: Sigara yok, alkol yok.
+Doktor: Eski ameliyat veya hastalık?
+Hasta: 5 yıl önce bir meme biyopsisi yapılmıştı ama temiz çıkmıştı. Başka bir şey yok.
+Doktor: Aile geçmişi?
+Hasta: Annem meme kanseri tedavisi gördü.
+Doktor: Kullandığınız ilaç?
+Hasta: Hayır.
+Doktor: Tansiyon 115/75, nabız 90, SpO2 %98. Ateşiniz 37.5. Boynunuzdaki lenf bezleri oldukça büyük ve sert.
+Hasta: Kötü bir şey mi var hocam?
+Doktor: Bu "B semptomları" dediğimiz bulgular (terleme, kilo kaybı) ve lenfadenopati araştırılmalı. Lenfoma veya başka bir maligniteyi dışlamalıyız. Hemogram, Periferik Yayma, LDH ve Boyun/Toraks Tomografisi isteyeceğim. Gerekirse biyopsi planlarız.

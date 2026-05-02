@@ -1,0 +1,15 @@
+Doktor: Geçmiş olsun, sizi dinliyorum.
+Hasta: Hocam saçlarım çok dökülüyor, cildim kurudu ve inanılmaz derecede üşüyorum. Yaz günü hırkayla geziyorum.
+Doktor: Ses kısıklığı veya kabızlık var mı?
+Hasta: Evet hocam, sesim kalınlaştı ve haftada bir zor tuvalete çıkıyorum.
+Doktor: Sigara, alkol?
+Hasta: Hiçbiri yok.
+Doktor: Geçmiş tıbbi öykü?
+Hasta: 5 yıl önce göğsümden iyi huylu bir kitle alınmıştı. Bir de kansızlık (anemi) tedavisi görmüştüm.
+Doktor: Aile geçmişi?
+Hasta: Annemde Hashimato hastalığı var.
+Doktor: İlaç?
+Hasta: Sadece vitamin hapı alıyorum arasıra.
+Doktor: Tansiyon 105/65, nabız 56 (oldukça yavaş), SpO2 %98.
+Hasta: Kalbim neden bu kadar yavaş?
+Doktor: Muhtemelen tiroid beziniz çok az çalışıyor (Hipotiroidi). Serbest T3, Serbest T4 ve TSH bakmamız lazım.

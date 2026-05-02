@@ -1,0 +1,13 @@
+Doktor: Merhaba, şikayetiniz nedir?
+Hasta: Hocam eklemlerim çok ağrıyor. Sabahları ellerimi açıp kapatamıyorum, sanki kilitleniyor. Bir saat sonra açılıyor.
+Doktor: Sigara, alkol?
+Hasta: Günde 5 dal sigara. Alkol yok.
+Doktor: Eski ameliyat veya hastalık?
+Hasta: 10 yıl önce bir tüberküloz (verem) geçirdim, 9 ay ilaç kullandım. Başka bir şey yok.
+Doktor: Ailede romatizma var mı?
+Hasta: Annemde Romatoid Artrit var, elleri yamuldu kadının.
+Doktor: Kullandığınız bir ilaç var mı şu an?
+Hasta: Sadece ağrı olunca Aspirin içiyorum.
+Doktor: Tansiyon 120/80, nabız 76, SpO2 %98. El eklemlerinizde şişlik ve ısı artışı var.
+Hasta: Annem gibi mi olacağım ben de?
+Doktor: Erken teşhisle önleyebiliriz. RF, Anti-CCP, Sedimantasyon ve CRP tahlilleri ile el röntgeni isteyeceğim.

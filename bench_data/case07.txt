@@ -1,0 +1,13 @@
+Doktor: Sizi dinliyorum, şikayetiniz nedir?
+Hasta: Hocam çok şiddetli öksürüğüm var, bazen pembe renkli köpüklü balgam geliyor. Ateşim de var sanki.
+Doktor: Sigara içiyor musunuz?
+Hasta: 40 yıldır günde 2 paket içiyorum, hiç bırakamadım.
+Doktor: Geçmiş hastalıklar?
+Hasta: KOAH teşhisi konmuştu 3 yıl önce. Bir de prostat ameliyatı oldum geçen sene.
+Doktor: Kullandığınız fısfıslar (inhaler) var mı?
+Hasta: Evet, iki tane fısfısım var ama düzenli kullanmıyorum.
+Doktor: Ailede akciğer sorunu olan var mı?
+Hasta: Kardeşim akciğer kanserinden vefat etti.
+Doktor: Tansiyon 130/80, nabız 110, SpO2 %88. Ateşiniz 38.4 derece. Akciğer sesleriniz çok kaba.
+Hasta: Oksijenim çok mu düşük?
+Doktor: Evet, satürasyonun %88 olması düşük. Acil Akciğer grafisi, CRP, Hemogram ve Balgam kültürü isteyeceğiz. Yatış gerekebilir.

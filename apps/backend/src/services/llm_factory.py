@@ -10,22 +10,44 @@ from apps.backend.src.services.gemini_service import GeminiLLMService
 from apps.backend.src.services.groq_service import GroqLLMService
 from apps.backend.src.services.cerebras_service import CerebrasLLMService
 from apps.backend.src.services.anthropic_service import AnthropicLLMService
+from apps.backend.src.services.moonshot_service import MoonshotLLMService
+from apps.backend.src.services.openrouter_service import OpenRouterLLMService
 
 logger = logging.getLogger(__name__)
 
 
 def create_llm_service(
     settings: AppSettings | None = None,
-) -> OllamaLLMService | GeminiLLMService | GroqLLMService | CerebrasLLMService | AnthropicLLMService:
+) -> OllamaLLMService | GeminiLLMService | GroqLLMService | CerebrasLLMService | AnthropicLLMService | MoonshotLLMService | OpenRouterLLMService:
     """Create the LLM service based on settings.llm.mode.
 
-    Returns OllamaLLMService for 'local', GeminiLLMService for 'api',
-    or GroqLLMService for 'groq' mode.
+    Modes: 'local' (Ollama), 'api' (Gemini), 'groq', 'cerebras',
+    'anthropic' (Haiku), 'moonshot' (Kimi K2 direct), 'openrouter' (Kimi K2 via OpenRouter).
     """
     if settings is None:
         settings = AppSettings()
 
     mode = settings.llm.mode
+
+    if mode == "openrouter":
+        if not settings.llm.openrouter_api_key:
+            logger.warning("OpenRouter modu secili ama API key tanimlanmamis, local moda donuluyor")
+            return OllamaLLMService()
+        logger.info("LLM modu: OpenRouter (%s)", settings.llm.openrouter_model)
+        return OpenRouterLLMService(
+            api_key=settings.llm.openrouter_api_key,
+            model=settings.llm.openrouter_model,
+        )
+
+    if mode == "moonshot":
+        if not settings.llm.moonshot_api_key:
+            logger.warning("Moonshot modu secili ama API key tanimlanmamis, local moda donuluyor")
+            return OllamaLLMService()
+        logger.info("LLM modu: Moonshot (%s)", settings.llm.moonshot_model)
+        return MoonshotLLMService(
+            api_key=settings.llm.moonshot_api_key,
+            model=settings.llm.moonshot_model,
+        )
 
     if mode == "anthropic":
         if not settings.llm.anthropic_api_key:

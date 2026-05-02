@@ -1,0 +1,15 @@
+Doktor: Merhaba, şikayetiniz nedir?
+Hasta: Hocam benim sürekli bir ishal halim var. Günde 5-6 kez tuvalete gidiyorum ve çok halsizim.
+Doktor: Dışkıda kan veya karın ağrısı oluyor mu?
+Hasta: Kan görmedim ama kramplar çok şiddetli. Yemek yiyince hemen tuvalete koşuyorum.
+Doktor: Sigara, alkol?
+Hasta: Sigara yok, alkol yok.
+Doktor: Eski ameliyat veya hastalık?
+Hasta: 20 yıl önce bir fıtık ameliyatı olmuştum. Başka bir şey yok.
+Doktor: Ailede bağırsak kanseri veya Crohn/Ülseratif Kolit olan var mı?
+Hasta: Kız kardeşimde Çölyak hastalığı var.
+Doktor: İlaç kullanıyor musunuz?
+Hasta: Hayır.
+Doktor: Tansiyon 100/60 (biraz düşük), nabız 92, SpO2 %97. Karnınızda yaygın bir hassasiyet var.
+Hasta: Kardeşim gibi miyim acaba?
+Doktor: Çölyak veya enflamatuar bir bağırsak hastalığı olabilir. Gaitada parazit, gizli kan, Çölyak paneli ve Kolonoskopi planlayalım.

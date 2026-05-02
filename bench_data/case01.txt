@@ -1,0 +1,13 @@
+Doktor: Hoş geldiniz, buyurun. Bugün sizi bize getiren şikayet nedir?
+Hasta: Merhaba hocam. Son birkaç haftadır nefes darlığım arttı, ayak bileklerim de iyice şişti. Gece nefes nefese uyanıyorum.
+Doktor: Anlıyorum. Sigara kullanıyor musunuz?
+Hasta: 30 yıl içtim, 2 yıl önce bıraktım hocam. Alkol ise ayda bir belki.
+Doktor: Daha önce bir ameliyat geçirdiniz mi? Bilinen başka hastalığınız var mı?
+Hasta: 5 yıl önce bir kalp krizi geçirdim, o zaman stent takılmıştı. Bir de 10 yıldır şeker hastasıyım.
+Doktor: Ailenizde benzer sorunları olan var mı?
+Hasta: Babamı 55 yaşında kalp krizinden kaybettik. Annem de tansiyon hastası.
+Doktor: Şu an hangi ilaçları kullanıyorsunuz?
+Hasta: Aspirin, bir kolesterol ilacı ve Metformin kullanıyorum şeker için.
+Doktor: Vitals değerlerinize bakalım... Tansiyonunuz 155/95 mmHg, nabzınız 105 atıyor. Satürasyon (SpO2) %91 çıktı, biraz düşük.
+Hasta: Çok mu kötü hocam?
+Doktor: Kalp yetmezliği alevlenmesi olabilir. Akciğerlerinizde su toplanmış mı bakmamız lazım. BNP, Ekokardiyografi ve akciğer grafisi isteyeceğim.

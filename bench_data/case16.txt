@@ -1,0 +1,15 @@
+Doktor: Buyurun, nedir şikayetiniz?
+Hasta: Hocam çok unutkanım ama asıl sorunum dengesizlik. Yürürken sağa sola çarpıyorum. Ellerim de titremeye başladı.
+Doktor: Alkol kullanımınız nasıl?
+Hasta: Çok uzun yıllardır günde en az yarım litre vodka içerim hocam.
+Doktor: Beslenme düzeniniz nasıl?
+Hasta: Pek yemek yemem, genelde içkiyle geçiştiriyorum günü.
+Doktor: Eski ameliyat veya hastalık?
+Hasta: Hiç ameliyat olmadım ama 2 yıl önce "alkol koması" nedeniyle yatışım olmuştu.
+Doktor: Aile öyküsü?
+Hasta: Bilmiyorum, ailemle görüşmüyorum.
+Doktor: Kullandığınız ilaç?
+Hasta: Hayır.
+Doktor: Tansiyon 130/85, nabız 105, SpO2 %96. Gözlerinizde nistagmus (istemsiz hareket) var ve dengeniz çok bozuk.
+Hasta: Kör olur muyum hocam?
+Doktor: Wernicke-Korsakoff sendromu riski altındasınız, bu ciddi bir vitamin B1 (Tiamin) eksikliğidir. Acil yatış ve damardan vitamin desteği gerekebilir.

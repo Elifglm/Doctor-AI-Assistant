@@ -1,0 +1,15 @@
+Doktor: Merhaba, buyurun.
+Hasta: Hocam her iki bacağımda da çok fena varisler var ama asıl şikayetim dün geceden beri sağ bacağımın çok şişmesi ve kızarması. Üstüne basamıyorum.
+Doktor: Sıcaklık artışı ve ağrı var mı?
+Hasta: Evet, dokununca ateş gibi yanıyor.
+Doktor: Sigara, alkol?
+Hasta: Sigara günde 1 paket. Alkol yok.
+Doktor: Eski ameliyat veya hastalık?
+Hasta: 1 ay önce kalça protezi ameliyatı oldum, o zamandan beri pek hareket etmiyorum.
+Doktor: Aile öyküsü?
+Hasta: Dayım akciğer embolisinden vefat etmişti.
+Doktor: İlaç kullanıyor musunuz?
+Hasta: Ameliyat sonrası bir süre kan sulandırıcı iğne kullandım ama 1 hafta önce bitti.
+Doktor: Tansiyon 135/85, nabız 100, SpO2 %95. Sağ bacak çapı sola göre 4 cm daha geniş.
+Hasta: Pıhtı mı attı hocam?
+Doktor: Derin Ven Trombozu (DVT) riskiniz çok yüksek. Acil Alt ekstremite Venöz Doppler USG ve D-Dimer testi yaptırmamız lazım.

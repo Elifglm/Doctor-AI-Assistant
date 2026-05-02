@@ -1,0 +1,13 @@
+Doktor: Merhaba, şikayetiniz nedir?
+Hasta: Hocam karnımda çok şiddetli bir şişkinlik ve halsizlik var. Göz aklarımda sararma fark ettim dün.
+Doktor: Alkol kullanımınız nasıl?
+Hasta: Yaklaşık 20 yıldır her akşam 3-4 kadeh rakı içerim hocam. Sigara da günde 1.5 paket.
+Doktor: Geçmişte bir ameliyat veya ciddi bir hastalık yaşadınız mı?
+Hasta: 10 yıl önce safra kesemi aldırdım. Onun dışında pek doktora gitmem.
+Doktor: Ailede karaciğer veya kanser öyküsü var mı?
+Hasta: Amcam karaciğer sirozundan vefat etti.
+Doktor: Mevcut bir ilacınız var mı?
+Hasta: Hayır, hiçbir ilaç kullanmıyorum.
+Doktor: Tansiyonunuz 110/70, nabız 92. SpO2 %96. Muayenede karnınızda sıvı birikmiş (asit) gibi duruyor.
+Hasta: Çok içtiğim için mi oldu?
+Doktor: Alkolün etkisi büyüktür. Karaciğer fonksiyon testleri, Bilirubinler, INR ve Batın Ultrasonu görelim.

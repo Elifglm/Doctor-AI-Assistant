@@ -59,6 +59,10 @@ class LLMSettings(BaseModel):
     cerebras_model: str = "llama3.1-8b"
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-haiku-4-5-20251001"
+    moonshot_api_key: str = ""
+    moonshot_model: str = "kimi-k2-0905-preview"
+    openrouter_api_key: str = ""
+    openrouter_model: str = "moonshotai/kimi-k2-0905"
 
 
 class NERSettings(BaseModel):

@@ -1,0 +1,13 @@
+Doktor: Buyurun, sizi dinliyorum.
+Hasta: Hocam çok sık idrara çıkıyorum, bazen idrarımda kan görüyorum ve belimin sağ tarafı çok ağrıyor.
+Doktor: Sigara veya alkol?
+Hasta: Sigara günde 10 adet. Alkol sosyal içiciyim.
+Doktor: Geçmiş tıbbi geçmişinizde ne var?
+Hasta: 3 yıl önce böbrek taşı düşürmüştüm. Çocukken de bir apandisit ameliyatım var.
+Doktor: Tansiyon, şeker veya ailede böbrek hastalığı?
+Hasta: Teyzem diyalize giriyor, böbrek yetmezliği var. Bende de bazen tansiyon yükseliyor ama ilaç kullanmıyorum.
+Doktor: Şu an ağrı kesici falan içiyor musunuz?
+Hasta: Çok ağrım olunca günde 2-3 tane Naproksen içiyorum.
+Doktor: Tansiyon 165/100, nabız 84. SpO2 %98. Böbrek yatağınızda hassasiyet var.
+Hasta: Taş mı var yine acaba?
+Doktor: Taş olabilir veya böbreklerde bir süzme problemi. Kreatinin, Üre, Tam İdrar ve Üriner USG isteyelim.

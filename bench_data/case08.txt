@@ -1,0 +1,13 @@
+Doktor: Hoş geldiniz, şikayetinizi öğrenebilir miyim?
+Hasta: Hocam çok sık acıkıyorum, yemek yiyorum yarım saat sonra elim ayağım titriyor, soğuk ter döküyorum.
+Doktor: Sigara, alkol?
+Hasta: Sigara yok, alkol haftada bir.
+Doktor: Geçmişte bir sağlık sorunu yaşadınız mı?
+Hasta: Polikistik over sendromu (PKOS) demişlerdi kadın doğumda. Onun dışında bir şey yok.
+Doktor: Aile öyküsü?
+Hasta: Annem ve teyzem tip 2 diyabet hastası.
+Doktor: İlaç kullanıyor musunuz?
+Hasta: Doğum kontrol hapı kullanıyorum sadece.
+Doktor: Tansiyon 140/95, nabız 88, SpO2 %98. Bel çevreniz 102 cm, biraz geniş.
+Hasta: Gizli şeker mi var acaba?
+Doktor: İnsülin direnci olabilir. Açlık kan şekeri, İnsülin (HOMA-IR hesabı için), HbA1c ve Lipid paneli görelim.

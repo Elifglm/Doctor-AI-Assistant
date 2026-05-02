@@ -1,0 +1,13 @@
+Doktor: Geçmiş olsun, nedir şikayetiniz?
+Hasta: Hocam çok şiddetli baş ağrısı ve burun kanaması ile uyandım bu sabah. Ensemden yukarı doğru bir baskı var.
+Doktor: Sigara, alkol?
+Hasta: Sigara kullanıyorum, günde bir paket. Alkol de sosyal olarak.
+Doktor: Geçmişte tansiyon veya şeker tanısı aldınız mı?
+Hasta: Sınırda demişlerdi ama ilaç vermemişlerdi. 5 yıl önce bir safra kesesi ameliyatım var.
+Doktor: Ailede felç (inme) veya erken yaşta ölüm var mı?
+Hasta: Babam 60 yaşında beyin kanamasından vefat etti.
+Doktor: Şu an bir ilaç içiyor musunuz?
+Hasta: Hayır.
+Doktor: Tansiyonunuzu ölçüyorum... 190/110 mmHg. Nabzınız 96. SpO2 %97. Gözleriniz kanlanmış.
+Hasta: Çok mu yüksek hocam? Beyin kanaması geçirir miyim?
+Doktor: Şu an çok yüksek (Hipertansif acil durum olabilir). Sizi hemen müşahedeye alıp dil altı veya damardan ilaçla tansiyonu kademeli düşürmemiz lazım. EKG ve böbrek testleri de yapacağız.

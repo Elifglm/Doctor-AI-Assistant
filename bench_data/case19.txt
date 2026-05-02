@@ -1,0 +1,13 @@
+Doktor: Merhaba, sizi dinliyorum.
+Hasta: Hocam ben çok zayıfladım. Hiç iştahım yok, sürekli bir karın ağrım var ve dışkım çok yağlı, tuvaletten temizlenmiyor bir türlü.
+Doktor: Sigara, alkol?
+Hasta: Günde 1 paket sigara. Alkol haftada 4-5 kez.
+Doktor: Eski ameliyat veya hastalık?
+Hasta: 3 yıl önce şeker hastalığı çıktı aniden. Bir de kronik bronşit dendi.
+Doktor: Aile öyküsü?
+Hasta: Babam pankreas kanserinden vefat etti.
+Doktor: İlaç kullanıyor musunuz?
+Hasta: Şeker hapı kullanıyorum ama şekerim bir türlü düşmüyor.
+Doktor: Tansiyon 110/70, nabız 80, SpO2 %97. Karnınızda üst bölgede hassasiyet var.
+Hasta: Kanser olabilir miyim babam gibi?
+Doktor: Kilo kaybı ve yağlı dışkı (steatore) önemli bulgular. Pankreas fonksiyonlarını ve yapısını incelememiz lazım. Tüm Batın Tomografisi ve CEA/CA 19-9 markırlarına bakalım.

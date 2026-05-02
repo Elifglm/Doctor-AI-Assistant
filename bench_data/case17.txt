@@ -1,0 +1,11 @@
+Doktor: Merhaba, şikayetiniz nedir?
+Hasta: Hocam karnımın tam ortasında, sırtıma vuran çok şiddetli bir ağrı var. Öne eğilince biraz hafifliyor ama düz yatınca ölüyorum ağrıdan. Çok da kusuyorum.
+Doktor: Safra taşınız olduğu söylendi mi hiç? Alkol?
+Hasta: Safra kesemde taş var dediler ama aldırmadım. Alkol kullanmıyorum.
+Doktor: Eski ameliyat veya hastalık?
+Hasta: Sadece safra taşı var bildiğim. Bir de kanda yağlarım (trigliserid) çok yüksek çıkmıştı geçen sene.
+Doktor: İlaç kullanıyor musunuz?
+Hasta: Kolesterol ilacım vardı ama bıraktım.
+Doktor: Tansiyon 100/65, nabız 115 (taşikardi), SpO2 %94. Ateş 37.9.
+Hasta: Zehirlendim mi acaba?
+Doktor: Akut Pankreatit olabilir. Amilaz, Lipaz, Tam Kan Sayımı ve Batın USG/Tomografi isteyeceğim. Acil yatış gerekebilir.

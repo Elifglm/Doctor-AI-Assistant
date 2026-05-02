@@ -1,0 +1,13 @@
+Doktor: Geçmiş olsun, şikayetinizi anlatın.
+Hasta: Hocam midem çok kötü bulanıyor, sürekli bir baş dönmem var ve idrarımın rengi kola gibi simsiyah gelmeye başladı.
+Doktor: Sigara, alkol?
+Hasta: Sigara yok, alkol sosyal.
+Doktor: Eski ameliyat veya hastalık?
+Hasta: 1 hafta önce çok ağır bir diş iltihabı yaşadım, doktor çok güçlü bir ağrı kesici ve antibiyotik verdi. Onları kullanıyorum.
+Doktor: İlaçların isimlerini biliyor musunuz?
+Hasta: Diklofenak ve bir tane penisilin grubu antibiyotikti.
+Doktor: Göz aklarınızda sararma var mı?
+Hasta: Evet, eşim sabah söyledi.
+Doktor: Tansiyon 115/75, nabız 88, SpO2 %98. Karaciğer bölgenizde hassasiyet var.
+Hasta: İlaçlar mı dokundu?
+Doktor: Toksik hepatit (ilaç kaynaklı karaciğer hasarı) olabilir. AST, ALT, GGT, Bilirubin ve Tam İdrar Tahlili isteyeceğim. İlaçları hemen kesin.

@@ -1,0 +1,13 @@
+Doktor: Merhaba, buyurun.
+Hasta: Hocam göğsümün ortasında bir yanma var, sanki yukarı ağzıma doğru bir ateş çıkıyor. Yemeklerden sonra çok kötü oluyorum.
+Doktor: Sigara, alkol, kahve?
+Hasta: Günde 2 paket sigara, çok fazla kahve içerim. Alkol haftada 2-3 gece.
+Doktor: Eski ameliyat veya hastalık?
+Hasta: Hiç ameliyat olmadım. 5 yıldır tansiyon ilacı kullanıyorum sadece.
+Doktor: İlacınızın adı nedir?
+Hasta: Amlodipin kullanıyorum.
+Doktor: Ailede mide kanseri veya kalp hastalığı var mı?
+Hasta: Babam mide delinmesinden ameliyat olmuştu zamanında.
+Doktor: Tansiyon 145/90, nabız 82, SpO2 %96. Kilonuz boyunuza göre biraz fazla (BMI: 31).
+Hasta: Kalp krizi değildir değil mi?
+Doktor: Ayırmak lazım. EKG çekeceğiz ama tarifiniz reflüye çok benziyor. Endoskopi ve kardiyoloji konsültasyonu gerekebilir.

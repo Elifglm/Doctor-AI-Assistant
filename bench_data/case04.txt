@@ -1,0 +1,13 @@
+Doktor: Merhaba, hoş geldiniz. Nedir şikayetiniz?
+Hasta: Hocam ellerim ve ayaklarım çok uyuşuyor, sürekli bir dengesizlik halim var. Çok unutkanlaştım.
+Doktor: Beslenme düzeniniz nasıl? Et yer misiniz?
+Hasta: 5 yıldır vegan besleniyorum hocam, hiç hayvansal gıda almıyorum.
+Doktor: Ameliyat veya kronik hastalık?
+Hasta: 3 yıl önce mide küçültme (tüp mide) ameliyatı oldum. O zamandan beri çok kilo verdim.
+Doktor: Aile geçmişi?
+Hasta: Annemde erken bunama (Alzheimer) vardı.
+Doktor: İlaç veya takviye kullanıyor musunuz?
+Hasta: Hayır, hiçbir şey kullanmıyorum.
+Doktor: Tansiyon 120/80, nabız 78, SpO2 %99. Reflekslerinizde biraz yavaşlama var.
+Hasta: Mide ameliyatı ile ilgisi olabilir mi?
+Doktor: Kesinlikle. Vitamin emilimi bozulmuş olabilir. B12, Folat, Homosistein ve Tam Kan Sayımı bakacağız.

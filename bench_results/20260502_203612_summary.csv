@@ -1,0 +1,2 @@
+llm,n_runs,n_cases,latency_p50,latency_p95,json_success_pct,field_present_avg_pct,field_filled_avg_pct,format_ok_avg_pct,numeric_violations_total,avg_output_chars,estimated_cost_per_1k_calls_usd,error_count
+kimi,100,20,22853.192979004234,31509.681835200172,98.0,100.0,47.05651491365777,99.13657770800629,0,917.25,2.97328125,0

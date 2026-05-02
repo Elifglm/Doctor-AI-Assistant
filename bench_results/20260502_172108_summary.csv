@@ -1,0 +1,2 @@
+llm,n_runs,n_cases,latency_p50,latency_p95,json_success_pct,field_present_avg_pct,field_filled_avg_pct,format_ok_avg_pct,numeric_violations_total,avg_output_chars,estimated_cost_per_1k_calls_usd,error_count
+haiku,2,1,5526.98037493974,6078.786725271493,100.0,100.0,34.61538461538461,100.0,0,927,5.15875,0

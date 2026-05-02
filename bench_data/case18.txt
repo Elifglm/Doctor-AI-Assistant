@@ -1,0 +1,15 @@
+Doktor: Geçmiş olsun, buyurun.
+Hasta: Hocam yüzümde, burnumun kenarlarında kelebek gibi bir kızarıklık çıktı. Güneşe çıkınca çok kötü oluyorum. Bir de eklemlerim sızlıyor.
+Doktor: Saç dökülmesi veya ağızda yaralar oluyor mu?
+Hasta: Evet, damağımda hiç geçmeyen yaralar var ve saçlarım avuç avuç dökülüyor.
+Doktor: Sigara, alkol?
+Hasta: Hiçbiri yok.
+Doktor: Eski hastalık veya ameliyat?
+Hasta: Geçen sene bir düşük yapmıştım, nedenini bulamadılar. Onun dışında bir şey yok.
+Doktor: Aile öyküsü?
+Hasta: Kuzenimde Lupus hastalığı var.
+Doktor: İlaç?
+Hasta: Sadece ağrı kesici.
+Doktor: Tansiyon 130/80, nabız 82, SpO2 %99. Yüzünüzdeki döküntü tipik görünüyor.
+Hasta: Ben de mi Lupus oldum?
+Doktor: Şüphelerimiz o yönde. ANA, Anti-dsDNA, C3-C4 ve Tam İdrar tahlilleri isteyeceğiz.
