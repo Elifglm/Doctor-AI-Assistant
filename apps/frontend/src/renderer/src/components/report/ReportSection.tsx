@@ -26,6 +26,7 @@ interface ReportSectionProps {
   section: ReportSectionType
   onContentChange: (key: string, content: string) => void
   onApprove: (key: string) => void
+  onUnapprove: (key: string) => void
   allSections?: ReportSectionType[]
   sessionId?: number
 }
@@ -34,6 +35,7 @@ export function ReportSectionCard({
   section,
   onContentChange,
   onApprove,
+  onUnapprove,
   allSections,
   sessionId,
 }: ReportSectionProps): React.JSX.Element {
@@ -116,7 +118,7 @@ export function ReportSectionCard({
             {section.status === 'approved' ? (
               <button
                 type="button"
-                onClick={() => onContentChange(section.key, section.content)}
+                onClick={() => onUnapprove(section.key)}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
               >
                 <Pencil className="h-3.5 w-3.5" />

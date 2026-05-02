@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   User,
   Mic,
@@ -78,6 +78,12 @@ function SesTab(): React.JSX.Element {
   const [permissionError, setPermissionError] = useState(false)
   const t = useT()
 
+  // Capture micDeviceId in a ref so loadDevices isn't re-created (and the
+  // effect re-fires) every time we set the mic id. Without this, picking a
+  // device triggers a redundant getUserMedia/enumerate cycle.
+  const micDeviceIdRef = useRef(micDeviceId)
+  micDeviceIdRef.current = micDeviceId
+
   const loadDevices = useCallback(async () => {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -89,9 +95,9 @@ function SesTab(): React.JSX.Element {
           label: d.label || `Mikrofon ${d.deviceId.slice(0, 8)}`,
         }))
       setDevices(audioInputs)
-      // If saved device is no longer available, fall back to first
       if (audioInputs.length > 0) {
-        const stillAvailable = micDeviceId && audioInputs.some((d) => d.deviceId === micDeviceId)
+        const current = micDeviceIdRef.current
+        const stillAvailable = current && audioInputs.some((d) => d.deviceId === current)
         if (!stillAvailable) {
           setMicDeviceId(audioInputs[0].deviceId)
         }
@@ -100,7 +106,7 @@ function SesTab(): React.JSX.Element {
     } catch {
       setPermissionError(true)
     }
-  }, [micDeviceId, setMicDeviceId])
+  }, [setMicDeviceId])
 
   useEffect(() => {
     void loadDevices()

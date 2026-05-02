@@ -204,7 +204,7 @@ export function ReportReviewPage(): React.JSX.Element {
                       }
                       className={cn(
                         'w-full text-left transition-colors',
-                        index === selectedSegmentIndex && 'ring-2 ring-inset ring-blue-300 bg-blue-50/50'
+                        index === selectedSegmentIndex && 'ring-2 ring-inset ring-blue-300 bg-blue-50/50 dark:bg-blue-900/20'
                       )}
                     >
                       <TranscriptSegmentItem segment={segment} index={index} />
