@@ -1,0 +1,7 @@
+[
+  {
+    "query_id": "manual_001",
+    "scenario": "DOCTOR FILL: Type natural Turkish doctor speech here, ASR-style. Example below.",
+    "query_text": "PLACEHOLDER — kullanıcı doldurur"
+  }
+]

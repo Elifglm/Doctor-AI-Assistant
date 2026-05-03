@@ -1,0 +1,252 @@
+[
+  {
+    "query_id": "syn_000_uri_acute",
+    "scenario": "akut üst solunum yolu enfeksiyonu, genç erişkin",
+    "query_text": "Boğazda ağrı şikayeti getirdi, üç dört gündür başlayan ses kısıklığı ve öksürük var. Muayenede farinks hiperemik, tonsiller hafif şişkin ve ateş biraz yüksek. Viral üst hava yolu enfeksiyonu düşünüyorum, sıvı alıp dinlenme öneriyorum, gerekirse parasetamol kullanabilir."
+  },
+  {
+    "query_id": "syn_001_uri_chronic",
+    "scenario": "tekrarlayan boğaz ağrısı, 1 hafta+, sigara öyküsü",
+    "query_text": "Peki, hastam boğazda sürekli bir ağrı var, bir haftadan beri devam ediyor dediğiniz, sigara içiyorsunuz herhalde uzun süredir, tamam, öksürük var mı bunun yanında, ses kısıklığı falan, anladım, muayenede boğazda kızarıklık var, tonsillerde ödem görmüyorum ama farenks irritatif gözüküyor, sigara kaynaklı kronik irritasyonun devam etmesinden şüpheleniyorum, antibiyotik başlamadan önce sigara kesmeyi ciddi ciddi düşünmeniz lazım."
+  },
+  {
+    "query_id": "syn_002_gastrit_acute",
+    "scenario": "akut gastrit, mide bulantısı + epigastrik ağrı",
+    "query_text": "Tamam hastanın mide bölgesinde şiddetli ağrısı var epigastrik alanda, bulantı var kusma da olmuş demiş. Geçen gece başlamış ani olarak, yağlı şeyler yemişten sonra. Muayenede ateş yok, kan basıncı normal ama midede sağ tarafta hassasiyet var baskıya karşı. Akut gastrit düşünüyorum, proton pompası inhibitörü başlayacağız."
+  },
+  {
+    "query_id": "syn_003_gastrit_chronic",
+    "scenario": "kronik gastrit + reflü, NSAID kullanımı",
+    "query_text": "Kronik gastrit şikayeti var diyorsunuz, ne kadar süredir devam ediyor bu? Üç dört aydır mı? Tamam, reflü de var yani, gece yatarken mizaç geliyor. İbuprofen filan kullanıyor musunuz ağrı için? Hah, düzenli kullanıyorsunuz. Şimdi bak işte bu ilaç mide mukozasına ciddi zarar verebiliyor, özellikle reflü ile beraber devam edince. Muayenede üst kadran hassasiyet var, geri kalan abdomen normal gözüküyor. Protokol olarak mide koruyucu başlayacağız, reflü için de H2 bloker filan, NSAİD'i kesmek lazım mutlaka."
+  },
+  {
+    "query_id": "syn_004_dm_kontrol",
+    "scenario": "DM kontrol vizitesi, kan şekeri yüksek, halsizlik",
+    "query_text": "Diyabet kontrol vizitesine geldim, hastanın kan şekeri seviyeleri yüksek çıkmış, halsizlik ve yorgunluk şikayeti var, ilaç uyumunu sorguluyorum şu anda, hastaya beslenme düzenini tekrar anlatmak gerekecek gibi gözüküyor."
+  },
+  {
+    "query_id": "syn_005_dm_yeni",
+    "scenario": "yeni teşhis edilmiş DM şüphesi, polidipsi+poliuri",
+    "query_text": "Hastanın son zamanlarda çok susuz kaldığını söylüyor, gün içinde defalarca tuvalete gidiyor, çok yorgun hissediyor kendini. Dışarı çıktığında bile sürekli su içme ihtiyacı duyuyor, gece de uyandığı oluyor. Yaklaşık iki üç haftadır başlamış bu şikayetler. Muayenede genel durumu iyi, ağırlığında azalma var, ağız kuruluğu var ama başka bir bulgu yok. Kan şekerini ölçmemiz gerekiyor, şüpheli diyabet tablasında."
+  },
+  {
+    "query_id": "syn_006_ht_kontrol",
+    "scenario": "HT kontrol, baş ağrısı + tansiyon yüksekliği",
+    "query_text": "Hastayla tansiyon kontrolüne gelmiş, baş ağrısından da şikayetçi. Tansiyonu biraz yüksek çıkmış, ilaçlarını düzenli kullanıp kullanmadığını sordum. Diyor ki stresli bir haftası olmuş, uyku da pek iyiye almıyor. Fizik muayenede başka bir şey yok, nörolojik muayene normal. Diyordum ki tansiyonunu kontrol altına alamadığı sürece bu baş ağrıları devam edecek, ilaçları kaçırmasın diye."
+  },
+  {
+    "query_id": "syn_007_ht_kriz",
+    "scenario": "hipertansif acil, baş dönmesi + bulantı + 180/110 TA",
+    "query_text": "Tamam, tekrar deneyeyim hastanın vitalleri çok kötü. Bulantısı var, başı dönüyor. Tansiyon 180'in üstünde, diastolik 110'a yakın. Hemen nifedipin verelim, serum açalım. Acil servisle koordine edelim, hipertensif krizin başka bulgusu var mı acaba, nörolojik bakı normal mi? Göz fundusunda papil ödemi filan görmüyorum ama hastanın oksijen saturasyonu normal. Biraz daha observe edelim, ikinci doz antihipertansifu hazırla."
+  },
+  {
+    "query_id": "syn_008_anemi_dem",
+    "scenario": "demir eksikliği anemisi, kadın hasta, yorgunluk + saç dökülmesi",
+    "query_text": "Hasta şikayeti başladığından beri iki aydan beri çok yorgun hissediyor, sabahları kalkmakta güçlük çekiyor, evde işleri yapamaz duruma gelmiş. Bununla beraber saçları da fazlaca dökülüyor, tırnaklarında da kırılma var. Fizik muayenede biraz solgun görünüyor, konjonktival rengi biraz açık. Hemoglobin düzeyi düşük çıkmış, demir eksikliği anemisi düşünüyorum, demir replasmanı başlayalım ve beslenmeye dikkat etsin, kızılötesi et, tavuk, legüm tüketsin."
+  },
+  {
+    "query_id": "syn_009_anemi_b12",
+    "scenario": "B12 eksikliği şüphesi, yaşlı hasta, parestezi + halsizlik",
+    "query_text": "Parmak uçlarında karıncalanma var bir süredir, halsizlik de eklemiş son aylarda. B12 eksikliği şüphesi var, intrensek faktör yok mu diye bakmamız lazım. Muayenede vibrasyon hissi biraz azalmış, Romberg'de stabil ama yürüyüşte bir az titiz bir az çekingen. Kan değerlerine bakalım, B12 ve folik asit lazım."
+  },
+  {
+    "query_id": "syn_010_tiroid_hipo",
+    "scenario": "hipotiroidi, soğuk intoleransı + kilo alımı",
+    "query_text": "Şikayet şu an soğuğa çok dayanamıyor, terlemiyor da kalsın şu son aylarda, kilo almışız biraz hiç diyet yapmadan. Muayenede cilt kurumuş, nabız biraz yavaş geldi, refleks de biraz slow. Tiroid hormonlarına bakmamız lazım, hipotiroidi düşünüyorum, başlayalım levotiroksinle."
+  },
+  {
+    "query_id": "syn_011_tiroid_hiper",
+    "scenario": "hipertiroidi, çarpıntı + kilo kaybı + sıcak intoleransı",
+    "query_text": "Hastaya bakıyorum, çarpıntı var diyorsunuz, kaç gündür böyle? Evet hani kalp atışını hissediyor, gece de mı oluyor? Kilo kaybı da söylediniz, ne kadar kısa zamanda? Sıcağa dayanamıyorsunuz, terleme fazla mı? Tiroid hormonları yüksek çıkabilir, internist olarak bu belirtiler hipertiroidiyi gösteriyor, elin titriyor mu? TSH değerini kontrol ettirmemiz lazım, ultrason da bakalım, endokrinoloji kliniğine refere edeceğim sizi."
+  },
+  {
+    "query_id": "syn_012_akut_karin",
+    "scenario": "akut karın, sağ alt kadran ağrısı, defans",
+    "query_text": "Sağ alt kadranda keskin ağrı, bu sabah başlamış, öğleden sonra arttı hocam. Defans fark ettim, Rebound da pozitif. Akut abdomen tablosu var, cerrahın görmesi gerekiyor. Appendisit düşünmek lazım."
+  },
+  {
+    "query_id": "syn_013_ishal_akut",
+    "scenario": "akut gastroenterit, sulu ishal + bulantı",
+    "query_text": "Tamam anlıyorum, dün akşamdan beri sulu ishal var, hani kaç kez oldu, beş altı kez mi daha fazla mı? ve bulantı da başladı, kusmuş musun? Evet, bir iki kere kusmussun. Karında ağrı, kramp var mı? Biraz var, özellikle tuvalete gitmeden önce. Anlaşıldı, tamam. Ateşin ölçtün mü? Hafif yüksek gibi hissetim ama ölçmedim. İyi, onu ölçeriz. Muayene edeyim şimdi, karına dokunayım. Tamam, ağrı var mı? Biraz hassas bölgeler var ama çok ağır değil. Yok ödem filan. Anlaşıldı, bu muhtemelen gastroenterit, viral veya bakteri olabilir. Tüm bulguları destekliyor. Sen bol sıvı al, elektrolit içkisi iyi olur, yağlı yemeği bırak birkaç gün, beslenmeye dik"
+  },
+  {
+    "query_id": "syn_014_uti_kadin",
+    "scenario": "kadın hastada idrar yolu enfeksiyonu, dizüri + sıkışma",
+    "query_text": "İdrar yolunda yanma ve sık tuvalete çıkma şikayetiyle gelen kadın hastada dizüri ve pollaküri bulguları saptandı, üretral irritasyon mevcut, sitürite uyumlu klinik tablo tespit ettim, idrar analizi önerildi."
+  },
+  {
+    "query_id": "syn_015_vertigo",
+    "scenario": "baş dönmesi, periferik vertigo şüphesi",
+    "query_text": "Hasta dün sabah yataktan kalkarken aniden duvardaki eşyaların döndüğünü söylüyor, bulantısı var, hareket ettiğinde kötüleşiyor. Muayenede baş hareketi ile nistagmus görüyorum, romberg testi normal, yürüyüşü düzgün. Periferik vertigo düşünüyorum, muhtemelen BPPV, epley manevrası yapmak lazım."
+  },
+  {
+    "query_id": "syn_016_kbb_sinüzit",
+    "scenario": "akut sinüzit, yüz ağrısı + nazal akıntı",
+    "query_text": "Hastanın burnu akıyor, yüz ağrısından şikayet ediyor birkaç gündür, ateş de var dün. Muayenede burun boşluğunda irin gibi sekresyon görüyorum, maksiller bölgede basınç ağrısı var. Sinüzit tanısı koyuyorum, antibiyotik başlayacağız, nazal lavaj öner, üç gün sonra kontrol istiyorum."
+  },
+  {
+    "query_id": "syn_017_kas_iskelet",
+    "scenario": "lomber bel ağrısı, kronik, sedanter işçi",
+    "query_text": "İşte bir örnek transkript metni:\n\n\"Tamam, bel ağrısı diyorsunuz uzun süredir, öyle mi? Kaç aydır başladı bu? Masada oturuyor musunuz çoğu zaman? Evet, anladım, hareketsiz kalıyor, bel kasları zayıflıyor. Ağrı nasıl, keskin mi, sızlayan mı? Bacağınıza veriyor mu? Hayır, sadece belde. Muayene edelim, ileri doğru eğilin bakalım... Eh, bel fleksiyonunda rahatsızlık var, kas gerginliği hissediliyor, sinir basısı yok gibi görünüyor. Fizyoterapiye başlamanız lazım, çekirdek kaslarını güçlendirmeliyiz. Masada oturduğunuz zaman araya ara verin, hareket edin. Antienflamatuvar kullanabilirsiniz lazımsa, ama temel olarak egzersiz ve postür düzeltme önemli burada.\""
+  },
+  {
+    "query_id": "syn_018_alerjik_rinit",
+    "scenario": "alerjik rinit, mevsimsel",
+    "query_text": "Tamam bayrağım, burun akıntısı ve hapşırık şikayetiyle gelmiş. İlkbahar aylarında başlayan, özellikle sabahları ağır oluyor diyor. Muayenede burun mukozası şişik ve soluk, septal devasyon yok. Göz kaşıntısı da var. Mevsimsel alerjik rinit düşünüyorum, antihistaminik başlayalım ve burun steroid spreyi kullansın."
+  },
+  {
+    "query_id": "syn_019_anksiyete",
+    "scenario": "yaygın anksiyete + somatik şikayetler",
+    "query_text": "Evet, hastamız yaklaşık üç dört aydır başında basınç hissiyle birlikte kalp çarpıntısı yakıyor, nefes almakta güçlük çekiyormuş. Özellikle gece olmak üzere her gün farklı şikayetler varmış, bazen göğüste sıkışma bazen kol ağrısı olarak ortaya çıkıyor. Muayenede herhangi bir kardiyak patoloji görülmedi, EKG normal, istirahat halindeki nabız biraz yüksek durumda, tansiyon sınır değerlerde. Hastanın hayatında son zamanlarda stres faktörleri var, uyku düzenini de bozmuş bu durumun. Klinik olarak yaygın anksiyete bozukluğu ve somatik belirti bozukluğu düşünüyorum, psikiyatra değerlendirme öneriyorum."
+  },
+  {
+    "query_id": "syn_020_obezite_metabolik",
+    "scenario": "obezite + metabolik sendrom kontrolü",
+    "query_text": "Tamam ağabey vücut kitle indeksi oldukça yüksek, metabolik sendromun bütün kriterleri karşılanmış, kan şekeri düzenli kontrol edilmemiş, tansiyon da hafif yüksek bulunmuş, kan yağlarında da trigliserid ve kolesterol seviyeleri arttığını görüyoruz, kilo kaybı için mutlaka beslenme danışmanına yönlendirecek miyim hemen, orta şiddette egzersiz başlasın günde en az otuz kırkbeş dakika, ilaçlar bakımından da şeker düşürücü eklemek gerekebilir ama bunu üç ay sonra kontrol edip karar veririz."
+  },
+  {
+    "query_id": "syn_021_kolesterol",
+    "scenario": "hiperlipidemi takibi, statin kullanımı",
+    "query_text": "Hastanın kolesterol değerleri hâlâ biraz yüksek, statin dozunu artırdık son ay, fakat beslenmeye de dikkat etmesi lazım, et ve yağlı şeyler azaltsın, balık ve zeytinyağını tercih etsin, ilaçları aksatmasın ve üç ay sonra tekrar kan tahlili yaptıralım kontrol edelim."
+  },
+  {
+    "query_id": "syn_022_asthma_kronik",
+    "scenario": "kronik astım, hışıltı + nefes darlığı",
+    "query_text": "Kronik astım hastası, son birkaç gün nefes darlığı ve göğüste hışıltı şikayeti ile gelmiş. Muayenede bilateral hışıltılar saptanmış, saturasyon normal sınırlarda. Kontrol inhalerini düzenli kullanmadığını söylüyor. Astım kontrolü bozuk gözüküyor, tedavi uyumunu artırmamız gerek."
+  },
+  {
+    "query_id": "syn_023_kopd_alev",
+    "scenario": "KOAH alevlenmesi, sigara öyküsü",
+    "query_text": "Evet hemşire not aldı zaten, sigara içmiş yıllarca, şu son bir iki haftada öksürük arttı, balgam rengi sarımsı oldu, nefes darlığı var özellikle merdiven çıkınca. Muayenede ronkus işitiyorum bilateral, oksijen satürasyonu biraz düşük kalmış, akciğer fonksiyonları düşüktü daha önceki tetkiklerinde. KOAH alevlenmesi, steroid başlıyoruz, bronkodilatör, antibiyotik de verelim, bir iki hafta sonra kontrol et kendini."
+  },
+  {
+    "query_id": "syn_024_konstipasyon",
+    "scenario": "kronik konstipasyon, yaşlı hasta",
+    "query_text": "Şey hastam, diyorsun ki iki üç haftadır işin hiç olmuyor, karnın şişiyor, rahatsız ediyormuş değil mi? Kaç gündür tuvalete gitmiyorsun son olarak? Evet, evet anladım, kronik olmuş yani. Ağrın var mı, kan geliyor mu hiç? Tamam, iyi. Şu besinler konusunda konuşalım, ne kadar su içiyorsun günde, lifli yiyecek yiyorsun mu pek? Aktivite nasıl, hareket edebiliyor musun biraz? Palpasyon yaptığımda kapalı hissettim, rektumda da dikkatli baktığımda normal görünüyor. Kronik konstipasyondur, mekanik bir sorun yok yani, beslenme ve yaşam tarzı düzeltilmeli, lazım olursa osmotik laksatif yazarız denemesine."
+  },
+  {
+    "query_id": "syn_025_gut",
+    "scenario": "gut atağı, başparmak şişme + ağrı",
+    "query_text": "Tamam hocam şimdi başını kaldır, başparmağında şişme var tabii, burası çok hassas dokunuyor belli, tama basıp travma olmuş mu son günlerde, yok diyor hastalık hikayeleri sordum gece ansızın şişip ağrılamış artan kırmızılık var ısı var çevresi ödemli, bence burası gut atağına benziyor hızlı yanıt için kolşisin başlıyacağız ve ibuprofen yazacağız beslenmeyle alakası da vardır, alkol alkolü kesmelisin böcek eti red wine iç paydos et az tuz az purin içerikli yiyecekler"
+  },
+  {
+    "query_id": "syn_026_egzama",
+    "scenario": "atopik egzama, kaşıntı",
+    "query_text": "Tamam, çocuğun kollarında ve boyun bölgesinde kuru, kızarık, kaşıntılı lezyonlar var, sabah akşam özellikle gece kötüleşiyor diyor. Yaklaşık üç hafta önce başlamış, evin nemli olduğunu söylüyor. Muayenede iki kol iç yüzünde likenifikasyon ve ekskoriyasyon görüyorum, çizinti testi pozitif çıktı. Atopik dermatit tanısı koydum, nemlendiricili tedaviye başlayacağız."
+  },
+  {
+    "query_id": "syn_027_uyku_problem",
+    "scenario": "uyku problemi + halsizlik + sabah yorgun uyanma",
+    "query_text": "Tamam işte uyku problemi hastası için doktor notunun transkripti:\n\nDemiş ki gece yatarken uyku tutmuyor, sabah erkenden uyandığı oluyor ve sonra tekrar uyuyamıyor, gün boyu da çok yorgun hissediyor, enerjisi yok, işte sabah kalktığında da dinlenmiş gibi değil. Kaç aydır böyle devam ediyor deyince, en az iki üç aydır bu şekilde demiş. Muayene de genel durumu biraz bitkin gözüküyor, vital bulguları normal, fizik muayenede de özellik yok görünen."
+  },
+  {
+    "query_id": "syn_028_kabızlık_diyare",
+    "scenario": "değişken bağırsak alışkanlığı, IBS şüphesi",
+    "query_text": "Hasta geliyor, eh demiş değişken bağırsak alışkanlığı var, bazen kabızlık bazen ishal, bu şikayeti bir aydan beri yaşıyor dedi. Stres de etkili olabiliyor diye söyledi. Karında şişkinlik ve hava problemi de var. Muayenede batın normal, defans yok, barsak sesleri normal, herhangi bir kitle palpe edilmiyor. IBS ayırıcı tanısına girmemiz gerekebilir, fiber almasını tavsiye ettim, sıvı tüketimini artırsın dedim."
+  },
+  {
+    "query_id": "syn_029_vitamin_d",
+    "scenario": "vitamin D eksikliği, kemik ağrıları",
+    "query_text": "Hastada kemik ağrıları var özellikle bacaklar ve bel bölgesinde, iki üç aydır devam ediyor, yorgunluk ve halsizlik de eşlik ediyor. Muayenede genel durumu iyi ama bel ve uyluk basısında hassasiyet var. Vitamin D eksikliği düşünüyorum, serum D seviyesine bakmamız lazım, eksik çıkarsa takviye başlayacağız."
+  },
+  {
+    "query_id": "syn_030_menopause",
+    "scenario": "perimenopozal kadın, sıcak basması + ruh hali değişimi",
+    "query_text": "Peki efendim bu sıcak basmaları kaç aydır yaşıyorsunuz gece uykunuzu etkiliyor mu terliyorsunuz geceler çok sorun oluyor değil mi ayrıca bu ruh hali değişimleri ne zaman başladı sık sık sinirleniyorsunuz böyle ani ruh hallerle uğraşıyorsunuz anladığım kadarıyla adet çevreniz düzensiz mi olmuş yaklaşık perimenopozu yaşıyor olmanız ihtimal gibi görünüyor yani hormonal değişimle açıklanabilir sizde bu tipik şikayetleri görüyoruz muayenede tansiyon nabız normal bulundu rahim eki kontrol ettik sorun yok tiroid fonksiyonlarını kontrol edelim istiyorum hormon testleri de çekelim sizin için uygun olur diye düşünüyorum"
+  },
+  {
+    "query_id": "syn_031_soguk_alg",
+    "scenario": "viral soğuk algınlığı, çocuk teması",
+    "query_text": "Tamamı, geçen birkaç gündür öksürük var, biraz burun akıntısı, ateş çıkmıştı ama şu an düştü. Muayenede boğazı kızarık, akciğerler temiz, viral soğuk algınlığı gibi gözüküyor. Okulda ya da oyun alanında başka çocuklardan bulaşmış olabilir, antibiyotiğe gerek yok, semptomatik tedavi yeterli."
+  },
+  {
+    "query_id": "syn_032_akciger_pnomoni",
+    "scenario": "alt solunum yolu enfeksiyonu şüphesi, ateş + öksürük + balgam",
+    "query_text": "Hastalık yaklaşık bir hafta önce başlamış, başta kuru öksürük vardı şimdi sarımsı balgam çıkıyor, ateş de yüksek devam ediyor. Göğüs dinlemesinde sağ alt zonunda krepitasyon var, kalp sesleri normal, nabız biraz hızlı."
+  },
+  {
+    "query_id": "syn_033_tetanoz_yaralanma",
+    "scenario": "yaralanma sonrası tetanoz aşı sorgusu",
+    "query_text": "Hastanın kütü üzerinde kesik yaralanması var, metal eşya ile temas olmuş. Okul aşılarından sonra tetanoz aşısına kaç yıl oldu diye soruyorum, son doza beş altı yıl kadar zaman geçmiş görünüyor. Bugün aşı yaptırması gerekli, özellikle kirli yaralanmada koruyucu doza ihtiyaç var, aynı zamanda yaraya antibiyotik merhemi sürüp temiz sarı yapıyorum."
+  },
+  {
+    "query_id": "syn_034_checkup_yillik",
+    "scenario": "yıllık genel kontrol, asemptomatik",
+    "query_text": "Peki hocam bu yıllık kontrol için geldik, şikayetiniz var mı hiç? Baş ağrısı, göz problemi, sindirim sorunu yok değil mi? Tamam iyi. Yakın zamanda grip oldum mu, aşılarınız güncel mi? Sağ olsun. Şimdi basit muayene yapalım, tansiyonu ölçeceğiz, göğsünüzü dinleyeceğim, karına basacağım, refleks kontrolü yapacağız. Evet, tansiyon normal, kalp ritmi düzenli, solunum temiz, karın soft. Şimdi de boy kilo ölçerelim, o da gayet iyi. Bütün bulgular normal gözüküyor, siz de sağlıklı görünüyorsunuz, böyle devam edin."
+  },
+  {
+    "query_id": "syn_035_kalp_carpinti",
+    "scenario": "çarpıntı, atipik göğüs ağrısı",
+    "query_text": "Hastanın çarpıntısı var son iki haftadır, stresle tetikleniyor gibi duruyor. Göğüs ağrısı atipik, kassal karakterde, hareketle değişiyor. Kalp sesleri normal, ritim düzenli, tansiyonu iyi. EKG'sine baktığımızda da anormal bir şey yok, kalp hızı biraz yüksek ama belki stres. Anksiyete ön planda duruyor bana göre, kas gerginliğinden de kaynaklanabilir."
+  },
+  {
+    "query_id": "syn_036_renal_takip",
+    "scenario": "kronik böbrek hastalığı takibi, kreatinin yüksek",
+    "query_text": "Kreatinin yüksek çıkmış yine, böbrek fonksiyonları düşüş gösteriyor maalesef. Kan basıncı nasıl son zamanlarda, ilaçlarını düzenli alıyor musun? Proteinüri var mı idrar testinde, çünkü bu çok önemli kronik böbrek hastalığında takip açısından."
+  },
+  {
+    "query_id": "syn_037_tiroid_nodul",
+    "scenario": "tiroid nodülü tespit, asemptomatik",
+    "query_text": "Tamam bakalım şurada bir nodül var tiroid'de, ultrasonunda da görülmüş zaten. Hastanın şikayeti yok, asemptomatik, çok iyi. TSH değeri normal gidiyor, bu da güzel. Nodül boyutu orta büyüklükte, şimdilik biopsi gerekmiyor ama altı ay sonra kontrolle geleceğiz, ultrason tekrarlayacağız, takip edeceğiz yani."
+  },
+  {
+    "query_id": "syn_038_kilo_kayb",
+    "scenario": "açıklanamayan kilo kaybı, malignite şüphesi",
+    "query_text": "Hastada üç dört aydır açıklanamayan kilo kaybı var, son zamanlarda biraz halsiz, iştahsız, karında da hafif rahatsızlık söylüyor. Fizik muayenede batında hafif distansiyon, sol üst kadranda palpable bir kitle gibi şey hissettim. Onkoloji ile çalışmamız lazım, urgently tomografi çektirmesi gerekiyor, malignite ekarte etmemiz şart."
+  },
+  {
+    "query_id": "syn_039_pedi_atesli",
+    "scenario": "pediatrik ateşli hasta, viral şüphesi",
+    "query_text": "Çocuk biraz ateşli gelmiş, öğleden sonra çıkmış ateş, boğaz kızarıklığı var, öksürüğü de var. Viral enfeksiyon düşünüyorum, üç dört gündür böyle devam etmiş. Muayenede başka bir şey yok, akciğerler temiz, karın normal. Şimdilik destekleyici tedavi yapsın, ateş indirici verelim, üç beş gün içinde geçmeli diye söyledim."
+  },
+  {
+    "query_id": "syn_040_kabızlık_yaşlı",
+    "scenario": "yaşlı hastada kronik kabızlık + abdominal rahatsızlık",
+    "query_text": "Tamam şu şekilde yakınması var iki haftadır karın şişkinliği ve çok sert dışkılama zorluk çekiyor diyor. Kronik kabızlığı varmış eskiden de şikayetlenmiş. Muayenede karında hafif distansiyon var, bağırsaklar dinlendiğinde normal sesler işitiliyor, defans yok, hepatosplenomegali yok. İlaç öyküsünde de antidepresan ve antihipertansif var bunlar da kabızlığa yol açıyor olabilir yani."
+  },
+  {
+    "query_id": "syn_041_ödem_alt",
+    "scenario": "alt ekstremite ödemi, kalp yetmezliği şüphesi",
+    "query_text": "Ayakları şişmiş, iki taraflı simetrik, botadan kalkıyor morarmış. Sabah uyandığında daha çok şişmiş diyor, akşam doğru ağırlaşıyor. İki haftadır böyle, öksürük de varmış biraz. Kardiyolojiye göndereceğiz, EKG ve ekokardiyografi isteyeceğiz, bu arada diüretik başlayabiliriz."
+  },
+  {
+    "query_id": "syn_042_depresyon_somatik",
+    "scenario": "depresyon ile ilişkili somatik şikayetler",
+    "query_text": "Tamam, çok mu zamandır böyle hissediyorsun? Evet, yaklaşık iki üç aydır. Boyun kısmında gerilim var, baş ağrısı, yorgunluk çok fazla. Uyku mu düzensiz? Evet, gece uyuyamıyorum, sabah erken kalkıyorum, gün boyunca hiç enerjim yok. Başka bir sorun var mı? Açı, halsizlik, bir de mide garıntısı oluyor zaman zaman. Stres mi yoğun? İş, aile, hayatın genel seyri. Şu an zihinsel olarak nasıl hissediyorsun? Çok mutsuzum açıkçası, her şeye ilgim kalmadı. Anladım, muayene edelim. Palpasyon yapıldı, kas gerginliği var boyunda, vital bulguları normal. Depresyonun somatik bulguları olarak değerlendiriyorum bunu, eşlik eden anksiyete, uyku bozukluğu ve kas ağrıları"
+  },
+  {
+    "query_id": "syn_043_halsizlik_b12_demir",
+    "scenario": "yorgunluk + halsizlik, çoklu vitamin eksikliği şüphesi",
+    "query_text": "Hastanın çok zamandır yorgun olduğunu söylüyor, hiç enerjisi yok sabahtan akşama kadar. Bir iki ay önce başladığını hatırlıyor, yemek yiyemiyor, iştahı azalmış. Muayenede genel durumu kötü görünüyor, cilt rengi soluk, dil hafif kaplı gözüküyor. Çoklu vitamin eksikliğinden şüpheleniyorum, kan testleri çektirtmek gerekiyor."
+  },
+  {
+    "query_id": "syn_044_akut_gut",
+    "scenario": "monoartiküler akut başlangıç + kırmızı şişme",
+    "query_text": "Tamam arkadaş şu diz ağrısı çok ani başlamış, dün sabah kalktığında hiç yokmuş, akşama doğru birden şişip kızarmış. Muayenede sıcak, ödemli, hareket çok kısıtlı duruyor. İnflamasyon bulguları var, hemen kan alıp iltihap belirtecileri kontrol edelim, belki kristal artrit, belki de enfeksiyöz, iğne çekeceğiz kaynağını anlamak için."
+  },
+  {
+    "query_id": "syn_045_fmf",
+    "scenario": "ailevi akdeniz ateşi şüphesi, periyodik karın ağrısı + ateş",
+    "query_text": "Tamam şöyle başlıyor işte, hasta diyor ki son üç dört aydır her ay bir iki hafta arayla birdenbire karın ağrısı başlıyor ve ateş çıkıyor, ortalama iki üç gün sürüyor sonra kendi kendine geçiyor, arada boşalım oluyor, bulantı da var, ama ara dönemlerde hiçbir şey yok tamamen iyi hissediyor, hatta bu arada antrenmanlarına da devam edebiliyor. Muayenede şu anda ağrı yok, abdomen soft, defans yok, rebound yok, ama ailede benzer şikayetleri olan birisi varmış delikanlının babasında da aynı şey olmuş daha önce. Bunun periodik tablı ateş sendromu olma ihtimali yüksek, genetik yatkınlık var ve klinik prezentasyon uyuyor, genetik testleri ve inflamatuar belirteçleri çekmemiz lazım."
+  },
+  {
+    "query_id": "syn_046_gerd",
+    "scenario": "gastroözofageal reflü, retrosternal yanma",
+    "query_text": "Hasta reflü yakınması var, göğüs kafesi arkasında yanma hissettiğini söylüyor, özellikle yemekten sonra kötüleşiyor demiş. Üç-dört haftadır devam ediyor galiba. Muayenede abdomen soft, epigastrik hassasiyet var, özofageal peristaltik sesler normal geldi. Reflü semptomları var, önce PPI başlayalım, diyet düzenlemeleri ve yaşam tarzı değişiklikleri önemli."
+  },
+  {
+    "query_id": "syn_047_ülser_dyspepsia",
+    "scenario": "peptik ülser şüphesi, açlık ağrısı + bulantı",
+    "query_text": "Hastamız yaklaşık iki haftadır özellikle sabah erken saatlerde ve ara öğünlerde karın üst bölgesinde yanıcı tipi ağrı şikayeti var, bulantı eşlik ediyor, kusmuyor. Muayene de epigastrik hassasiyet var, diğer bulguları normal gözüküyor. Peptik ülser düşünüyorum, endoskopi isteyeceğiz."
+  },
+  {
+    "query_id": "syn_048_h_pylori",
+    "scenario": "H. pylori taraması, kronik gastrik şikayetler",
+    "query_text": "Hastanın midede yanma ve şişkinlik şikayetleri var birkaç aydır, özellikle yağlı yemeklerden sonra kötüleşiyor. Muayenede üst karında hafif hassasiyet var, başka bulgu yok. H. pylori antijen testi yapacağız sonucuna göre tedavi şeması belirleriz."
+  },
+  {
+    "query_id": "syn_049_ishal_kronik",
+    "scenario": "kronik ishal + kilo kaybı, IBD şüphesi",
+    "query_text": "İşte doktorun muayene notunun ASR transkripsiyonu:\n\nÜç dört aydır devamlı ishal var, günde kaç kez dedim beş altı kez çıkıyor, kanlı mukus da görmüş bir iki kez, başta pek umursamadı ama son aylarda kilo kaybı başladı, dokuz on kilo düştü ve kompleksi görülüyor, karında rahatsızlık ve kramplar varmış özellikle yemekten sonra, bu kadar süren ishal ve kilo kaybı göz önüne alınca IBD'yi düşünmek lazım tabii, muayenede karın hassas buldum ışık, oropharinks normal, rectal muayene yapacağız ama şimdilik laboratuvar istiyorum ve mutlaka gastroenteroloji konsültasyonu alacağız hemen."
+  }
+]
