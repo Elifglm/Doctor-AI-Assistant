@@ -368,6 +368,21 @@ class ICD10SuggestionService:
         self, terms: list[str]
     ) -> list[dict[str, Any]]:
         """Search vector DB for candidate ICD-10 codes."""
+        # Query expansion: synonyms (halk_dili → tıbbi terim) AND
+        # per-word significant token isolation. The token step is a
+        # noise-resistance fix — long phrases like "MENENJİT İHTİMALİ GÖZE
+        # ALINIYOR" lose semantic signal in dense embedding because filler
+        # words dominate; isolating "menenjit" lets the vector index
+        # surface the actual ICD code.
+        from apps.backend.src.services.nlp_normalizer import (
+            get_expander, expand_with_tokens,
+        )
+        expanded = expand_with_tokens(get_expander(), terms)
+        if len(expanded) > len(terms):
+            logger.info("ICD expansion (synonyms+tokens): %d → %d terms",
+                        len(terms), len(expanded))
+        terms = expanded
+
         if self._vectors is None or not self._vectors.is_ready:
             logger.warning("ICD10VectorService not available, using text search fallback")
             return await self._text_search_fallback(terms)

@@ -40,6 +40,14 @@ GRAMER KURALLARI:
 - EYLEM ÇEKİMİ KULLANMA — isim öbeği (noun phrase) yaz.
 - Eylem isimleri kullan: "AÇLIK HİSSİ ARTIŞI" (DOĞRU), "AÇLIK HİSSİ ARTMIŞ" \
   YASAK (artmış = sıfat-fiil, anamnez jargonu değil).
+- İSİMLERİN KÖK HÂLİNİ KULLAN — iyelik/durum eklerini at:
+  * "ÖDEM" yaz, "ÖDEMİ" YASAK ("ödemi" iyelik formu, kök "ödem")
+  * "AĞRI" yaz, "AĞRISI" YASAK (kök "ağrı")
+  * "ŞİKAYET" yaz, "ŞİKAYETİ" YASAK
+  * "BULANTI" yaz, "BULANTISI" YASAK
+  * Hasta "ödemi var" der → "AYAK BİLEKLERİNDE ÖDEM" yaz, "AYAK BİLEKLERİNDE ÖDEMİ" YASAK.
+  * Hasta "ağrım var" der → "BAŞ AĞRISI" (alan adının doğru iyelik hâli kabul, çünkü tıbbi terim).
+  * Genel kural: tek başına bir semptom/bulgu adı yazıyorsan KÖK kullan.
 
 TIBBİ JARGON DÖNÜŞÜMÜ — hasta dili → klinik terim:
 - "kendini çok yorma" → AŞIRI EGZERSİZDEN KAÇINMA / DİNLENME
@@ -111,7 +119,7 @@ konsultasyon_oneri, icd10_list, sut_tetkik_list
 15. oneri                   — Yaşam tarzı/diyet önerileri. BÜYÜK HARF, ANLAMLI tıbbi ifadeler. Her öneri `----` ile ayrı. Doğru örnekler: "TUZ KISITLAMASI", "DÜZENLİ EGZERSİZ", "BOL SIVI TÜKETİMİ", "AŞIRI EGZERSİZDEN KAÇINMA", "DİNLENME", "SİGARAYI BIRAKMA", "KİLO VERME", "DİYABETİK DİYET", "DÜZENLİ İLAÇ KULLANIMI", "AĞIRLIK KALDIRMAMA". Yoksa "".
 16. uyari                   — İlaç etkileşimi/alerji uyarısı. BÜYÜK HARF. Yoksa "".
 17. kontrol_zamani          — BÜYÜK HARF (örn: "1 HAFTA SONRA TANSİYON KONTROLÜ"). Yoksa "".
-18. agri_skalasi            — Sayı veya "VAS X" (örn: "7" veya "VAS 7"). Yoksa "".
+18. agri_skalasi            — SADECE SAYI (0-10) veya "VAS X" formatı. Hasta ağrı şiddetini sayısal söylediyse buraya yaz (örn: "7" / "VAS 7"). KELIME YASAK — "zonklayıcı", "şiddetli", "hafif" gibi kalitatif ifadeler buraya YAZILMAZ; bunlar `hastanin_oykusu` alanına ağrı KARAKTERİ olarak girer. Hasta sayı vermediyse "".
 19. kilo                    — SADECE SAYI (kg). Yoksa "".
 20. boy                     — SADECE SAYI (cm). Yoksa "".
 21. sikayet_baslangic_tarihi — BÜYÜK HARF (örn: "2 HAFTA ÖNCE" / "3 GÜN ÖNCE" / "1 YILDIR"). Yoksa "BELIRTILMEDI".
@@ -181,6 +189,20 @@ Aile bireyleri (soy_gecmisi):
 - "kanlı dışkı"            → HEMATEZİ / MELENA
 - "kanlı idrar"            → HEMATÜRİ
 - "uyuşma"                 → PARESTEZİ
+
+Ağrı KARAKTERİ (oykusu alanına, agri_skalasi DEĞİL):
+- "zonklayıcı" / "vuruyor"     → ZONKLAYICI KARAKTER
+- "keskin" / "bıçak gibi"      → KESKİN KARAKTER
+- "künt" / "tam ağrı diyemem"  → KÜNT KARAKTER
+- "yanıcı" / "yakıyor"         → YANICI KARAKTER
+- "sıkıştırıcı" / "baskı gibi" → SIKIŞTIRICI KARAKTER
+- "kramp tarzı" / "tutar bırakır" → KRAMP TARZI
+- "batıcı" / "iğne gibi"       → BATICI KARAKTER
+
+Ağrı ŞİDDETİ (sadece hasta sayı verdiyse agri_skalasi alanına):
+- "10 üzerinden 8" / "8 puan" → "8" veya "VAS 8"
+- "şiddetli" / "dayanılmaz" → bu KELIMEDIR, agri_skalasi'na YAZILMAZ; \
+  oykusu'da "ŞİDDETLİ KARAKTER" olarak geçebilir.
 
 Kronik hastalıklar (oz_gecmisi_soy_gecmisi, soy_gecmisi):
 - "şeker hastalığı/şekerim" → DM

@@ -386,13 +386,15 @@ class ReportGenerator:
             return
 
         try:
-            # Use transcript directly — tetkik names are in conversation, not report fields
-            # ICD diagnoses passed as context to improve accuracy (not to force suggestions)
-            suggestions = await self.sut.suggest(
-                transcript, icd_context=icd_diagnoses
-            ) if transcript else []
-            if not suggestions:
-                suggestions = await self.sut.suggest_from_report(report_sections)
+            # Prefer report-based pipeline: it benefits from synonym dictionary,
+            # LLM-based explicit test extraction, candidate validation, and the
+            # 3-source candidate generation. The transcript-based path is older
+            # and lacks these layers — only fall back to it if report yields nothing.
+            suggestions = await self.sut.suggest_from_report(report_sections)
+            if not suggestions and transcript:
+                suggestions = await self.sut.suggest(
+                    transcript, icd_context=icd_diagnoses
+                )
             if suggestions:
                 sut_text = "\n".join(
                     f"({s.kodu}) - {s.adi} [%{int(s.confidence * 100)}]"

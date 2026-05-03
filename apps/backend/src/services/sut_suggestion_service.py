@@ -429,6 +429,21 @@ class SUTSuggestionService:
         self, terms: list[str], brans: str | None = None
     ) -> list[dict[str, Any]]:
         """Search vector DB for candidate SUT tetkik codes."""
+        # Query expansion: synonyms + per-word significant tokens.
+        # Token step (noise-resistance): a phrase like "MENENJİT İHTİMALİ
+        # GÖZE ALINIYOR" loses signal in dense embedding because filler
+        # words dominate; isolating "menenjit" lets the vector index match.
+        from apps.backend.src.services.nlp_normalizer import (
+            get_expander, expand_with_tokens,
+        )
+        expanded = expand_with_tokens(get_expander(), terms)
+        if len(expanded) > len(terms):
+            print(
+                f"[SUT-DEBUG] expansion (synonyms+tokens): {len(terms)} → {len(expanded)} terms",
+                flush=True,
+            )
+        terms = expanded
+
         print(f"[SUT-DEBUG] _find_vector_candidates: vectors={self._vectors is not None}, ready={self._vectors.is_ready if self._vectors else False}, terms={terms}", flush=True)
         if self._vectors is None or not self._vectors.is_ready:
             print("[SUT-DEBUG] Vector service NOT ready, falling back to text search", flush=True)
@@ -480,22 +495,36 @@ class SUTSuggestionService:
 
         print(f"[SUT-DEBUG] LLM-extracted explicit test names: {names}", flush=True)
 
+        # Each LLM-extracted name is synonym-expanded before SUT search.
+        # Use substring-aware expand() (not expand_term, which requires exact
+        # match) so phrases like "Beyin görüntülemesi (MR/BT)" still surface
+        # the dictionary's "beyin görüntülemesi" entry → BT/MR Beyin codes.
+        from apps.backend.src.services.nlp_normalizer import get_expander
+        expander = get_expander()
+
         candidates: list[dict[str, Any]] = []
         seen: set[str] = set()
         for name in names[:20]:
             if not isinstance(name, str) or not name.strip():
                 continue
-            results = await self._sut.search(name.strip(), limit=3, brans=brans)
-            for r in results:
-                if r.kodu not in seen:
-                    seen.add(r.kodu)
-                    candidates.append({
-                        "kodu": r.kodu,
-                        "adi": r.adi,
-                        "brans": r.brans,
-                        "score": 0.95,
-                        "source": f"llm_explicit:{name}",
-                    })
+            name_clean = name.strip()
+            search_terms = {name_clean}
+            # Substring-based expansion catches names with extra qualifiers
+            search_terms.update(expander.expand(name_clean))
+            # Plus exact-key expansion as fallback
+            search_terms.update(expander.expand_term(name_clean))
+            for term in search_terms:
+                results = await self._sut.search(term, limit=3, brans=brans)
+                for r in results:
+                    if r.kodu not in seen:
+                        seen.add(r.kodu)
+                        candidates.append({
+                            "kodu": r.kodu,
+                            "adi": r.adi,
+                            "brans": r.brans,
+                            "score": 0.95,
+                            "source": f"llm_explicit:{name}",
+                        })
         return candidates
 
     async def _text_search_fallback(
