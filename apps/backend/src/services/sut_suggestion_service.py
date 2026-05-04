@@ -14,6 +14,18 @@ from apps.backend.src.services.llm_base import LLMProvider
 
 logger = logging.getLogger(__name__)
 
+
+def _safe_for_format(text: str) -> str:
+    """Escape ``{`` and ``}`` so user-controlled text cannot break str.format().
+
+    Defends against prompt-injection-by-format-string. Doctor-patient
+    transcript or report sections are user/ASR-controlled inputs that flow
+    into prompt templates via ``str.format()`` — a stray ``{`` would raise
+    ``KeyError`` and a crafted ``{key}`` could collide with a placeholder.
+    """
+    return text.replace("{", "{{").replace("}", "}}")
+
+
 SUT_SELECTION_PROMPT = """\
 Sen bir Turkce tibbi tetkik/tahlil uzmanisisin. Asagida bir doktor-hasta gorusme \
 transkripti ve SUT tetkik/tahlil aday kodlari verilmistir.
@@ -231,28 +243,28 @@ class SUTSuggestionService:
         self, report_sections: dict[str, str], brans: str | None = None
     ) -> list[SUTSuggestion]:
         """Generate SUT tetkik suggestions from structured report fields."""
-        print(f"[SUT-DEBUG] suggest_from_report called with {len(report_sections)} sections", flush=True)
+        logger.debug(f"[SUT-DEBUG] suggest_from_report called with {len(report_sections)} sections")
         search_parts: list[str] = []
         for key in self._RELEVANT_KEYS:
             val = report_sections.get(key, "").strip()
-            print(f"[SUT-DEBUG]   key={key} val={val[:60]!r} included={bool(val and val not in {'BELIRTILMEDI', 'BELIRTILMEDI.', ''})}", flush=True)
+            logger.debug(f"[SUT-DEBUG]   key={key} val={val[:60]!r} included={bool(val and val not in {'BELIRTILMEDI', 'BELIRTILMEDI.', ''})}")
             if val and val not in {"BELIRTILMEDI", "BELIRTILMEDI.", ""}:
                 search_parts.append(val)
 
         # Fallback: use ALL non-empty report sections
         if not search_parts:
-            print("[SUT-DEBUG]   No relevant keys matched, trying ALL sections...", flush=True)
+            logger.debug("[SUT-DEBUG]   No relevant keys matched, trying ALL sections...")
             for key, val in report_sections.items():
                 val = val.strip()
                 if val and val not in {"BELIRTILMEDI", "BELIRTILMEDI.", ""}:
                     search_parts.append(val)
-                    print(f"[SUT-DEBUG]   FALLBACK key={key} val={val[:60]!r}", flush=True)
+                    logger.debug(f"[SUT-DEBUG]   FALLBACK key={key} val={val[:60]!r}")
 
         if not search_parts:
-            print("[SUT-DEBUG] NO search_parts found, returning empty", flush=True)
+            logger.debug("[SUT-DEBUG] NO search_parts found, returning empty")
             return []
 
-        print(f"[SUT-DEBUG] search_parts count: {len(search_parts)}", flush=True)
+        logger.debug(f"[SUT-DEBUG] search_parts count: {len(search_parts)}")
 
         logger.info("search_parts count: %d", len(search_parts))
 
@@ -274,10 +286,9 @@ class SUTSuggestionService:
             "Report combined %d candidates (vector + text + llm-explicit)",
             len(candidates),
         )
-        print(
+        logger.debug(
             f"[SUT-DEBUG] candidate sources: vector={len(candidates) - len(text_candidates) - len(explicit_candidates)} "
             f"text={len(text_candidates)} llm-explicit={len(explicit_candidates)}",
-            flush=True,
         )
 
         if not candidates:
@@ -298,11 +309,11 @@ class SUTSuggestionService:
         )
 
         prompt = SUT_REPORT_SELECTION_PROMPT.format(
-            report_text=report_text,
-            candidates=candidates_text,
+            report_text=_safe_for_format(report_text),
+            candidates=_safe_for_format(candidates_text),
         )
 
-        print(f"[SUT-DEBUG] LLM report-select: {len(candidates)} candidates", flush=True)
+        logger.debug(f"[SUT-DEBUG] LLM report-select: {len(candidates)} candidates")
 
         try:
             raw = await self._llm.generate(prompt, "")
@@ -418,7 +429,7 @@ class SUTSuggestionService:
                 if word_count <= 5:
                     found.append(token)
 
-        print(f"[SUT-DEBUG] keyword extraction found: {found}", flush=True)
+        logger.debug(f"[SUT-DEBUG] keyword extraction found: {found}")
         return found[:25]
 
     # ------------------------------------------------------------------
@@ -438,15 +449,14 @@ class SUTSuggestionService:
         )
         expanded = expand_with_tokens(get_expander(), terms)
         if len(expanded) > len(terms):
-            print(
+            logger.debug(
                 f"[SUT-DEBUG] expansion (synonyms+tokens): {len(terms)} → {len(expanded)} terms",
-                flush=True,
             )
         terms = expanded
 
-        print(f"[SUT-DEBUG] _find_vector_candidates: vectors={self._vectors is not None}, ready={self._vectors.is_ready if self._vectors else False}, terms={terms}", flush=True)
+        logger.debug(f"[SUT-DEBUG] _find_vector_candidates: vectors={self._vectors is not None}, ready={self._vectors.is_ready if self._vectors else False}, terms={terms}")
         if self._vectors is None or not self._vectors.is_ready:
-            print("[SUT-DEBUG] Vector service NOT ready, falling back to text search", flush=True)
+            logger.debug("[SUT-DEBUG] Vector service NOT ready, falling back to text search")
             return await self._text_search_fallback(terms, brans=brans)
 
         results = await self._vectors.search_multiple(
@@ -473,7 +483,9 @@ class SUTSuggestionService:
         bugs by relying on the LLM to produce proper Turkish forms (e.g.
         "EKOKARDIYOGRAFI" → "EKOKARDİYOGRAFİ") that match the SUT DB exactly.
         """
-        prompt = EXPLICIT_TEST_EXTRACTION_PROMPT.format(report_text=report_text)
+        prompt = EXPLICIT_TEST_EXTRACTION_PROMPT.format(
+            report_text=_safe_for_format(report_text)
+        )
         try:
             raw = await self._llm.generate(prompt, "")
         except Exception:
@@ -493,7 +505,7 @@ class SUTSuggestionService:
         if not isinstance(names, list):
             return []
 
-        print(f"[SUT-DEBUG] LLM-extracted explicit test names: {names}", flush=True)
+        logger.debug(f"[SUT-DEBUG] LLM-extracted explicit test names: {names}")
 
         # Each LLM-extracted name is synonym-expanded before SUT search.
         # Use substring-aware expand() (not expand_term, which requires exact
@@ -568,9 +580,9 @@ class SUTSuggestionService:
             ) + "\n"
 
         prompt = SUT_SELECTION_PROMPT.format(
-            transcript=transcript,
-            candidates=candidates_text,
-            icd_context=icd_text,
+            transcript=_safe_for_format(transcript),
+            candidates=_safe_for_format(candidates_text),
+            icd_context=_safe_for_format(icd_text),
         )
 
         try:

@@ -71,6 +71,12 @@ class NERSettings(BaseModel):
     device: str = "cpu"
 
 
+class SUTSettings(BaseModel):
+    """SUT tetkik intent disambiguation settings."""
+    intent_prompt_version: str = "v2"  # "v1" = legacy, "v2" = per-mention CoT
+    intent_min_confidence: float = 0.70  # below this, REQUEST → NOT_REQUEST
+
+
 class RAGSettings(BaseModel):
     # Legacy synthetic medical_knowledge RAG (kept for archival/comparison).
     # Disabled by default in production — flip the flag to re-enable.
@@ -96,6 +102,7 @@ class AppSettings(BaseSettings):
     llm: LLMSettings = LLMSettings()
     ner: NERSettings = NERSettings()
     rag: RAGSettings = RAGSettings()
+    sut: SUTSettings = SUTSettings()
     hf_token: str = Field(default="", alias="HF_TOKEN")
     log_level: str = "INFO"
 
