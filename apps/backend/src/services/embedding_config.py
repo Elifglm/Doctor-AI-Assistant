@@ -52,6 +52,23 @@ PROFILES: dict[str, EmbeddingProfile] = {
         query_prefix="query: ",
         passage_prefix="passage: ",
     ),
+    "e5-base": EmbeddingProfile(
+        name="e5-base",
+        model_id="intfloat/multilingual-e5-base",
+        icd_chroma_dir=_PROJECT_ROOT / "data" / "icd10_chroma_e5_base",
+        sut_chroma_dir=_PROJECT_ROOT / "data" / "sut_tetkik_chroma_e5_base",
+        rag_chroma_dir=_PROJECT_ROOT / "data" / "rag" / "chroma_db_e5_base",
+        query_prefix="query: ",
+        passage_prefix="passage: ",
+    ),
+    "bge-m3": EmbeddingProfile(
+        name="bge-m3",
+        model_id="BAAI/bge-m3",
+        icd_chroma_dir=_PROJECT_ROOT / "data" / "icd10_chroma_bge",
+        sut_chroma_dir=_PROJECT_ROOT / "data" / "sut_tetkik_chroma_bge",
+        rag_chroma_dir=_PROJECT_ROOT / "data" / "rag" / "chroma_db_bge",
+        # BGE-M3 has no required prefix — raw text encodes correctly.
+    ),
 }
 
 

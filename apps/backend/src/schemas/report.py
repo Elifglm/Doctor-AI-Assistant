@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ReportSection(BaseModel):
@@ -25,6 +25,9 @@ class ReportContent(BaseModel):
 class GenerateReportRequest(BaseModel):
     session_id: int
     method: str = "manual"  # "manual" | "ai_generated"
+    # Number of similar past anamneses to retrieve as few-shot examples (RAG).
+    # Frontend Settings page can override 3..10. Backward compat: omit -> 5.
+    top_k: Optional[int] = Field(default=None, ge=3, le=10)
 
 
 class UpdateReportRequest(BaseModel):

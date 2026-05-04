@@ -141,6 +141,18 @@ async def audio_websocket(websocket: WebSocket, session_id: int):
                 await websocket.close()
                 return
 
+            # KVKK consent guard. The frontend already blocks the start button
+            # without consent, but a direct WebSocket connection could bypass
+            # that check — enforce it server-side as a defense-in-depth.
+            if not session.kvkk_consent:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "KVKK onayi alinmadan kayit baslatilamaz.",
+                    "code": "KVKK_CONSENT_REQUIRED",
+                })
+                await websocket.close()
+                return
+
             # Note: "RECORDING" status check removed. The in-memory connection
             # registry above already prevents true concurrent access. The DB
             # status check caused false rejections when the old WS's finally

@@ -61,6 +61,8 @@ data/icd10_chroma/
 data/sut_tetkik_chroma/
 data/sut_tetkik.db
 data/rag/
+data/anamnez.db
+data/anamnez_chroma_*/
 
 # MariaDB volume + dumps (PHI riski — Whatsapp/Drive ile paylas)
 data/mariadb/

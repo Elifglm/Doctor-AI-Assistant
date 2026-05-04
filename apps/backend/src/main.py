@@ -77,7 +77,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app_settings = AppSettings()
     llm_service = create_llm_service(app_settings)
     ner_service = NERService()
-    rag_service = RAGService()
+
+    # Legacy synthetic RAG (medical_knowledge collection). Off by default;
+    # set ASR_RAG__USE_SYNTHETIC=true to revive for archival comparison.
+    rag_service: RAGService | None = None
+    if app_settings.rag.use_synthetic:
+        rag_service = RAGService()
+        try:
+            await rag_service.initialize()
+        except Exception:
+            logger.warning("Synthetic RAG service initialization failed")
+            rag_service = None
+    else:
+        logger.info("Synthetic RAG disabled (set ASR_RAG__USE_SYNTHETIC=true to revive)")
 
     try:
         await llm_service.initialize()
@@ -86,11 +98,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             "LLM service initialization failed (provider=%s)",
             llm_service.provider_name,
         )
-
-    try:
-        await rag_service.initialize()
-    except Exception:
-        logger.warning("RAG service initialization failed")
 
     # NER is lazy-loaded on first use (heavy model ~500MB)
 
@@ -132,7 +139,45 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         ner_service=ner_service,
     )
 
-    report_generator = ReportGenerator(ner_service, rag_service, llm_service, icd10_suggestion_service, sut_suggestion_service)
+    # ---- Anamnez RAG (real hospital corpus, BGE-M3 × metadata) ----
+    from apps.backend.src.services.anamnez_rag_service import AnamnezRAGService
+
+    anamnez_rag_service = AnamnezRAGService(
+        profile=app_settings.rag.anamnez_profile,
+        fmt=app_settings.rag.anamnez_fmt,
+    )
+    try:
+        await anamnez_rag_service.initialize()
+        if app_settings.rag.anamnez_warmup:
+            # 2 dummy encodes prime CUDA kernels / first-query latency cliff
+            await anamnez_rag_service.query_similar_cases("warmup", top_k=1)
+            await anamnez_rag_service.query_similar_cases("warmup", top_k=1)
+            logger.info("AnamnezRAG warmup done")
+    except FileNotFoundError as e:
+        logger.critical(
+            "AnamnezRAG initialization FAILED: %s. "
+            "Run: python -m apps.backend.src.scripts.build_anamnez_vectors "
+            "--profile %s --format %s",
+            e, app_settings.rag.anamnez_profile, app_settings.rag.anamnez_fmt,
+        )
+        raise
+    except Exception:
+        logger.critical(
+            "AnamnezRAG initialization FAILED. Check ChromaDB dir + model cache.",
+            exc_info=True,
+        )
+        raise
+
+    report_generator = ReportGenerator(
+        ner_service,
+        rag_service,
+        llm_service,
+        icd10_suggestion_service,
+        sut_suggestion_service,
+        anamnez_rag=anamnez_rag_service,
+        default_top_k=app_settings.rag.anamnez_top_k,
+        use_synthetic_rag=app_settings.rag.use_synthetic,
+    )
 
     # ---- OpenEMR integration ----
     from apps.backend.src.services.openemr_service import OpenEMRService
@@ -146,6 +191,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.llm_service = llm_service
     app.state.ner_service = ner_service
     app.state.rag_service = rag_service
+    app.state.anamnez_rag_service = anamnez_rag_service
     app.state.report_generator = report_generator
     app.state.icd10_service = icd10_service
     app.state.icd10_suggestion_service = icd10_suggestion_service
