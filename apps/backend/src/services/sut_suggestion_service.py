@@ -165,6 +165,88 @@ Yanit (sadece JSON array):
 """
 
 
+# ============================================================================
+# V2 PROMPT — Per-mention CoT label-then-decide for intent disambiguation.
+# Selected via ASR_SUT__INTENT_PROMPT_VERSION env var (default v2).
+# Set to "v1" to fall back to SUT_SELECTION_PROMPT (legacy).
+# ============================================================================
+
+SUT_SELECTION_PROMPT_V2 = """\
+Sen Türkçe tıbbi tetkik/tahlil uzmanısın. Aşağıda doktor-hasta görüşme \
+transkripti ve aday SUT tetkik kodları var.
+
+GÖREV: Transkriptteki her tetkik mention'ını analiz et, sadece DOKTORUN \
+ŞİMDİ İSTEDİĞİ tetkikleri seç. Geçmiş mention'ları, hasta sorularını, \
+hipotetik/reddedilen tetkikleri DAHIL ETME.
+
+ADIM ADIM AKIL YÜRÜTME (her aday için):
+1. **kaynak_cumle**: tetkikin geçtiği TAM cümleyi transkriptten kelimesi \
+   kelimesine çıkar. Konuşmacı prefix'ini ("Doktor:" / "Hasta:") koru.
+2. **konuşmacı**: cümle "Doktor:" ile başlıyorsa DOCTOR, "Hasta:" ile \
+   başlıyorsa PATIENT. Belirsizse OTHER.
+3. **zaman_kipi**: Türkçe morfoloji ipuçları:
+   - PAST_NARRATIVE: -mIştI, -mIş, -dI ekleri ("baktırmıştım", \
+     "yaptırdım", "geldi", "bakmıştık")
+   - OPTATIVE: -AlIm ("isteyelim", "bakalım"), imperatif ("iste", "bak")
+   - FUTURE: -AcAk ("isteyeceğim", "yapacağım", "yazacağım")
+   - HYPOTHETICAL: -sA + ana cümle ("şeker yüksekse insülin bakarız")
+   - INTERROGATIVE: soru ("- mi?", "- mı?", "lazım mı?")
+   - DECLARATIVE: düz haber cümlesi
+4. **intent_etiketi** (KARAR):
+   - **REQUEST**: konuşmacı=DOCTOR + zaman_kipi (OPTATIVE | FUTURE | \
+     imperatif) + olumlu cümle. SADECE bu seçilir.
+   - **PAST_DONE**: zaman_kipi=PAST_NARRATIVE (kim söylerse söylesin: \
+     doktor "iki yıl önce şeker baktınız" dese de geçmiş!)
+   - **PATIENT_QUESTION**: konuşmacı=PATIENT + (INTERROGATIVE veya kendi \
+     anlatısı)
+   - **RESULT_DISCUSS**: tetkik sonucu konuşuluyor ("CRP 5 gelmiş", \
+     "şeker normal"), istek değil
+   - **OTHER**: hipotetik, reddedilen ("önerir misiniz? - hayır gerek yok"), \
+     diğer
+5. **include**: intent_etiketi == REQUEST AND aday listesinde ilgili kod var
+
+NEGATİF ÖRNEKLER (HİÇ DAHIL ETME):
+- "Hasta: öz geçmişte hemogram baktırdım" → PATIENT/PAST_NARRATIVE/PAST_DONE → EXCLUDE
+- "Doktor: iki yıl önce şeker baktınız" → DOCTOR/PAST_NARRATIVE/PAST_DONE → EXCLUDE \
+  (DİKKAT: doktor söylese bile PAST!)
+- "Doktor: şekerin yüksekse insülin bakarız" → DOCTOR/HYPOTHETICAL/OTHER → EXCLUDE
+- "Hasta: D vitamini bakar mıyız?" → PATIENT/INTERROGATIVE/PATIENT_QUESTION → EXCLUDE
+- "Doktor: CRP 12 gelmiş" → DOCTOR/DECLARATIVE/RESULT_DISCUSS → EXCLUDE \
+  (sonuç paylaşımı, istek değil)
+
+POZİTİF ÖRNEKLER (SEÇ):
+- "Doktor: tam kan isteyelim" → DOCTOR/OPTATIVE/REQUEST → INCLUDE
+- "Doktor: troponin ve EKG isteyeceğim" → DOCTOR/FUTURE/REQUEST → INCLUDE \
+  (iki ayrı mention)
+- "Doktor: bir de B12 bakalım" → DOCTOR/OPTATIVE/REQUEST → INCLUDE
+
+KOD KAYNAĞI KURALI: SADECE aday listesindeki kodları kullan. Aday listesinde \
+OLMAYAN bir kodu ASLA UYDURMA. Bilmediğin kodu yazma.
+
+GÜVEN SKORU: kaynak cümle açık ve niyet net ise ≥0.90. Belirsizse 0.60-0.80.
+
+TRANSKRIPT:
+{transcript}
+{icd_context}
+ADAY TETKIKLER:
+{candidates}
+
+ÇIKTI (sadece JSON array, markdown fence yok, açıklama yok):
+[
+  {{
+    "kodu": "<adaydan>",
+    "adi": "<adaydan>",
+    "confidence": 0.95,
+    "kaynak_cumle": "<transkriptten tam cümle>",
+    "intent_etiketi": "REQUEST",
+    "reasoning": "DOCTOR/OPTATIVE — tetkik açıkça istendi"
+  }}
+]
+
+Hiçbir aday REQUEST değilse: []
+"""
+
+
 class SUTSuggestionService:
     """NER → Vector DB search → LLM selection pipeline for SUT tetkik codes.
 
@@ -579,7 +661,17 @@ class SUTSuggestionService:
                 f"- {d}" for d in icd_context
             ) + "\n"
 
-        prompt = SUT_SELECTION_PROMPT.format(
+        # Intent-disambiguation prompt versioning. v2 = per-mention CoT
+        # (default), v1 = legacy single-rule prompt. Switched via
+        # ASR_SUT__INTENT_PROMPT_VERSION env var for safe rollback.
+        from config.settings import AppSettings
+        prompt_version = AppSettings().sut.intent_prompt_version
+        prompt_template = (
+            SUT_SELECTION_PROMPT_V2 if prompt_version == "v2" else SUT_SELECTION_PROMPT
+        )
+        logger.debug("[SUT-DEBUG] using prompt version=%s", prompt_version)
+
+        prompt = prompt_template.format(
             transcript=_safe_for_format(transcript),
             candidates=_safe_for_format(candidates_text),
             icd_context=_safe_for_format(icd_text),
