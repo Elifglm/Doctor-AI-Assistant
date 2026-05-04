@@ -7,7 +7,7 @@ import logging
 import re
 from typing import Any
 
-from apps.backend.src.schemas.sut_tetkik import SUTSuggestion
+from apps.backend.src.schemas.sut_tetkik import IntentLabel, SUTSuggestion
 from apps.backend.src.services.sut_service import SUTService
 from apps.backend.src.services.sut_vector_service import SUTVectorService
 from apps.backend.src.services.llm_base import LLMProvider
@@ -734,6 +734,20 @@ class SUTSuggestionService:
                 cand = cand_by_code[kodu]
                 adi = cand.get("adi", adi)
                 brans = cand.get("brans", brans)
+
+            # V2 alanlari: yeni LLM cevabi kaynak_cumle + intent_etiketi
+            # iceriyorsa parse et. V1 cevabinda alanlar yok → safe defaults.
+            kaynak_cumle = str(item.get("kaynak_cumle", ""))[:200]  # storage hijyeni
+            intent_raw = str(item.get("intent_etiketi", "REQUEST")).strip().upper()
+            try:
+                intent_etiketi = IntentLabel(intent_raw)
+            except ValueError:
+                logger.warning(
+                    "Invalid intent_etiketi=%r from LLM for kodu=%s, defaulting OTHER",
+                    intent_raw, kodu,
+                )
+                intent_etiketi = IntentLabel.OTHER
+
             suggestions.append(
                 SUTSuggestion(
                     kodu=kodu,
@@ -741,6 +755,8 @@ class SUTSuggestionService:
                     brans=brans,
                     confidence=float(item.get("confidence", 0.5)),
                     reasoning=item.get("reasoning", ""),
+                    kaynak_cumle=kaynak_cumle,
+                    intent_etiketi=intent_etiketi,
                 )
             )
         if dropped:
