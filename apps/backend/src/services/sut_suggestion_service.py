@@ -665,7 +665,9 @@ class SUTSuggestionService:
         # (default), v1 = legacy single-rule prompt. Switched via
         # ASR_SUT__INTENT_PROMPT_VERSION env var for safe rollback.
         from config.settings import AppSettings
-        prompt_version = AppSettings().sut.intent_prompt_version
+        settings = AppSettings()
+        prompt_version = settings.sut.intent_prompt_version
+        intent_threshold = settings.sut.intent_min_confidence
         prompt_template = (
             SUT_SELECTION_PROMPT_V2 if prompt_version == "v2" else SUT_SELECTION_PROMPT
         )
@@ -692,7 +694,25 @@ class SUTSuggestionService:
                 for c in candidates[:10]
             ]
 
-        return self._parse_llm_selection(raw, candidates)
+        suggestions = self._parse_llm_selection(raw, candidates)
+
+        # Confidence gate: dusuk guvenli REQUEST -> NOT_REQUEST. Yanlis
+        # pozitif (gereksiz lab istegi → gercek hasta zarari) icin guvenlik.
+        # Threshold ASR_SUT__INTENT_MIN_CONFIDENCE env var ile ayarlanir.
+        downgraded = 0
+        for s in suggestions:
+            if s.intent_etiketi == IntentLabel.REQUEST and s.confidence < intent_threshold:
+                s.intent_etiketi = IntentLabel.NOT_REQUEST
+                tail = f"[confidence<{intent_threshold}, NOT_REQUEST'e indirildi]"
+                s.reasoning = f"{s.reasoning} {tail}".strip()
+                downgraded += 1
+        if downgraded:
+            logger.info(
+                "Confidence gate: %d REQUEST → NOT_REQUEST (threshold=%.2f)",
+                downgraded, intent_threshold,
+            )
+
+        return suggestions
 
     @staticmethod
     def _parse_llm_selection(
