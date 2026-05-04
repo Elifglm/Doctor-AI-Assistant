@@ -72,9 +72,19 @@ class NERSettings(BaseModel):
 
 
 class RAGSettings(BaseModel):
+    # Legacy synthetic medical_knowledge RAG (kept for archival/comparison).
+    # Disabled by default in production — flip the flag to re-enable.
+    use_synthetic: bool = False
     persist_dir: str = "data/rag/chroma_db"
     collection_name: str = "medical_knowledge"
     n_results: int = 50
+
+    # Real-anamnez RAG (production)
+    anamnez_profile: str = "bge-m3"          # winning model from ablation
+    anamnez_fmt: str = "metadata"             # winning format from ablation
+    anamnez_top_k: int = 5                    # default few-shot count, frontend can override 3-10
+    anamnez_device: str = "auto"              # auto / cpu / cuda — env-driven
+    anamnez_warmup: bool = True               # 2 dummy encodes at startup to avoid first-query latency
 
 
 class AppSettings(BaseSettings):

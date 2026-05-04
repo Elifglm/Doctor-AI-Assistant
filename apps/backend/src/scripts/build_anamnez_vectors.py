@@ -27,6 +27,7 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 
 from apps.backend.src.rag.embed_text_builder import FORMATS, build
+from apps.backend.src.rag.phi_guard import mask_phi_count
 from apps.backend.src.services.embedding_config import PROFILES, get_profile
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
@@ -77,15 +78,19 @@ def main() -> int:
     n_rows = len(rows)
     print(f"[build] corpus: {n_rows:,} rows", flush=True)
 
-    # --- 2. Format texts ---
+    # --- 2. Format texts (with defense-in-depth PHI mask) ---
     t0 = time.perf_counter()
     texts: list[str] = []
     keep_indices: list[int] = []
     metadatas: list[dict] = []
+    phi_totals = {"tc": 0, "phone": 0, "email": 0}
     for i, row in enumerate(rows):
         text = build(dict(row), args.format)
         if not text.strip():
             continue
+        text, phi_counts = mask_phi_count(text)
+        for k, v in phi_counts.items():
+            phi_totals[k] += v
         if profile.passage_prefix:
             text = profile.passage_prefix + text
         texts.append(text)
@@ -106,6 +111,10 @@ def main() -> int:
                 meta[k] = str(v).strip()[:128]
         metadatas.append(meta)
     print(f"[build] formatted {len(texts):,} non-empty texts in {time.perf_counter()-t0:.1f}s", flush=True)
+    if any(phi_totals.values()):
+        print(f"[build] PHI masked: tc={phi_totals['tc']} phone={phi_totals['phone']} email={phi_totals['email']}", flush=True)
+    else:
+        print("[build] PHI masked: 0 hits (defense-in-depth, expected from prior scan)", flush=True)
 
     if not texts:
         print("[ERROR] no non-empty texts to embed", file=sys.stderr)

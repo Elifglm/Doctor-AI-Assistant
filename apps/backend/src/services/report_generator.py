@@ -15,6 +15,7 @@ from apps.backend.src.prompts.section_prompts import (
     get_anamnesis_sections,
 )
 from apps.backend.src.prompts.system_prompt import SYSTEM_PROMPT
+from apps.backend.src.services.anamnez_rag_service import AnamnezRAGService, AnamnezResult
 from apps.backend.src.services.llm_base import LLMProvider
 from apps.backend.src.services.ner_service import MedicalEntity, NERService
 from apps.backend.src.services.rag_service import RAGResult, RAGService
@@ -77,16 +78,24 @@ class ReportGenerator:
     def __init__(
         self,
         ner: NERService,
-        rag: RAGService,
+        rag: RAGService | None,
         llm: LLMProvider,
         icd10_suggestion_service: Any | None = None,
         sut_suggestion_service: Any | None = None,
+        anamnez_rag: AnamnezRAGService | None = None,
+        default_top_k: int = 5,
+        use_synthetic_rag: bool = False,
     ) -> None:
         self.ner = ner
+        # Legacy synthetic RAG. Disabled by default; flip ASR_RAG__USE_SYNTHETIC=true
+        # to revive for archival comparison.
         self.rag = rag
         self.llm = llm
         self.icd10 = icd10_suggestion_service
         self.sut = sut_suggestion_service
+        self.anamnez_rag = anamnez_rag
+        self.default_top_k = default_top_k
+        self.use_synthetic_rag = use_synthetic_rag
 
     # ------------------------------------------------------------------
     # Batch prompt helpers
@@ -203,8 +212,11 @@ class ReportGenerator:
     async def _retrieve_rag(
         self, query_text: str
     ) -> list[RAGResult]:
-        """Retrieve diverse RAG results using query_diverse."""
-        if not self.rag.is_ready or self.rag.doc_count == 0:
+        """Legacy synthetic RAG (medical_knowledge collection). Disabled
+        unless ASR_RAG__USE_SYNTHETIC=true. Kept for archival/comparison."""
+        if not self.use_synthetic_rag:
+            return []
+        if self.rag is None or not self.rag.is_ready or self.rag.doc_count == 0:
             return []
         try:
             return await self.rag.query_diverse(
@@ -213,6 +225,39 @@ class ReportGenerator:
         except Exception:
             logger.exception("RAG query_diverse failed")
             return []
+
+    async def _retrieve_anamnez_rag(
+        self, query_text: str, top_k: int | None = None
+    ) -> list[AnamnezResult]:
+        """Retrieve top-k similar past anamneses (real hospital data, BGE-M3)."""
+        if self.anamnez_rag is None or not self.anamnez_rag.is_ready:
+            return []
+        k = top_k or self.default_top_k
+        try:
+            return await self.anamnez_rag.query_similar_cases(query_text, top_k=k)
+        except Exception:
+            logger.exception("AnamnezRAG query failed; few-shot will be empty")
+            return []
+
+    @staticmethod
+    def _format_anamnez_examples(results: list[AnamnezResult]) -> str:
+        """Render anamnez RAG results as XML-tagged few-shot block.
+
+        Anthropic best practice: examples in <examples> tag, before instruction.
+        Each anamnez document already has section headers (YAKINMA:/ÖYKÜ:/...)
+        thanks to the metadata format used in build_anamnez_vectors.py.
+        """
+        if not results:
+            return ""
+        parts: list[str] = ["<examples>"]
+        for i, r in enumerate(results, start=1):
+            doc = r.document
+            # Strip the E5-style "passage: " prefix if present
+            if doc.startswith("passage: "):
+                doc = doc[len("passage: "):]
+            parts.append(f"<example index=\"{i}\">\n{doc}\n</example>")
+        parts.append("</examples>")
+        return "\n".join(parts)
 
     # ------------------------------------------------------------------
     # Full pipeline (non-streaming)
@@ -223,6 +268,7 @@ class ReportGenerator:
         segments: list[dict[str, Any]],
         on_progress: ProgressCallback | None = None,
         brans: str | None = None,
+        top_k: int | None = None,
     ) -> dict[str, Any]:
         """Run the complete pipeline and return structured report content."""
 
@@ -248,6 +294,11 @@ class ReportGenerator:
             0.2,
         )
 
+        # 2b. Anamnez RAG retrieval (real hospital corpus, BGE-M3)
+        anamnez_examples = await self._retrieve_anamnez_rag(full_text, top_k=top_k)
+        if anamnez_examples:
+            logger.info("AnamnezRAG returned %d examples for batch report", len(anamnez_examples))
+
         # 3. Batch generation — all sections in a single LLM call
         brans_sections = get_anamnesis_sections(brans)
         section_keys = list(brans_sections.keys())
@@ -255,8 +306,11 @@ class ReportGenerator:
 
         await _progress("generating", "Tum alanlar olusturuluyor...", 0.3)
 
-        # Build a single prompt for all sections
+        # Build a single prompt for all sections (with anamnez few-shot prepended)
         batch_prompt = self._build_batch_prompt(full_text, entities, grouped, brans)
+        examples_block = self._format_anamnez_examples(anamnez_examples)
+        if examples_block:
+            batch_prompt = f"{examples_block}\n\n{batch_prompt}"
         batch_result: dict[str, str] = {}
 
         for attempt in range(3):
@@ -580,6 +634,7 @@ class ReportGenerator:
         self,
         segments: list[dict[str, Any]],
         brans: str | None = None,
+        top_k: int | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Stream report generation events for SSE."""
 
@@ -606,6 +661,13 @@ class ReportGenerator:
             },
         }
 
+        # Global anamnez RAG retrieval (one query for the whole transcript,
+        # reused across all sections — avoids per-section latency tax of ~25 calls)
+        anamnez_examples = await self._retrieve_anamnez_rag(full_text, top_k=top_k)
+        anamnez_examples_block = self._format_anamnez_examples(anamnez_examples)
+        if anamnez_examples:
+            logger.info("AnamnezRAG returned %d examples for streaming report", len(anamnez_examples))
+
         # Section-by-section
         brans_sections = get_anamnesis_sections(brans)
         section_keys = list(brans_sections.keys())
@@ -621,12 +683,14 @@ class ReportGenerator:
                 "data": {"section": key, "title": meta["title"], "progress": progress},
             }
 
-            # RAG with diversity
+            # Legacy synthetic RAG (only if env flag enabled)
             query_text = f"{meta['title']} {' '.join(e.text for e in section_entities)}"
             rag_results = await self._retrieve_rag(query_text)
 
             # LLM streaming (with retry and rate-limit pacing)
             prompt = build_section_prompt(key, full_text, section_entities, rag_results)
+            if anamnez_examples_block:
+                prompt = f"{anamnez_examples_block}\n\n{prompt}"
             accumulated = ""
             for attempt in range(3):
                 try:

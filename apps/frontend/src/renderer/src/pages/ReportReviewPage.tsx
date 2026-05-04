@@ -50,11 +50,15 @@ export function ReportReviewPage(): React.JSX.Element {
   })
 
   const generateAIReport = useMutation({
-    mutationFn: () =>
-      apiClient.post<Report>('/api/v1/reports', {
+    mutationFn: () => {
+      const stored = parseInt(localStorage.getItem('anamnez_top_k') || '5', 10)
+      const top_k = Number.isFinite(stored) && stored >= 3 && stored <= 10 ? stored : 5
+      return apiClient.post<Report>('/api/v1/reports', {
         session_id: sessionId,
         method: 'ai_generated',
-      }),
+        top_k,
+      })
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
     },

@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from apps.backend.src.rag.phi_guard import mask_phi
 from apps.backend.src.services.embedding_config import (
     EmbeddingProfile,
     PROFILES,
@@ -126,10 +127,13 @@ class AnamnezRAGService:
             dists = res["distances"][0]
             out: list[AnamnezResult] = []
             for _id, doc, meta, dist in zip(ids, docs, metas, dists):
+                # Defense-in-depth: 2nd PHI mask layer (1st is at build time).
+                # Idempotent — already-masked text passes through unchanged.
+                safe_doc = mask_phi(doc) if doc else doc
                 out.append(
                     AnamnezResult(
                         form_id=int(meta.get("form_id", 0)),
-                        document=doc,
+                        document=safe_doc,
                         metadata=meta or {},
                         distance=float(dist),
                     )

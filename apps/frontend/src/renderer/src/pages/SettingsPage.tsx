@@ -185,6 +185,10 @@ function LLMTab(): React.JSX.Element {
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash')
   const [fallbackEnabled, setFallbackEnabled] = useState(true)
   const [temperature, setTemperature] = useState(0.3)
+  const [anamnezTopK, setAnamnezTopK] = useState(() => {
+    const v = parseInt(localStorage.getItem('anamnez_top_k') || '5', 10)
+    return Number.isFinite(v) && v >= 3 && v <= 10 ? v : 5
+  })
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -219,6 +223,9 @@ function LLMTab(): React.JSX.Element {
     if (geminiApiKey) {
       payload.gemini_api_key = geminiApiKey
     }
+    // RAG top-k is client-side only; persisted in localStorage and read by
+    // the report-generation flow when posting to /api/v1/reports.
+    localStorage.setItem('anamnez_top_k', String(anamnezTopK))
     saveMutation.mutate(payload)
   }
 
@@ -460,6 +467,26 @@ function LLMTab(): React.JSX.Element {
               <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mt-1">
                 <span>{t('settings_tempDeterministic')}</span>
                 <span>{t('settings_tempCreative')}</span>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="anamnezTopKSlider" className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+                {t('settings_anamnezTopK', { value: anamnezTopK })}
+              </label>
+              <input
+                id="anamnezTopKSlider"
+                type="range"
+                min={3}
+                max={10}
+                step={1}
+                value={anamnezTopK}
+                onChange={(e) => setAnamnezTopK(parseInt(e.target.value, 10))}
+                className="w-full accent-blue-600"
+              />
+              <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mt-1">
+                <span>3</span>
+                <span>{t('settings_anamnezTopKHelp')}</span>
+                <span>10</span>
               </div>
             </div>
           </div>

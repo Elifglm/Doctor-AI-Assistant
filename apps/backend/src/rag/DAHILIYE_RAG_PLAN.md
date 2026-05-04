@@ -243,7 +243,30 @@ Mini panel:
 - **Sonuç:** ✓
 
 ### Adım 13 — Production entegrasyon
-- **Durum:** Kullanıcı kararı bekleniyor — bu sprint'te mi, ayrı sprint mi
+- **Tarih:** 2026-05-04 (devam ediyor)
+- **Faz 0 kararları (ek):**
+  - Hard-fail startup (clear actionable error)
+  - Top-k default 5, frontend 3-10 (localStorage)
+  - PHI mask `[MASKED_TC]`, `[MASKED_PHONE]`, `[MASKED_EMAIL]` — 2 katman (build-time + query-time)
+  - Device env-driven (`auto/cpu/cuda`)
+  - HEM batch HEM streaming entegrasyon
+  - Sentetik RAG kapalı (env flag `ASR_RAG__USE_SYNTHETIC=false` default)
+  - WebSocket KVKK guard sprint'e dahil edildi
+- **Yapılan değişiklikler:**
+  - `apps/backend/src/rag/phi_guard.py` (yeni) — `mask_phi()` + `mask_phi_count()`
+  - `apps/backend/src/scripts/build_anamnez_vectors.py` — embed öncesi PHI mask (1. katman)
+  - **ChromaDB rebuild:** BGE-M3 × metadata, PHI mask uygulandı (0 hit, beklenen)
+  - `apps/backend/src/services/anamnez_rag_service.py` — query çıkışında PHI mask (2. katman)
+  - `config/settings.py` — `RAGSettings` extend (use_synthetic, anamnez_profile/fmt/top_k/device/warmup)
+  - `apps/backend/src/schemas/report.py` — `GenerateReportRequest.top_k` (3-10)
+  - `apps/backend/src/services/report_generator.py` — `_retrieve_anamnez_rag()`, `_format_anamnez_examples()`, batch + streaming entegrasyonu
+  - `apps/backend/src/main.py` — `AnamnezRAGService` lifespan init (hard-fail + warmup)
+  - `apps/backend/src/routes/reports.py` — `top_k` body'den geçiş
+  - `apps/backend/src/routes/transcription.py` — WebSocket KVKK consent guard
+  - `apps/frontend/src/renderer/src/pages/SettingsPage.tsx` — top_k slider + localStorage
+  - `apps/frontend/src/renderer/src/pages/ReportReviewPage.tsx` — top_k localStorage'dan POST body'ye
+  - `apps/frontend/src/renderer/src/i18n/translations.ts` — TR/EN labels
+- **Durum:** ChromaDB rebuild devam ediyor, smoke test bekliyor
 
 ---
 

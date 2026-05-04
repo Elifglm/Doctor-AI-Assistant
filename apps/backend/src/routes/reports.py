@@ -105,7 +105,7 @@ async def generate_report(
 
         try:
             content = await report_generator.generate_report(
-                segments_data, brans=user.brans
+                segments_data, brans=user.brans, top_k=body.top_k
             )
         except Exception:
             logger.exception("AI report generation failed")
