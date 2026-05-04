@@ -24,6 +24,29 @@ documentation in Turkish polyclinics.
 1. Import ICD-10 codes: `python -m apps.backend.src.scripts.import_icd10 <icd10.sql>`
 2. Build vector DB: `python -m apps.backend.src.scripts.build_icd10_vectors`
 
+## Anamnez RAG Setup (required after fresh clone)
+Real-anamnesis RAG (BGE-M3 + metadata) uses a corpus of anonymized hospital
+reports. Steps for a clean machine:
+1. Get `data/Anemnez_tetkik/` folder from the team (PHI — not in repo).
+2. Import into SQLite: `python -m apps.backend.src.scripts.import_anamnez`
+3. Build ChromaDB vectors: `python -m apps.backend.src.scripts.build_anamnez_vectors`
+4. Verify: `python -m apps.backend.src.rag.test_rag_live` (smoke test).
+
+To disable RAG (e.g. evaluating without it), set `ANAMNEZ_RAG_ENABLED=false` in `.env`.
+
+## OpenEMR Setup
+Backend talks to OpenEMR over (a) OAuth2 REST API and (b) direct MariaDB queries
+via `aiomysql`. Configuration lives in a separate `.env.openemr` file:
+
+1. `cp .env.openemr.example .env.openemr`
+2. Pick scenario (A) Docker compose internal, (B) compose + host backend, or
+   (C) native XAMPP — uncomment the matching block.
+3. **Register OAuth client in OpenEMR Admin Panel** (Admin → System → API Clients)
+   and paste the resulting `client_id` / `client_secret` into `.env.openemr`.
+   Without this, OAuth2 calls fail and the service logs a warning at startup.
+
+Docker stack details: see `docker/README.md`.
+
 ## Commands
 - Backend dev: cd ASR1 && /c/Users/Huckleberry/miniconda3/envs/asr/python.exe -m uvicorn apps.backend.src.main:app --reload --host 127.0.0.1 --port 8700
 - Frontend dev: cd apps/frontend && npm run dev

@@ -3,19 +3,27 @@
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass, field
 
 from pathlib import Path
 
+import aiomysql
 import httpx
 from dotenv import dotenv_values
+from pymysql.constants import CLIENT as _MYSQL_CLIENT_FLAGS
 
 logger = logging.getLogger(__name__)
 
 # Load OpenEMR-specific env from .env.openemr (separate from main .env to avoid
 # pydantic-settings conflicts with AppSettings which forbids extra fields).
+# Falls back to OS env vars (OPENEMR_*) when .env.openemr is missing — needed
+# for Docker compose where the file isn't bind-mounted into the container.
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
-_OPENEMR_ENV = dotenv_values(_PROJECT_ROOT / ".env.openemr")
+_OPENEMR_ENV: dict[str, str | None] = {
+    k: v for k, v in os.environ.items() if k.startswith("OPENEMR_")
+}
+_OPENEMR_ENV.update(dotenv_values(_PROJECT_ROOT / ".env.openemr"))
 
 # OpenEMR doktor username → specialty mapping
 # Bu mapping KlinikAsistan auth ile OpenEMR kullanıcılarını eşleştirir
@@ -42,11 +50,25 @@ class OpenEMRConfig:
     base_url: str = ""
     username: str = "admin"
     password: str = "pass"
+    client_id: str = ""
+    client_secret: str = ""
+    mysql_host: str = "127.0.0.1"
+    mysql_port: int = 3306
+    mysql_user: str = "openemr"
+    mysql_password: str = "openemr"
+    mysql_db: str = "openemr"
 
     def __post_init__(self) -> None:
-        self.base_url = _OPENEMR_ENV.get("OPENEMR_BASE_URL", "http://localhost:8300/apis/default")
-        self.username = _OPENEMR_ENV.get("OPENEMR_USERNAME", "admin")
-        self.password = _OPENEMR_ENV.get("OPENEMR_PASSWORD", "pass")
+        self.base_url = _OPENEMR_ENV.get("OPENEMR_BASE_URL", "http://localhost/openemr/apis/default")
+        self.username = _OPENEMR_ENV.get("OPENEMR_USERNAME", "administrator")
+        self.password = _OPENEMR_ENV.get("OPENEMR_PASSWORD", "administrator")
+        self.client_id = _OPENEMR_ENV.get("OPENEMR_CLIENT_ID", "")
+        self.client_secret = _OPENEMR_ENV.get("OPENEMR_CLIENT_SECRET", "")
+        self.mysql_host = _OPENEMR_ENV.get("OPENEMR_MYSQL_HOST", "127.0.0.1")
+        self.mysql_port = int(_OPENEMR_ENV.get("OPENEMR_MYSQL_PORT", "3306"))
+        self.mysql_user = _OPENEMR_ENV.get("OPENEMR_MYSQL_USER", "openemr")
+        self.mysql_password = _OPENEMR_ENV.get("OPENEMR_MYSQL_PASSWORD", "openemr")
+        self.mysql_db = _OPENEMR_ENV.get("OPENEMR_MYSQL_DB", "openemr")
 
 
 @dataclass
@@ -83,86 +105,44 @@ class OpenEMRService:
             self._client = None
 
     async def _authenticate(self) -> None:
-        """Get access token from OpenEMR using password grant."""
+        """Get access token via OAuth2 password grant with stored client credentials."""
         if not self._client:
             raise RuntimeError("OpenEMR client not initialized")
 
-        # OpenEMR 7.x uses /oauth2/default/token for auth
-        # But for simpler setups, it also supports basic /api auth
-        # Try the standard OpenEMR API auth endpoint
         token_url = self.config.base_url.replace("/apis/default", "") + "/oauth2/default/token"
 
-        # First, we need to register a client or use password grant
-        # OpenEMR 7.x supports password grant with registered clients
-        # For prototype, we'll use the standard API with session-based auth
-        auth_url = f"{self.config.base_url}/portal/login"
-
-        # Try direct API authentication (OpenEMR supports Basic Auth for API)
-        response = await self._client.post(
-            f"{self.config.base_url}/fhir/metadata",
-            headers={"Accept": "application/json"},
-        )
-
-        # For OpenEMR, we'll use the credentials-based approach
-        # The standard REST API uses /api/auth endpoint
-        auth_data = {
-            "grant_type": "password",
-            "username": self.config.username,
-            "password": self.config.password,
-        }
+        if not self.config.client_id or not self.config.client_secret:
+            logger.warning(
+                "OPENEMR_CLIENT_ID/SECRET .env.openemr'de tanimli degil - "
+                "OpenEMR Admin > API Clients'tan kayit yapip env'e eklenmeli"
+            )
+            return
 
         try:
-            resp = await self._client.post(token_url, data=auth_data)
+            resp = await self._client.post(
+                token_url,
+                data={
+                    "grant_type": "password",
+                    "client_id": self.config.client_id,
+                    "client_secret": self.config.client_secret,
+                    "user_role": "users",
+                    "scope": "openid api:oemr offline_access",
+                    "username": self.config.username,
+                    "password": self.config.password,
+                },
+            )
             if resp.status_code == 200:
                 data = resp.json()
                 self._access_token = data.get("access_token", "")
-                logger.info("OpenEMR OAuth2 token alindi")
-                return
-        except Exception:
-            pass
-
-        # Fallback: try registration flow first, then token
-        # OpenEMR 7.x requires client registration before OAuth2
-        reg_url = self.config.base_url.replace("/apis/default", "") + "/oauth2/default/registration"
-        try:
-            reg_resp = await self._client.post(
-                reg_url,
-                json={
-                    "application_type": "private",
-                    "redirect_uris": ["http://localhost:8700/callback"],
-                    "client_name": "KlinikAsistan",
-                    "token_endpoint_auth_method": "client_secret_post",
-                    "contacts": ["admin@klinikasistan.local"],
-                    "scope": "openid api:oemr api:fhir api:port",
-                },
-                headers={"Accept": "application/json"},
-            )
-            if reg_resp.status_code in (200, 201):
-                reg_data = reg_resp.json()
-                client_id = reg_data.get("client_id", "")
-                client_secret = reg_data.get("client_secret", "")
-
-                # Now get token with client credentials
-                resp = await self._client.post(
-                    token_url,
-                    data={
-                        "grant_type": "password",
-                        "username": self.config.username,
-                        "password": self.config.password,
-                        "client_id": client_id,
-                        "client_secret": client_secret,
-                        "scope": "openid api:oemr api:fhir",
-                    },
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    self._access_token = data.get("access_token", "")
-                    logger.info("OpenEMR OAuth2 token alindi (registration flow)")
+                if self._access_token:
+                    logger.info("OpenEMR OAuth2 token alindi")
                     return
+            logger.warning(
+                "OpenEMR token alinamadi: %d %s",
+                resp.status_code, resp.text[:200],
+            )
         except Exception as e:
-            logger.debug("OpenEMR registration flow failed: %s", e)
-
-        logger.warning("OpenEMR authentication failed - orders will be queued locally")
+            logger.warning("OpenEMR auth hatasi: %s", e)
 
     def _headers(self) -> dict[str, str]:
         """Return auth headers for API requests."""
@@ -409,24 +389,17 @@ class OpenEMRService:
 
     @staticmethod
     async def _list_practitioners_from_db() -> list[dict]:
-        """Fallback: query OpenEMR MySQL directly via docker exec."""
-        import asyncio
-
+        """Fallback: query OpenEMR MySQL directly."""
         try:
-            proc = await asyncio.create_subprocess_exec(
-                "docker", "compose", "exec", "-T", "mysql",
-                "mysql", "-u", "openemr", "-popenemr", "openemr",
-                "-sN", "-e",
+            raw = await OpenEMRService._mysql_exec(
                 "SELECT id, username, fname, lname, COALESCE(specialty,'') "
-                "FROM users WHERE username != '' AND username != 'admin' "
-                "AND active = 1 ORDER BY id;",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+                "FROM users WHERE username != '' AND username NOT IN "
+                "('admin','administrator','phimail-service','portal-user','oe-system') "
+                "AND active = 1 ORDER BY id;"
             )
-            stdout, _ = await proc.communicate()
 
             practitioners = []
-            for line in stdout.decode().strip().split("\n"):
+            for line in raw.strip().split("\n"):
                 if not line.strip():
                     continue
                 parts = line.split("\t")
@@ -454,8 +427,6 @@ class OpenEMRService:
             date: ISO date string (YYYY-MM-DD)
             provider_id: OpenEMR user ID to filter by doctor. None = all.
         """
-        import asyncio
-
         provider_filter = ""
         if provider_id is not None:
             provider_filter = f"AND e.pc_aid = {int(provider_id)}"
@@ -477,17 +448,10 @@ class OpenEMRService:
         )
 
         try:
-            proc = await asyncio.create_subprocess_exec(
-                "docker", "compose", "exec", "-T", "mysql",
-                "mysql", "-u", "openemr", "-popenemr", "openemr",
-                "-sN", "-e", query,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, _ = await proc.communicate()
+            raw = await OpenEMRService._mysql_exec(query)
 
             appointments = []
-            for line in stdout.decode().strip().split("\n"):
+            for line in raw.strip().split("\n"):
                 if not line.strip():
                     continue
                 parts = line.split("\t")
@@ -525,20 +489,42 @@ class OpenEMRService:
 
     @staticmethod
     async def _mysql_exec(query: str) -> str:
-        """Execute a MySQL query on OpenEMR via docker exec and return stdout."""
-        import asyncio
+        """Execute a MySQL query against the native OpenEMR DB.
 
-        proc = await asyncio.create_subprocess_exec(
-            "docker", "compose", "exec", "-T", "mysql",
-            "mysql", "-u", "openemr", "-popenemr", "openemr",
-            "-sN", "-e", query,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+        Returns the LAST result set as a TSV string (rows separated by \\n,
+        columns by \\t). Multi-statement queries (e.g. ``INSERT ...; SELECT
+        LAST_INSERT_ID();``) are supported - the last SELECT's rows are
+        returned. INSERT/UPDATE/DELETE alone returns an empty string.
+        """
+        cfg = OpenEMRConfig()
+
+        conn = await aiomysql.connect(
+            host=cfg.mysql_host,
+            port=cfg.mysql_port,
+            user=cfg.mysql_user,
+            password=cfg.mysql_password,
+            db=cfg.mysql_db,
+            charset="utf8mb4",
+            client_flag=_MYSQL_CLIENT_FLAGS.MULTI_STATEMENTS,
+            autocommit=True,
         )
-        stdout, stderr = await proc.communicate()
-        if proc.returncode != 0:
-            raise RuntimeError(f"MySQL error: {stderr.decode()}")
-        return stdout.decode().strip()
+        try:
+            async with conn.cursor() as cur:
+                await cur.execute(query)
+
+                last_output = ""
+                while True:
+                    if cur.description:
+                        rows = await cur.fetchall()
+                        last_output = "\n".join(
+                            "\t".join("" if v is None else str(v) for v in row)
+                            for row in rows
+                        )
+                    if not await cur.nextset():
+                        break
+                return last_output
+        finally:
+            conn.close()
 
     # ------------------------------------------------------------------
     # Push report data to OpenEMR

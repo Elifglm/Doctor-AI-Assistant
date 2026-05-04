@@ -83,6 +83,21 @@ services:
     environment:
       - ASR_WHISPER__DEVICE=cpu
       - ASR_WHISPER__COMPUTE_TYPE=int8
+      # OpenEMR: compose network'unde "openemr" ve "mysql" servis adlari
+      # uzerinden erisilir. .env.openemr container'a kopyalanmadigi icin
+      # bu env vars openemr_service.py'deki os.environ fallback'i ile okunur.
+      # Yazma islemleri (rapor push) icin OPENEMR_CLIENT_ID/SECRET'i kendi
+      # .env'inde tanimla (OpenEMR Admin > API Clients'tan kayit yapip).
+      - OPENEMR_BASE_URL=http://openemr/apis/default
+      - OPENEMR_USERNAME=admin
+      - OPENEMR_PASSWORD=pass
+      - OPENEMR_MYSQL_HOST=mysql
+      - OPENEMR_MYSQL_PORT=3306
+      - OPENEMR_MYSQL_USER=openemr
+      - OPENEMR_MYSQL_PASSWORD=openemr
+      - OPENEMR_MYSQL_DB=openemr
+    depends_on:
+      - mysql
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------

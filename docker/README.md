@@ -48,7 +48,15 @@ docker compose up -d openemr      # OpenEMR (~30sn-1dk)
 docker compose up openemr-init openemr-sut-init
 ```
 
-### 3. Backend'i dev modda başlat (host'ta)
+### 3. OpenEMR konfigürasyonunu hazırla
+```bash
+cp .env.openemr.example .env.openemr
+# .env.openemr'i aç → senaryo (B) "Docker compose + host backend" bloğunun
+# yorumunu kaldır, (C) "native" bloğunu yorumla
+# OAuth2 client kaydını OpenEMR Admin Panel'den yap (bkz. Yaygın Sorun #5)
+```
+
+### 4. Backend'i dev modda başlat (host'ta)
 ```bash
 source venv/bin/activate
 python -m uvicorn apps.backend.src.main:app --reload --host 127.0.0.1 --port 8700
@@ -117,7 +125,27 @@ docker compose up -d
 docker compose up openemr-init openemr-sut-init
 ```
 
-### 5. Pydantic `extra_forbidden` error (DATABASE_URL)
+### 5. OpenEMR REST API çağrıları başarısız ("OPENEMR_CLIENT_ID/SECRET tanımlı değil")
+**Belirtisi (backend log):**
+```
+WARNING  OPENEMR_CLIENT_ID/SECRET .env.openemr'de tanimli degil -
+         OpenEMR Admin > API Clients'tan kayit yapip env'e eklenmeli
+```
+
+**Sebebi:** OpenEMR 7.x OAuth2 token endpoint'i kayıtlı bir client zorunlu kılar.
+Backend `aiomysql` ile direkt DB sorguları yapabiliyor (kayıtlar listelenebilir),
+ama OAuth2 üzerinden yazma işlemleri (rapor push) çalışmaz.
+
+**Çözüm:**
+1. `cp .env.openemr.example .env.openemr` (henüz yapmadıysan)
+2. http://localhost:8300 → admin / pass ile login
+3. Administration → System → API Clients → "Register New App"
+   - application_type: `private`
+   - scope: `openid api:oemr offline_access`
+4. Verilen client_id + client_secret'ı `.env.openemr`'e yapıştır
+5. Backend'i restart et
+
+### 6. Pydantic `extra_forbidden` error (DATABASE_URL)
 **Belirtisi:**
 ```
 ValidationError: 1 validation error for AppSettings
