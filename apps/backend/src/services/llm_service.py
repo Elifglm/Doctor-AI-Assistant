@@ -91,8 +91,15 @@ class OllamaLLMService:
     # Generation
     # ------------------------------------------------------------------
 
-    def _build_payload(self, model: str, prompt: str, system: str, stream: bool) -> dict:
-        return {
+    def _build_payload(
+        self,
+        model: str,
+        prompt: str,
+        system: str,
+        stream: bool,
+        format: dict | str | None = None,
+    ) -> dict:
+        payload: dict = {
             "model": model,
             "prompt": prompt,
             "system": system,
@@ -103,18 +110,35 @@ class OllamaLLMService:
                 "num_predict": settings.llm.max_tokens,
             },
         }
+        # Ollama 0.5+ structured output — schema'yi enforce eder. Local model
+        # (Gemma 4 vs.) instruction-following Claude'tan zayifsa schema sapmasini
+        # bu engeller. dict (JSON Schema) veya "json" string olabilir.
+        if format is not None:
+            payload["format"] = format
+        return payload
 
-    async def _generate_with_model(self, model: str, prompt: str, system: str) -> str:
+    async def _generate_with_model(
+        self,
+        model: str,
+        prompt: str,
+        system: str,
+        format: dict | str | None = None,
+    ) -> str:
         """Generate with a specific model (no fallback)."""
-        payload = self._build_payload(model, prompt, system, stream=False)
+        payload = self._build_payload(model, prompt, system, stream=False, format=format)
         resp = await self.client.post("/api/generate", json=payload)
         resp.raise_for_status()
         return resp.json().get("response", "")
 
-    async def generate(self, prompt: str, system: str = "") -> str:
+    async def generate(
+        self,
+        prompt: str,
+        system: str = "",
+        format: dict | str | None = None,
+    ) -> str:
         """Non-streaming generation with automatic fallback to secondary model."""
         try:
-            result = await self._generate_with_model(self._primary_model, prompt, system)
+            result = await self._generate_with_model(self._primary_model, prompt, system, format)
             self._active_model = self._primary_model
             return result
         except Exception as primary_err:
@@ -128,7 +152,7 @@ class OllamaLLMService:
                 self._fallback_model,
             )
             try:
-                result = await self._generate_with_model(self._fallback_model, prompt, system)
+                result = await self._generate_with_model(self._fallback_model, prompt, system, format)
                 self._active_model = self._fallback_model
                 return result
             except Exception:

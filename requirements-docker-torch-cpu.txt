@@ -1,0 +1,7 @@
+# PyTorch CPU-only build (varsayilan, herkesin makinesinde calisir)
+# --index-url (NOT --extra-index-url) PyPI default wheel'i override eder.
+# Boylelikle pip varsayilan CUDA torch wheel'ini cekmez.
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+torch
+torchaudio

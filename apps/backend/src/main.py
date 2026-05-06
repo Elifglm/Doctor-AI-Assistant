@@ -78,6 +78,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     llm_service = create_llm_service(app_settings)
     ner_service = NERService()
 
+    # Inject NER into ASR pipeline so diarization speakers (SPEAKER_00/01) get
+    # relabeled as Doktor/Hasta based on entity distribution. Without this,
+    # the assignment is random — pyannote does not know which speaker is which.
+    from apps.backend.src.services.asr_service import asr_service
+    asr_service.set_ner_service(ner_service)
+
     # Legacy synthetic RAG (medical_knowledge collection). Off by default;
     # set ASR_RAG__USE_SYNTHETIC=true to revive for archival comparison.
     rag_service: RAGService | None = None
@@ -154,19 +160,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             await anamnez_rag_service.query_similar_cases("warmup", top_k=1)
             logger.info("AnamnezRAG warmup done")
     except FileNotFoundError as e:
-        logger.critical(
-            "AnamnezRAG initialization FAILED: %s. "
-            "Run: python -m apps.backend.src.scripts.build_anamnez_vectors "
+        logger.warning(
+            "AnamnezRAG disabled — chroma dir missing (%s). "
+            "To enable: python -m apps.backend.src.scripts.build_anamnez_vectors "
             "--profile %s --format %s",
             e, app_settings.rag.anamnez_profile, app_settings.rag.anamnez_fmt,
         )
-        raise
+        anamnez_rag_service = None
     except Exception:
-        logger.critical(
-            "AnamnezRAG initialization FAILED. Check ChromaDB dir + model cache.",
+        logger.warning(
+            "AnamnezRAG disabled — initialization error (chroma dir or model cache).",
             exc_info=True,
         )
-        raise
+        anamnez_rag_service = None
 
     report_generator = ReportGenerator(
         ner_service,

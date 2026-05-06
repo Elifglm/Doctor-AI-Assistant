@@ -28,6 +28,18 @@ class ASRService:
         self._process_lock = asyncio.Lock()
         self._initialized = False
         self._using_gpu = False
+        self._ner_service: Any = None
+
+    def set_ner_service(self, ner_service: Any) -> None:
+        """Inject NERService for speaker classification (Doktor vs Hasta).
+
+        Optional — if provided, BatchASRPipeline will use it after diarization
+        to relabel speakers based on entity distribution. Should be called
+        before initialize() or before the first process_recording() call.
+        """
+        self._ner_service = ner_service
+        if self._pipeline is not None:
+            self._pipeline.set_ner_service(ner_service)
 
     async def initialize(self) -> None:
         """Pipeline olustur (modelleri yuklemez, lazy init)."""
@@ -55,10 +67,11 @@ class ASRService:
                 settings.transcription.batch_size = 4
 
             self._using_gpu = gpu_available
-            self._pipeline = BatchASRPipeline(settings)
+            self._pipeline = BatchASRPipeline(settings, ner_service=self._ner_service)
             self._initialized = True
 
-            logger.info("ASR servisi baslatildi (gpu=%s)", gpu_available)
+            logger.info("ASR servisi baslatildi (gpu=%s, ner=%s)",
+                        gpu_available, self._ner_service is not None)
 
     async def process_recording(
         self,

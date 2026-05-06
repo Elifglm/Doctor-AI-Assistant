@@ -69,6 +69,17 @@ data/mariadb/
 data/dumps/
 *.sql.bak
 *.dump.sql
+# Root klinik dump'lari (KVKK — gercek hasta verisi)
+klinik_dump_*.sql
+klinik_dump*.sql
+/*.sql
+
+# ASR test artifacts (large + PHI riski — ses + transcript)
+data/test_audio/
+data/test_results/
+test_result.json
+test_results/
+*.parquet
 
 # Intermediate import artifacts (regenerate via find_missing_sut_codes.py)
 data/missing_sut_codes.csv
@@ -96,3 +107,7 @@ icd10_export.csv
 
 # Local Claude Code settings
 .claude/settings.local.json
+
+# Docker compose dev override (developer-specific bind mounts).
+# Kopya icin: docker-compose.override.yml.example
+docker-compose.override.yml

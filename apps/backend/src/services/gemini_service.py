@@ -62,8 +62,9 @@ class GeminiLLMService:
         except Exception:
             return False
 
-    async def generate(self, prompt: str, system: str = "") -> str:
+    async def generate(self, prompt: str, system: str = "", format: dict | str | None = None) -> str:
         """Non-streaming generation -- returns the full response text."""
+        del format  # accepted for parity; not used (schema enforced via system prompt)
         if self._client is None:
             raise RuntimeError("GeminiLLMService not initialized. Call initialize() first.")
 

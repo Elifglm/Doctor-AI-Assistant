@@ -1,0 +1,33 @@
+# GPU override — NVIDIA GPU + CUDA PyTorch.
+# Kullanim:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+#
+# Gereksinimler:
+#   - NVIDIA driver (host'ta nvidia-smi calismali)
+#   - Docker Desktop + WSL2 backend (Windows) veya NVIDIA Container Toolkit (Linux)
+#   - GPU testi: docker run --rm --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi
+
+services:
+  backend:
+    build:
+      args:
+        TORCH_VARIANT: gpu
+    image: klinikasistan-backend:gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Ollama'ya GPU passthrough — Gemma 4 inference'i CUDA ile hizlandirir.
+  # CPU mode'da Ollama (override yok) calisir ama 5-10x daha yavastir.
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

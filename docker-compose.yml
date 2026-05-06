@@ -74,6 +74,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        TORCH_VARIANT: cpu
+    image: klinikasistan-backend:cpu
     ports:
       - "8700:8700"
     volumes:
@@ -81,8 +84,6 @@ services:
     env_file:
       - .env
     environment:
-      - ASR_WHISPER__DEVICE=cpu
-      - ASR_WHISPER__COMPUTE_TYPE=int8
       # OpenEMR: compose network'unde "openemr" ve "mysql" servis adlari
       # uzerinden erisilir. .env.openemr container'a kopyalanmadigi icin
       # bu env vars openemr_service.py'deki os.environ fallback'i ile okunur.
@@ -98,6 +99,21 @@ services:
       - OPENEMR_MYSQL_DB=openemr
     depends_on:
       - mysql
+      - ollama
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # ollama — Local LLM runtime (Gemma 4 default, model degistirilebilir)
+  # Backend buraya http://ollama:11434 uzerinden baglanir (compose network).
+  # GPU passthrough icin docker-compose.gpu.yml override'i kullanilmali.
+  # Modeller `ollama_data` volume'unda kalir — re-pull etmez.
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -190,3 +206,5 @@ volumes:
   # paylasilan dump'i tekrar import etmesi gerekir.
   openemr_mysql:
   openemr_data:
+  # Ollama model storage. ~3-8 GB per model — silersen tekrar pull gerekir.
+  ollama_data:

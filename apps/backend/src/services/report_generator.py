@@ -15,7 +15,10 @@ from apps.backend.src.prompts.section_prompts import (
     get_anamnesis_sections,
 )
 from apps.backend.src.prompts.system_prompt import SYSTEM_PROMPT
+from apps.backend.src.prompts.system_prompt_gemma import SYSTEM_PROMPT_GEMMA
+from apps.backend.src.prompts.anamnez_schema import ANAMNEZ_JSON_SCHEMA
 from apps.backend.src.services.anamnez_rag_service import AnamnezRAGService, AnamnezResult
+from apps.backend.src.services.llm_service import OllamaLLMService
 from apps.backend.src.services.llm_base import LLMProvider
 from apps.backend.src.services.ner_service import MedicalEntity, NERService
 from apps.backend.src.services.rag_service import RAGResult, RAGService
@@ -313,9 +316,18 @@ class ReportGenerator:
             batch_prompt = f"{examples_block}\n\n{batch_prompt}"
         batch_result: dict[str, str] = {}
 
+        # Pick the system prompt tuned for the active LLM provider.
+        # Ollama (Gemma 4 etc.) uses a shorter markdown-structured prompt;
+        # API providers (Anthropic Haiku) keep the longer XML-tagged prompt
+        # which is also cache-friendly.
+        if isinstance(self.llm, OllamaLLMService):
+            active_system_prompt = SYSTEM_PROMPT_GEMMA
+        else:
+            active_system_prompt = SYSTEM_PROMPT
+
         for attempt in range(3):
             try:
-                raw = await self.llm.generate(batch_prompt, SYSTEM_PROMPT)
+                raw = await self.llm.generate(batch_prompt, active_system_prompt, format=ANAMNEZ_JSON_SCHEMA)
                 batch_result = self._parse_batch_response(raw, section_keys)
                 break
             except Exception as e:

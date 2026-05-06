@@ -1,0 +1,18 @@
+# Geliştirme overlay'i — `docker-compose.override.yml` adıyla kopyala (gitignored).
+#
+# Kullanim:
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#   docker compose up -d
+#
+# Compose otomatik olarak override.yml'i merge eder, ekstra flag gerekmez.
+#
+# Bu dosya host'taki kodu container'a bind-mount eder; backend kod degisikligi
+# yapinca rebuild gerektirmez (sadece backend container restart yeter).
+# Production'da bu dosya bulunmaz, image'daki kod kullanilir.
+
+services:
+  backend:
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - ./config:/app/config
+      - ./shared:/app/shared

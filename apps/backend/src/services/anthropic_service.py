@@ -100,7 +100,10 @@ class AnthropicLLMService:
                 cc, cr, usage.get("input_tokens", 0) or 0,
             )
 
-    async def generate(self, prompt: str, system: str = "") -> str:
+    async def generate(self, prompt: str, system: str = "", format: dict | str | None = None) -> str:
+        # `format` accepted for cross-provider parity; Anthropic enforces schema via
+        # the system prompt itself (no native structured-output param yet).
+        del format
         if self._client is None:
             raise RuntimeError("AnthropicLLMService not initialized.")
 

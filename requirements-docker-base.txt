@@ -1,15 +1,16 @@
 # ==============================================
-# KlinikAsistan Backend - Docker Dependencies
-# CPU-only PyTorch (herkesin makinesinde calisir)
+# KlinikAsistan Backend - Docker Base Dependencies
+# PyTorch HARIC tum bagimliliklar
+#
+# NOT: pyannote.audio ve ctranslate2 BURADA pin'lenmiyor — pip backtracking
+# yapip saatlerce takiliyordu. Onlari Dockerfile ikinci RUN'da `-U` ile
+# upgrade ediyoruz (sadece 2 paket, hizli).
 # ==============================================
 
-# --- PyTorch CPU ---
---extra-index-url https://download.pytorch.org/whl/cpu
-torch
-torchaudio
-
 # --- ASR Pipeline ---
-whisperx
+# whisperx: KALDIRILDI. apps/backend/src/asr (yeni BatchASRPipeline) faster-whisper
+# kullaniyor; whisperx torch~=2.8 + pyannote<4 isteyip yeni stack ile uyumsuz.
+# Eski donmus src/transcriber.py whisperx import ediyor ama runtime'da cagrilmiyor.
 deepfilternet
 pyannote.audio
 faster-whisper
@@ -36,9 +37,6 @@ asyncmy>=0.2.10
 aiomysql>=0.2.0
 pymysql>=1.1.0
 
-# --- RAG / Dedup ---
-datasketch>=1.6.0
-
 # --- Auth ---
 python-jose[cryptography]>=3.3.0
 bcrypt>=4.0.0,<5.0.0
@@ -55,7 +53,8 @@ python-dotenv
 numpy<2.0
 rich
 rapidfuzz>=3.0.0
+datasketch>=1.6.0
 
 # --- HuggingFace ---
 huggingface_hub
-reportlab
+reportlab>=4.0.0
