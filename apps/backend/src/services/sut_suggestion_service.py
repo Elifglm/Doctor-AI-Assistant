@@ -7,12 +7,24 @@ import logging
 import re
 from typing import Any
 
-from apps.backend.src.schemas.sut_tetkik import SUTSuggestion
+from apps.backend.src.schemas.sut_tetkik import IntentLabel, SUTSuggestion
 from apps.backend.src.services.sut_service import SUTService
 from apps.backend.src.services.sut_vector_service import SUTVectorService
 from apps.backend.src.services.llm_base import LLMProvider
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_for_format(text: str) -> str:
+    """Escape ``{`` and ``}`` so user-controlled text cannot break str.format().
+
+    Defends against prompt-injection-by-format-string. Doctor-patient
+    transcript or report sections are user/ASR-controlled inputs that flow
+    into prompt templates via ``str.format()`` — a stray ``{`` would raise
+    ``KeyError`` and a crafted ``{key}`` could collide with a placeholder.
+    """
+    return text.replace("{", "{{").replace("}", "}}")
+
 
 SUT_SELECTION_PROMPT = """\
 Sen bir Turkce tibbi tetkik/tahlil uzmanisisin. Asagida bir doktor-hasta gorusme \
@@ -153,6 +165,218 @@ Yanit (sadece JSON array):
 """
 
 
+# ============================================================================
+# V2 PROMPT — Per-mention CoT label-then-decide for intent disambiguation.
+# Selected via ASR_SUT__INTENT_PROMPT_VERSION env var (default v2).
+# Set to "v1" to fall back to SUT_SELECTION_PROMPT (legacy).
+# ============================================================================
+
+SUT_SELECTION_PROMPT_V2 = """\
+Sen Türkçe tıbbi tetkik/tahlil uzmanısın. Aşağıda doktor-hasta görüşme \
+transkripti ve aday SUT tetkik kodları var.
+
+GÖREV: Transkriptteki her tetkik mention'ını analiz et, sadece DOKTORUN \
+ŞİMDİ İSTEDİĞİ tetkikleri seç. Geçmiş mention'ları, hasta sorularını, \
+hipotetik/reddedilen tetkikleri DAHIL ETME.
+
+ADIM ADIM AKIL YÜRÜTME (her aday için):
+1. **kaynak_cumle**: tetkikin geçtiği TAM cümleyi transkriptten kelimesi \
+   kelimesine çıkar. Konuşmacı prefix'ini ("Doktor:" / "Hasta:") koru.
+2. **konuşmacı**: cümle "Doktor:" ile başlıyorsa DOCTOR, "Hasta:" ile \
+   başlıyorsa PATIENT. Belirsizse OTHER.
+3. **zaman_kipi**: Türkçe morfoloji ipuçları:
+   - PAST_NARRATIVE: -mIştI, -mIş, -dI ekleri ("baktırmıştım", \
+     "yaptırdım", "geldi", "bakmıştık")
+   - OPTATIVE: -AlIm ("isteyelim", "bakalım"), imperatif ("iste", "bak")
+   - FUTURE: -AcAk ("isteyeceğim", "yapacağım", "yazacağım")
+   - HYPOTHETICAL: -sA + ana cümle ("şeker yüksekse insülin bakarız")
+   - INTERROGATIVE: soru ("- mi?", "- mı?", "lazım mı?")
+   - DECLARATIVE: düz haber cümlesi
+4. **intent_etiketi** (KARAR):
+   - **REQUEST**: konuşmacı=DOCTOR + zaman_kipi (OPTATIVE | FUTURE | \
+     imperatif) + olumlu cümle. SADECE bu seçilir.
+   - **PAST_DONE**: zaman_kipi=PAST_NARRATIVE (kim söylerse söylesin: \
+     doktor "iki yıl önce şeker baktınız" dese de geçmiş!)
+   - **PATIENT_QUESTION**: konuşmacı=PATIENT + (INTERROGATIVE veya kendi \
+     anlatısı)
+   - **RESULT_DISCUSS**: tetkik sonucu konuşuluyor ("CRP 5 gelmiş", \
+     "şeker normal"), istek değil
+   - **OTHER**: hipotetik, reddedilen ("önerir misiniz? - hayır gerek yok"), \
+     diğer
+5. **include**: intent_etiketi == REQUEST AND aday listesinde ilgili kod var
+
+NEGATİF ÖRNEKLER (HİÇ DAHIL ETME):
+- "Hasta: öz geçmişte hemogram baktırdım" → PATIENT/PAST_NARRATIVE/PAST_DONE → EXCLUDE
+- "Doktor: iki yıl önce şeker baktınız" → DOCTOR/PAST_NARRATIVE/PAST_DONE → EXCLUDE \
+  (DİKKAT: doktor söylese bile PAST!)
+- "Doktor: şekerin yüksekse insülin bakarız" → DOCTOR/HYPOTHETICAL/OTHER → EXCLUDE
+- "Hasta: D vitamini bakar mıyız?" → PATIENT/INTERROGATIVE/PATIENT_QUESTION → EXCLUDE
+- "Doktor: CRP 12 gelmiş" → DOCTOR/DECLARATIVE/RESULT_DISCUSS → EXCLUDE \
+  (sonuç paylaşımı, istek değil)
+
+POZİTİF ÖRNEKLER (SEÇ):
+- "Doktor: tam kan isteyelim" → DOCTOR/OPTATIVE/REQUEST → INCLUDE
+- "Doktor: troponin ve EKG isteyeceğim" → DOCTOR/FUTURE/REQUEST → INCLUDE \
+  (iki ayrı mention)
+- "Doktor: bir de B12 bakalım" → DOCTOR/OPTATIVE/REQUEST → INCLUDE
+
+KOD KAYNAĞI KURALI: SADECE aday listesindeki kodları kullan. Aday listesinde \
+OLMAYAN bir kodu ASLA UYDURMA. Bilmediğin kodu yazma.
+
+GÜVEN SKORU: kaynak cümle açık ve niyet net ise ≥0.90. Belirsizse 0.60-0.80.
+
+TRANSKRIPT:
+{transcript}
+{icd_context}
+ADAY TETKIKLER:
+{candidates}
+
+ÇIKTI (sadece JSON array, markdown fence yok, açıklama yok):
+[
+  {{
+    "kodu": "<adaydan>",
+    "adi": "<adaydan>",
+    "confidence": 0.95,
+    "kaynak_cumle": "<transkriptten tam cümle>",
+    "intent_etiketi": "REQUEST",
+    "reasoning": "DOCTOR/OPTATIVE — tetkik açıkça istendi"
+  }}
+]
+
+Hiçbir aday REQUEST değilse: []
+"""
+
+
+# ============================================================================
+# V3 PROMPT — V2 + üç bug-fix:
+#   1) Liste-mirası: ana fiil FUTURE/OPTATIVE/IMPERATIVE ise virgüllü/iki noktalı
+#      liste öğeleri o tense'i miras alır
+#   2) Pasif imperative tense (-sIn, -mAlI) ayrı kategori; REQUEST'e dahil
+#   3) 1. çoğul "isteyeceğiz/yapacağız/bakacağız" net pozitif örnek
+#   4) HYPOTHETICAL ("gerekirse...") güçlendirilmiş negatif örnek
+# Selected via ASR_SUT__INTENT_PROMPT_VERSION=v3 (default).
+# ============================================================================
+
+SUT_SELECTION_PROMPT_V3 = """\
+Sen Türkçe tıbbi tetkik/tahlil uzmanısın. Aşağıda doktor-hasta görüşme \
+transkripti ve aday SUT tetkik kodları var.
+
+GÖREV: Transkriptteki her tetkik mention'ını analiz et, sadece DOKTORUN \
+ŞİMDİ İSTEDİĞİ tetkikleri seç. Geçmiş mention'ları, hasta sorularını, \
+hipotetik/şartlı/reddedilen tetkikleri DAHIL ETME.
+
+ADIM ADIM AKIL YÜRÜTME (her aday için):
+
+1. **kaynak_cumle**: tetkikin geçtiği TAM cümleyi transkriptten kelimesi \
+   kelimesine çıkar. Konuşmacı prefix'ini ("Doktor:" / "Hasta:") koru.
+
+2. **konuşmacı**: cümle "Doktor:" ile başlıyorsa DOCTOR, "Hasta:" ile \
+   başlıyorsa PATIENT. Belirsizse OTHER.
+
+3. **liste_kontekst** (KRİTİK YENİ KURAL): Cümlede iki nokta (":") veya \
+   "şunlar/şunları/aşağıdakileri" gibi liste başlatıcı varsa VE liste içinde \
+   virgülle ayrılmış birden fazla tetkik adı varsa → liste başındaki ANA \
+   FİİLİ tespit et ve onun tense'ini liste öğelerine MİRAS olarak uygula.
+   Örnek:
+     "Tahliller isteyeceğiz: TSH, T3, T4, anti-TPO, hemogram"
+     → ana fiil: "isteyeceğiz" (FUTURE)
+     → liste öğeleri (TSH, T3, T4, anti-TPO, hemogram) HEPSİ FUTURE miras alır
+     → her biri için intent: REQUEST
+   Liste başında ana fiil yoksa veya tetkik tek başına geçiyorsa, kelime \
+   düzeyinde tense kontrolü yap (4. adım).
+
+4. **zaman_kipi**: Türkçe morfoloji ipuçları:
+   - PAST_NARRATIVE: -mIştI, -mIş, -dI ekleri ("baktırmıştım", \
+     "yaptırdım", "geldi", "bakmıştık")
+   - OPTATIVE: -AlIm 1.çoğul ("isteyelim", "bakalım", "yapalım")
+   - FUTURE: -AcAk ("isteyeceğim" 1.tekil, "isteyeceğiz" 1.çoğul, \
+     "yapacağız", "bakacağız", "yazacağız")
+   - **IMPERATIVE_PASSIVE: -sIn 3.tekil pasif emir** ("bakılsın", \
+     "yapılsın", "istensin", "ölçülsün") — REQUEST sayılır
+   - IMPERATIVE_ACTIVE: 2.tekil/çoğul emir ("iste", "bak", "yap", "isteyin")
+   - HYPOTHETICAL: -sA + ana cümle ("şeker yüksekse insülin bakarız", \
+     "**gerekirse holter takarız**", "olursa yapacağız")
+   - INTERROGATIVE: soru ("- mi?", "- mı?", "lazım mı?", "bakalım mı?")
+   - DECLARATIVE: düz haber cümlesi (yalın isim cümlesi, fiil yok ya da \
+     -DIr eki ile durum belirten)
+
+5. **intent_etiketi** (KARAR):
+   - **REQUEST** ← konuşmacı=DOCTOR + zaman_kipi (FUTURE | OPTATIVE | \
+     IMPERATIVE_ACTIVE | IMPERATIVE_PASSIVE) + olumlu cümle
+     VEYA liste_kontekst varsa ve ana fiil REQUEST üreten kategoride
+   - **PAST_DONE** ← zaman_kipi=PAST_NARRATIVE (kim söylerse söylesin: \
+     doktor "iki yıl önce şeker baktınız" dese de geçmiş!)
+   - **PATIENT_QUESTION** ← konuşmacı=PATIENT + (INTERROGATIVE veya kendi \
+     anlatısı). Veya konuşmacı=DOCTOR + INTERROGATIVE + hastaya yöneltilmiş \
+     soru ("Şeker, kolesterol var mı?")
+   - **RESULT_DISCUSS** ← tetkik sonucu konuşuluyor ("CRP 5 gelmiş", \
+     "ferritin 20", "tiroid normal"), istek değil
+   - **OTHER** ← HYPOTHETICAL ("gerekirse"), reddedilen ("önerir misiniz? \
+     - hayır gerek yok"), kapanış cümlesi
+
+6. **include**: intent_etiketi == REQUEST AND aday listesinde ilgili kod var
+
+NEGATİF ÖRNEKLER (HİÇ DAHIL ETME):
+- "Hasta: öz geçmişte hemogram baktırdım" → PATIENT/PAST_NARRATIVE/PAST_DONE → EXCLUDE
+- "Doktor: iki yıl önce şeker baktınız" → DOCTOR/PAST_NARRATIVE/PAST_DONE → EXCLUDE \
+  (DİKKAT: doktor söylese bile PAST!)
+- "Doktor: şekerin yüksekse insülin bakarız" → DOCTOR/HYPOTHETICAL/OTHER → EXCLUDE
+- **"Doktor: gerekirse holter takarız"** → DOCTOR/HYPOTHETICAL/OTHER → EXCLUDE \
+  (şartlı ifade — şu an istemiyor)
+- **"Doktor: olursa biz tomografi de çekeriz"** → HYPOTHETICAL/OTHER → EXCLUDE
+- "Hasta: D vitamini bakar mıyız?" → PATIENT/INTERROGATIVE/PATIENT_QUESTION → EXCLUDE
+- "Doktor: Şeker, kolesterol var mı?" → DOCTOR/INTERROGATIVE/PATIENT_QUESTION → \
+  EXCLUDE (hastaya yöneltilmiş tarama sorusu)
+- "Doktor: CRP 12 gelmiş" → DOCTOR/DECLARATIVE/RESULT_DISCUSS → EXCLUDE \
+  (sonuç paylaşımı, istek değil)
+- "Doktor: tiroid normal, hemoglobin 12.1, ferritin 20" → 3 mention DECLARATIVE/\
+  RESULT_DISCUSS → HEPSİ EXCLUDE
+
+POZİTİF ÖRNEKLER (SEÇ):
+- "Doktor: tam kan isteyelim" → DOCTOR/OPTATIVE/REQUEST → INCLUDE
+- "Doktor: troponin ve EKG isteyeceğim" → DOCTOR/FUTURE/REQUEST → INCLUDE \
+  (iki ayrı mention)
+- "Doktor: bir de B12 bakalım" → DOCTOR/OPTATIVE/REQUEST → INCLUDE
+- **"Doktor: rutin tahliller isteyeceğiz: kan şekeri, hemogram, TSH, idrar"** \
+  → DOCTOR/FUTURE liste-mirası → 4 mention HEPSİ REQUEST → 4'ünü de INCLUDE \
+  (kan şekeri, hemogram, TSH, idrar tahlili)
+- **"Doktor: Tahliller isteyeceğiz: TSH, T3, T4, anti-TPO, hemogram, açlık \
+  kan şekeri, tiroid USG"** → DOCTOR/FUTURE liste-mirası → 7 mention HEPSİ \
+  REQUEST → hepsini INCLUDE
+- **"Doktor: 8 saat aç kaldıktan sonra açlık kan şekerine bakılsın"** → \
+  DOCTOR/IMPERATIVE_PASSIVE/REQUEST → INCLUDE ("bakılsın" pasif emir!)
+- **"Doktor: HbA1c ve lipid profili isteyeceğiz"** → DOCTOR/FUTURE 1.çoğul/\
+  REQUEST → INCLUDE (1. çoğul "biz" hekim ekibi anlamında ama emir doktorun)
+- "Doktor: Açlık kan şekeri, HbA1c ve lipid profili isteyeceğiz. Ön tanı tip 2 \
+  diyabet" → 3 mention DOCTOR/FUTURE liste-mirası → REQUEST → INCLUDE
+
+KOD KAYNAĞI KURALI: SADECE aday listesindeki kodları kullan. Aday listesinde \
+OLMAYAN bir kodu ASLA UYDURMA. Bilmediğin kodu yazma.
+
+GÜVEN SKORU: kaynak cümle açık ve niyet net ise ≥0.90. Belirsizse 0.60-0.80.
+
+TRANSKRIPT:
+{transcript}
+{icd_context}
+ADAY TETKIKLER:
+{candidates}
+
+ÇIKTI (sadece JSON array, markdown fence yok, açıklama yok):
+[
+  {{
+    "kodu": "<adaydan>",
+    "adi": "<adaydan>",
+    "confidence": 0.95,
+    "kaynak_cumle": "<transkriptten tam cümle>",
+    "intent_etiketi": "REQUEST",
+    "reasoning": "DOCTOR/FUTURE liste-mirası — ana fiil 'isteyeceğiz', tetkik liste öğesi"
+  }}
+]
+
+Hiçbir aday REQUEST değilse: []
+"""
+
+
 class SUTSuggestionService:
     """NER → Vector DB search → LLM selection pipeline for SUT tetkik codes.
 
@@ -231,28 +455,28 @@ class SUTSuggestionService:
         self, report_sections: dict[str, str], brans: str | None = None
     ) -> list[SUTSuggestion]:
         """Generate SUT tetkik suggestions from structured report fields."""
-        print(f"[SUT-DEBUG] suggest_from_report called with {len(report_sections)} sections", flush=True)
+        logger.debug(f"[SUT-DEBUG] suggest_from_report called with {len(report_sections)} sections")
         search_parts: list[str] = []
         for key in self._RELEVANT_KEYS:
             val = report_sections.get(key, "").strip()
-            print(f"[SUT-DEBUG]   key={key} val={val[:60]!r} included={bool(val and val not in {'BELIRTILMEDI', 'BELIRTILMEDI.', ''})}", flush=True)
+            logger.debug(f"[SUT-DEBUG]   key={key} val={val[:60]!r} included={bool(val and val not in {'BELIRTILMEDI', 'BELIRTILMEDI.', ''})}")
             if val and val not in {"BELIRTILMEDI", "BELIRTILMEDI.", ""}:
                 search_parts.append(val)
 
         # Fallback: use ALL non-empty report sections
         if not search_parts:
-            print("[SUT-DEBUG]   No relevant keys matched, trying ALL sections...", flush=True)
+            logger.debug("[SUT-DEBUG]   No relevant keys matched, trying ALL sections...")
             for key, val in report_sections.items():
                 val = val.strip()
                 if val and val not in {"BELIRTILMEDI", "BELIRTILMEDI.", ""}:
                     search_parts.append(val)
-                    print(f"[SUT-DEBUG]   FALLBACK key={key} val={val[:60]!r}", flush=True)
+                    logger.debug(f"[SUT-DEBUG]   FALLBACK key={key} val={val[:60]!r}")
 
         if not search_parts:
-            print("[SUT-DEBUG] NO search_parts found, returning empty", flush=True)
+            logger.debug("[SUT-DEBUG] NO search_parts found, returning empty")
             return []
 
-        print(f"[SUT-DEBUG] search_parts count: {len(search_parts)}", flush=True)
+        logger.debug(f"[SUT-DEBUG] search_parts count: {len(search_parts)}")
 
         logger.info("search_parts count: %d", len(search_parts))
 
@@ -274,10 +498,9 @@ class SUTSuggestionService:
             "Report combined %d candidates (vector + text + llm-explicit)",
             len(candidates),
         )
-        print(
+        logger.debug(
             f"[SUT-DEBUG] candidate sources: vector={len(candidates) - len(text_candidates) - len(explicit_candidates)} "
             f"text={len(text_candidates)} llm-explicit={len(explicit_candidates)}",
-            flush=True,
         )
 
         if not candidates:
@@ -298,11 +521,11 @@ class SUTSuggestionService:
         )
 
         prompt = SUT_REPORT_SELECTION_PROMPT.format(
-            report_text=report_text,
-            candidates=candidates_text,
+            report_text=_safe_for_format(report_text),
+            candidates=_safe_for_format(candidates_text),
         )
 
-        print(f"[SUT-DEBUG] LLM report-select: {len(candidates)} candidates", flush=True)
+        logger.debug(f"[SUT-DEBUG] LLM report-select: {len(candidates)} candidates")
 
         try:
             raw = await self._llm.generate(prompt, "")
@@ -368,12 +591,15 @@ class SUTSuggestionService:
             "kan sayımı", "kan sayimi", "hemogram", "kan tahlili",
             "şeker", "seker", "açlık kan şekeri", "hba1c",
             "idrar", "idrar tahlili", "tam idrar",
-            "tiroit", "tiroid", "tsh", "t3", "t4",
+            "tiroit", "tiroid", "tsh", "t3", "t4", "anti-tpo", "trab",
+            "tsh reseptör antikoru", "tsh reseptor antikoru",
             "karaciğer", "karaciger", "ast", "alt",
             "böbrek", "bobrek", "kreatinin", "üre",
             "kolesterol", "lipid", "trigliserid",
             "röntgen", "rontgen", "mr", "tomografi", "bt",
             "ultrason", "ekg", "eko", "eforlu",
+            "akciğer grafisi", "akciger grafisi", "akciğer testi", "akciger testi",
+            "tüm batın", "tum batin", "tümbatım", "tum batim",
             "kültür", "kultur", "balgam", "gaita",
             "sedimantasyon", "crp", "demir", "ferritin",
             "d vitamini", "b12", "folik asit",
@@ -418,7 +644,33 @@ class SUTSuggestionService:
                 if word_count <= 5:
                     found.append(token)
 
-        print(f"[SUT-DEBUG] keyword extraction found: {found}", flush=True)
+        # ASR-typo handling: fuzzy match for likely transcription errors
+        # ("hemogran" → "hemogram", "tümbatım" → "tüm batın", etc.)
+        # Only run on tokens not already captured by exact-match above.
+        try:
+            from rapidfuzz import fuzz, process
+            existing_lower = {f.lower() for f in found}
+            tokens = set(_re.findall(r"\b\w{5,}\b", transcript_lower))
+            for token in tokens:
+                if token in tetkik_keywords or token in existing_lower:
+                    continue
+                # 85% threshold: catches single-char typos in 5-8 char words
+                result = process.extractOne(
+                    token, tetkik_keywords, scorer=fuzz.ratio, score_cutoff=85
+                )
+                if result:
+                    canonical_keyword = result[0]
+                    if canonical_keyword not in existing_lower:
+                        found.append(canonical_keyword)
+                        existing_lower.add(canonical_keyword)
+                        logger.debug(
+                            "[SUT-DEBUG] fuzzy match: %r → %r (score=%d)",
+                            token, canonical_keyword, int(result[1]),
+                        )
+        except ImportError:
+            logger.debug("rapidfuzz not available, skipping fuzzy ASR-typo match")
+
+        logger.debug(f"[SUT-DEBUG] keyword extraction found: {found}")
         return found[:25]
 
     # ------------------------------------------------------------------
@@ -438,15 +690,14 @@ class SUTSuggestionService:
         )
         expanded = expand_with_tokens(get_expander(), terms)
         if len(expanded) > len(terms):
-            print(
+            logger.debug(
                 f"[SUT-DEBUG] expansion (synonyms+tokens): {len(terms)} → {len(expanded)} terms",
-                flush=True,
             )
         terms = expanded
 
-        print(f"[SUT-DEBUG] _find_vector_candidates: vectors={self._vectors is not None}, ready={self._vectors.is_ready if self._vectors else False}, terms={terms}", flush=True)
+        logger.debug(f"[SUT-DEBUG] _find_vector_candidates: vectors={self._vectors is not None}, ready={self._vectors.is_ready if self._vectors else False}, terms={terms}")
         if self._vectors is None or not self._vectors.is_ready:
-            print("[SUT-DEBUG] Vector service NOT ready, falling back to text search", flush=True)
+            logger.debug("[SUT-DEBUG] Vector service NOT ready, falling back to text search")
             return await self._text_search_fallback(terms, brans=brans)
 
         results = await self._vectors.search_multiple(
@@ -473,7 +724,9 @@ class SUTSuggestionService:
         bugs by relying on the LLM to produce proper Turkish forms (e.g.
         "EKOKARDIYOGRAFI" → "EKOKARDİYOGRAFİ") that match the SUT DB exactly.
         """
-        prompt = EXPLICIT_TEST_EXTRACTION_PROMPT.format(report_text=report_text)
+        prompt = EXPLICIT_TEST_EXTRACTION_PROMPT.format(
+            report_text=_safe_for_format(report_text)
+        )
         try:
             raw = await self._llm.generate(prompt, "")
         except Exception:
@@ -493,7 +746,7 @@ class SUTSuggestionService:
         if not isinstance(names, list):
             return []
 
-        print(f"[SUT-DEBUG] LLM-extracted explicit test names: {names}", flush=True)
+        logger.debug(f"[SUT-DEBUG] LLM-extracted explicit test names: {names}")
 
         # Each LLM-extracted name is synonym-expanded before SUT search.
         # Use substring-aware expand() (not expand_term, which requires exact
@@ -567,10 +820,25 @@ class SUTSuggestionService:
                 f"- {d}" for d in icd_context
             ) + "\n"
 
-        prompt = SUT_SELECTION_PROMPT.format(
-            transcript=transcript,
-            candidates=candidates_text,
-            icd_context=icd_text,
+        # Intent-disambiguation prompt versioning. v2 = per-mention CoT
+        # (default), v1 = legacy single-rule prompt. Switched via
+        # ASR_SUT__INTENT_PROMPT_VERSION env var for safe rollback.
+        from config.settings import AppSettings
+        settings = AppSettings()
+        prompt_version = settings.sut.intent_prompt_version
+        intent_threshold = settings.sut.intent_min_confidence
+        if prompt_version == "v3":
+            prompt_template = SUT_SELECTION_PROMPT_V3
+        elif prompt_version == "v2":
+            prompt_template = SUT_SELECTION_PROMPT_V2
+        else:
+            prompt_template = SUT_SELECTION_PROMPT
+        logger.debug("[SUT-DEBUG] using prompt version=%s", prompt_version)
+
+        prompt = prompt_template.format(
+            transcript=_safe_for_format(transcript),
+            candidates=_safe_for_format(candidates_text),
+            icd_context=_safe_for_format(icd_text),
         )
 
         try:
@@ -588,7 +856,25 @@ class SUTSuggestionService:
                 for c in candidates[:10]
             ]
 
-        return self._parse_llm_selection(raw, candidates)
+        suggestions = self._parse_llm_selection(raw, candidates)
+
+        # Confidence gate: dusuk guvenli REQUEST -> NOT_REQUEST. Yanlis
+        # pozitif (gereksiz lab istegi → gercek hasta zarari) icin guvenlik.
+        # Threshold ASR_SUT__INTENT_MIN_CONFIDENCE env var ile ayarlanir.
+        downgraded = 0
+        for s in suggestions:
+            if s.intent_etiketi == IntentLabel.REQUEST and s.confidence < intent_threshold:
+                s.intent_etiketi = IntentLabel.NOT_REQUEST
+                tail = f"[confidence<{intent_threshold}, NOT_REQUEST'e indirildi]"
+                s.reasoning = f"{s.reasoning} {tail}".strip()
+                downgraded += 1
+        if downgraded:
+            logger.info(
+                "Confidence gate: %d REQUEST → NOT_REQUEST (threshold=%.2f)",
+                downgraded, intent_threshold,
+            )
+
+        return suggestions
 
     @staticmethod
     def _parse_llm_selection(
@@ -630,6 +916,20 @@ class SUTSuggestionService:
                 cand = cand_by_code[kodu]
                 adi = cand.get("adi", adi)
                 brans = cand.get("brans", brans)
+
+            # V2 alanlari: yeni LLM cevabi kaynak_cumle + intent_etiketi
+            # iceriyorsa parse et. V1 cevabinda alanlar yok → safe defaults.
+            kaynak_cumle = str(item.get("kaynak_cumle", ""))[:200]  # storage hijyeni
+            intent_raw = str(item.get("intent_etiketi", "REQUEST")).strip().upper()
+            try:
+                intent_etiketi = IntentLabel(intent_raw)
+            except ValueError:
+                logger.warning(
+                    "Invalid intent_etiketi=%r from LLM for kodu=%s, defaulting OTHER",
+                    intent_raw, kodu,
+                )
+                intent_etiketi = IntentLabel.OTHER
+
             suggestions.append(
                 SUTSuggestion(
                     kodu=kodu,
@@ -637,6 +937,8 @@ class SUTSuggestionService:
                     brans=brans,
                     confidence=float(item.get("confidence", 0.5)),
                     reasoning=item.get("reasoning", ""),
+                    kaynak_cumle=kaynak_cumle,
+                    intent_etiketi=intent_etiketi,
                 )
             )
         if dropped:

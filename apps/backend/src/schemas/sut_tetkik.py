@@ -2,7 +2,24 @@
 
 from __future__ import annotations
 
+from enum import Enum
+
 from pydantic import BaseModel, Field
+
+
+class IntentLabel(str, Enum):
+    """Intent classification for a tetkik mention in a doctor-patient transcript.
+
+    Used to disambiguate doctor's verbal test ORDERS from past mentions /
+    patient self-reports / hypothetical references. Only ``REQUEST`` items
+    flow through to the doctor's confirmed test list.
+    """
+    REQUEST = "REQUEST"                  # doktorun simdi istedigi (capture)
+    PAST_DONE = "PAST_DONE"              # gecmiste yapilmis (ignore)
+    PATIENT_QUESTION = "PATIENT_QUESTION"  # hasta sormus / kendi anlatmis (ignore)
+    RESULT_DISCUSS = "RESULT_DISCUSS"    # sonuc tartismasi (ignore)
+    OTHER = "OTHER"                      # hipotetik / reddedilen / diger (ignore)
+    NOT_REQUEST = "NOT_REQUEST"          # umbrella default (ignore)
 
 
 class SUTItem(BaseModel):
@@ -31,6 +48,10 @@ class SUTSuggestion(BaseModel):
     brans: str = ""
     confidence: float
     reasoning: str = ""
+    # Step 1 (intent sprint): debugging + intent disambiguation. Optional with
+    # safe defaults — old clients that ignore them keep working.
+    kaynak_cumle: str = ""                       # transkriptte tetik cumle (audit dis)
+    intent_etiketi: IntentLabel = IntentLabel.REQUEST  # default REQUEST = legacy davranis
 
 
 class SUTSuggestResponse(BaseModel):

@@ -64,6 +64,7 @@ async def suggest_sut(
     body: SUTSuggestRequest,
     request: Request,
     user: UserInfo = Depends(get_current_user),
+    audit: AuditService = Depends(get_audit_service),
 ) -> SUTSuggestResponse:
     """Get LLM-powered SUT tetkik suggestions from report sections or transcript text."""
     suggestion_service = getattr(request.app.state, "sut_suggestion_service", None)
@@ -74,10 +75,14 @@ async def suggest_sut(
         )
 
     if body.report_sections:
+        input_type = "report_sections"
+        input_size = sum(len(v) for v in body.report_sections.values())
         suggestions = await suggestion_service.suggest_from_report(
             body.report_sections, brans=body.brans
         )
     elif body.transcript_text:
+        input_type = "transcript_text"
+        input_size = len(body.transcript_text)
         suggestions = await suggestion_service.suggest(
             body.transcript_text, brans=body.brans
         )
@@ -86,6 +91,25 @@ async def suggest_sut(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="report_sections veya transcript_text alanlarindan biri gerekli",
         )
+
+    # KVKK Article 12: log every health-data processing event. Metadata only;
+    # raw transcript / report content is NEVER logged (PHI protection).
+    await audit.log(
+        action="SUT_TETKIK_SUGGEST",
+        resource_type="suggestion",
+        resource_id=None,
+        user_id=user.username,
+        details=json.dumps(
+            {
+                "input_type": input_type,
+                "input_size": input_size,
+                "brans": body.brans or "",
+                "n_suggestions": len(suggestions),
+            },
+            ensure_ascii=False,
+        ),
+        ip_address=request.client.host if request.client else None,
+    )
 
     return SUTSuggestResponse(suggestions=suggestions)
 

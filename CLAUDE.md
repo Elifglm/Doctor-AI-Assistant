@@ -24,15 +24,22 @@ documentation in Turkish polyclinics.
 1. Import ICD-10 codes: `python -m apps.backend.src.scripts.import_icd10 <icd10.sql>`
 2. Build vector DB: `python -m apps.backend.src.scripts.build_icd10_vectors`
 
-## Anamnez RAG Setup (required after fresh clone)
-Real-anamnesis RAG (BGE-M3 + metadata) uses a corpus of anonymized hospital
-reports. Steps for a clean machine:
-1. Get `data/Anemnez_tetkik/` folder from the team (PHI — not in repo).
-2. Import into SQLite: `python -m apps.backend.src.scripts.import_anamnez`
-3. Build ChromaDB vectors: `python -m apps.backend.src.scripts.build_anamnez_vectors`
-4. Verify: `python -m apps.backend.src.rag.test_rag_live` (smoke test).
+## Anamnez RAG Setup
+Real-anamnesis RAG (BGE-M3 + metadata) uses a corpus of de-identified hospital
+reports. **Everything is committed** — clone-and-run works out of the box:
+- `data/Anemnez_tetkik/` (raw Excel, 10 MB)
+- `data/anamnez.db` (SQLite, 32 MB)
+- `data/anamnez_chroma_bge-m3_metadata/` (production ChromaDB, 153 MB)
 
-To disable RAG (e.g. evaluating without it), set `ANAMNEZ_RAG_ENABLED=false` in `.env`.
+Smoke verify after clone: `python -m apps.backend.src.rag.test_rag_live`
+
+If you want to **rebuild** the ChromaDB (e.g. swap embedding model), redirect to
+a separate folder so the committed one stays untouched:
+```bash
+python -m apps.backend.src.scripts.build_anamnez_vectors --profile bge-m3 --output-dir data/anamnez_chroma_experimental
+```
+
+To disable RAG entirely (e.g. evaluating without it), set `ANAMNEZ_RAG_ENABLED=false` in `.env`.
 
 ## OpenEMR Setup
 Backend talks to OpenEMR over (a) OAuth2 REST API and (b) direct MariaDB queries

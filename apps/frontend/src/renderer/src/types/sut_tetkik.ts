@@ -12,12 +12,23 @@ export interface SUTSearchResponse {
   total: number
 }
 
+export type IntentLabel =
+  | 'REQUEST'
+  | 'PAST_DONE'
+  | 'PATIENT_QUESTION'
+  | 'RESULT_DISCUSS'
+  | 'OTHER'
+  | 'NOT_REQUEST'
+
 export interface SUTSuggestion {
   kodu: string
   adi: string
   brans: string
   confidence: number
   reasoning: string
+  // Intent sprint additions — optional for backward compat with old backend.
+  kaynak_cumle?: string
+  intent_etiketi?: IntentLabel
 }
 
 export interface SUTSuggestResponse {
