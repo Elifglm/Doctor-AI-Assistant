@@ -172,6 +172,22 @@ def _norm_tr(s: str) -> str:
 _NOISE_TOKENS_NORM: set[str] = {_norm_tr(t) for t in _NOISE_TOKENS}
 
 
+# Medical abbreviations that fall below the default min_len=4 token filter
+# but are still high-signal for retrieval. Whitelist them so they survive.
+# All entries pre-normalized (ASCII-fold lowercase).
+_ABBREV_WHITELIST: set[str] = {
+    # Hastalık kısaltmaları
+    "dm", "ht", "kah", "kby", "kyf", "kvh",
+    # Görüntüleme
+    "bt", "mr", "us", "usg", "mri", "pet", "pat",
+    # Lab kısaltmaları
+    "ekg", "eko", "eeg", "tit", "iye", "kcc", "tsh",
+    "ast", "alt", "bnp", "crp", "gfr", "ldl", "hdl",
+    "wbc", "rbc", "hb", "hgb", "mcv", "mch", "plt",
+    "egr", "fbg", "psa", "afp", "cea", "iyt", "tdm",
+}
+
+
 def _tokenize_significant(text: str, min_len: int = 4) -> set[str]:
     """Split text into significant tokens for vector retrieval.
 
@@ -179,6 +195,10 @@ def _tokenize_significant(text: str, min_len: int = 4) -> set[str]:
     that dominate embedding similarity in long phrases and obscure the
     medical signal. Output uses ASCII-folded Turkish (via normalize_turkish)
     so embedding tokenizers don't get tripped up by combining marks.
+
+    Medical abbreviations in ``_ABBREV_WHITELIST`` (DM, HT, BT, MR, EKG,
+    TSH, AST, ALT, BNP …) bypass the ``min_len`` filter — they're shorter
+    than 4 chars but carry high retrieval signal.
     """
     if not text:
         return set()
@@ -189,6 +209,10 @@ def _tokenize_significant(text: str, min_len: int = 4) -> set[str]:
         if not wc:
             continue
         wn = _norm_tr(wc)
+        # Whitelisted abbreviations bypass the length check
+        if wn in _ABBREV_WHITELIST:
+            tokens.add(wn)
+            continue
         if len(wn) < min_len:
             continue
         if wn in _NOISE_TOKENS_NORM:
@@ -207,6 +231,11 @@ def expand_with_tokens(expander: MedicalSynonymExpander, terms: Iterable[str]) -
     both the full phrase AND the bare significant tokens ("menenjit"),
     so the vector index can match on the medical term even when the
     full phrase carries too much noise.
+
+    Uses BOTH ``expand_term`` (exact-key match) and ``expand`` (substring
+    match) so phrases that don't exactly match a dictionary key still
+    surface synonyms (e.g. "üriner sistem ultrasonu" → "üriner sistem"
+    substring → its synonyms).
     """
     result: set[str] = set()
     for t in terms:
@@ -216,8 +245,10 @@ def expand_with_tokens(expander: MedicalSynonymExpander, terms: Iterable[str]) -
         if not t_clean:
             continue
         result.add(t_clean)
-        # Synonyms (whole-phrase matches in dictionary)
+        # Synonyms — exact-key match (fast path)
         result.update(expander.expand_term(t_clean))
+        # Synonyms — substring match (catches partial / qualified phrases)
+        result.update(expander.expand(t_clean))
         # Significant per-word tokens
         result.update(_tokenize_significant(t_clean))
     return list(result)

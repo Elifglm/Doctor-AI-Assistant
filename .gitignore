@@ -27,6 +27,8 @@ models/
 *.onnx
 # ...but ChromaDB HNSW index files are .bin too — committed for self-contained RAG
 !data/anamnez_chroma_bge-m3_metadata/**/*.bin
+!data/icd10_chroma_bge/**/*.bin
+!data/sut_tetkik_chroma_bge/**/*.bin
 
 # Output
 output/

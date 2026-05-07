@@ -123,8 +123,8 @@ konsultasyon_oneri, icd10_list, sut_tetkik_list
 19. kilo                    — SADECE SAYI (kg). Yoksa "".
 20. boy                     — SADECE SAYI (cm). Yoksa "".
 21. sikayet_baslangic_tarihi — BÜYÜK HARF (örn: "2 HAFTA ÖNCE" / "3 GÜN ÖNCE" / "1 YILDIR"). Yoksa "BELIRTILMEDI".
-22. konsultasyon_muayene    — Doktorun istediği muayene/tetkik (örn: "KARDİYOLOJİ KONSÜLTASYONU", "ABDOMEN USG"). KRITIK ALAN — retrieval bunu kullanır. Yoksa "".
-23. konsultasyon_sonuc      — Konsültasyon sonucu varsa. Yoksa "".
+22. konsultasyon_muayene    — Doktorun istediği muayene/tetkik (örn: "KARDİYOLOJİ KONSÜLTASYONU", "ABDOMEN USG", "ÜRİNER SİSTEM USG", "EKG", "EKO", "HEMOGRAM", "BİYOKİMYA", "HBA1C"). KRITIK ALAN — retrieval bunu kullanır. Yoksa "".
+23. konsultasyon_sonuc      — **KESİN VEYA ÖN TANI BURAYA YAZILIR.** Doktorun açıkça söylediği veya raporda TANI olarak ifade ettiği TÜM tanılar (örn: "AKUT SİSTİT", "TİP 2 DİABETES MELLİTUS", "ESANSİYEL HİPERTANSİYON", "MENENJİT ŞÜPHESİ", "AKUT GASTROENTERİT", "PNÖMONİ", "OTİTİS MEDİA"). KRİTİK ALAN — ICD pipeline'ı bunu okur. Halk dilinde söylenmiş tanıyı bile resmî tıbbi adına çevir: "şeker hastalığı" → "TİP 2 DİABETES MELLİTUS"; "tansiyon" → "ESANSİYEL HİPERTANSİYON"; "kansızlık" → "DEMİR EKSİKLİĞİ ANEMİSİ"; "bel fıtığı" → "LOMBER DİSK HERNİSİ"; "menejit" / "meninjit" (ASR yazım hatası) → "MENENJİT". Doktor "geçmiş" tanı söylüyorsa (örn: "geçen hafta sistit olmuştu") yine yaz — ICD geçmiş tanı için de kod üretir. Birden fazla tanı varsa `----` ile ayır. KESİN TANI YOKSA bos birak: "".
 24. konsultasyon_oneri      — Konsültasyondan gelen öneriler. Yoksa "".
 25. icd10_list              — DAİMA "" boş bırak. Ayrı pipeline doldurur.
 26. sut_tetkik_list         — DAİMA "" boş bırak. Ayrı pipeline doldurur.

@@ -110,9 +110,13 @@ class AnthropicLLMService:
         body: dict = {
             "model": self._model_name,
             "max_tokens": settings.llm.max_tokens,
-            "temperature": settings.llm.temperature,
             "messages": [{"role": "user", "content": prompt}],
         }
+        # `temperature` is deprecated/rejected by Opus 4.7+; pass it only for
+        # older Claude families that still accept it (Haiku 4.5, Sonnet 4.x,
+        # Opus 4.6 and earlier).
+        if self._supports_temperature():
+            body["temperature"] = settings.llm.temperature
         if system:
             body["system"] = self._wrap_system_for_cache(system)
 
@@ -129,6 +133,17 @@ class AnthropicLLMService:
             logger.exception("Anthropic generation failed")
             raise
 
+    def _supports_temperature(self) -> bool:
+        """Whether the current model accepts the `temperature` parameter.
+
+        Opus 4.7+ deprecated it (API returns 400 if sent). Default to True
+        for backwards compatibility with Haiku / Sonnet / older Opus.
+        """
+        name = (self._model_name or "").lower()
+        if name.startswith("claude-opus-4-7"):
+            return False
+        return True
+
     async def generate_stream(
         self, prompt: str, system: str = ""
     ) -> AsyncIterator[str]:
@@ -140,10 +155,11 @@ class AnthropicLLMService:
         body: dict = {
             "model": self._model_name,
             "max_tokens": settings.llm.max_tokens,
-            "temperature": settings.llm.temperature,
             "messages": [{"role": "user", "content": prompt}],
             "stream": True,
         }
+        if self._supports_temperature():
+            body["temperature"] = settings.llm.temperature
         if system:
             body["system"] = self._wrap_system_for_cache(system)
 

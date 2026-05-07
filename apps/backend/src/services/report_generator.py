@@ -364,8 +364,9 @@ class ReportGenerator:
         await _progress("validating", "Rapor dogrulaniyor...", 0.9)
 
         # 4. ICD-10: Report fields → NER → Vector DB → LLM selection
+        # (with transcript fallback when report fields are too sparse)
         report_sections = {s["key"]: s["content"] for s in sections}
-        icd_suggestions = await self._generate_icd10(sections, report_sections)
+        icd_suggestions = await self._generate_icd10(sections, report_sections, full_text)
 
         # 4b. SUT Tetkik: transcript + ICD context → Vector DB → LLM selection
         await self._generate_sut_tetkik(sections, report_sections, full_text, icd_suggestions)
@@ -386,9 +387,16 @@ class ReportGenerator:
     # ------------------------------------------------------------------
 
     async def _generate_icd10(
-        self, sections: list[dict[str, Any]], report_sections: dict[str, str]
+        self,
+        sections: list[dict[str, Any]],
+        report_sections: dict[str, str],
+        transcript: str = "",
     ) -> list[str]:
         """Generate ICD-10 suggestions using report fields → Vector DB → LLM pipeline.
+
+        Falls back to transcript-based ``suggest()`` when report fields are
+        too sparse (e.g. anamnesis batch failed to write konsultasyon_sonuc /
+        kesin_tani / on_tani) — mirrors the SUT pipeline's fallback.
 
         Returns list of ICD-10 diagnosis descriptions for use by SUT pipeline.
         """
@@ -406,6 +414,11 @@ class ReportGenerator:
 
         try:
             suggestions = await self.icd10.suggest_from_report(report_sections)
+            if not suggestions and transcript:
+                logger.info(
+                    "ICD-10 report-based pipeline empty — falling back to transcript-based suggest()"
+                )
+                suggestions = await self.icd10.suggest(transcript)
             if suggestions:
                 icd10_text = "\n".join(
                     f"({s.icd_kodu}) - {s.tani} (Ön Tanı) [%{int(s.confidence * 100)}]"
