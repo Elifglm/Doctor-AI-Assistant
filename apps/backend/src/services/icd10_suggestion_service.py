@@ -154,11 +154,21 @@ class ICD10SuggestionService:
         icd10_service: ICD10Service,
         vector_service: ICD10VectorService | None = None,
         ner_service: Any | None = None,
+        validation_mode: str = "strict",
     ) -> None:
         self._llm = llm
         self._icd10 = icd10_service
         self._vectors = vector_service
         self._ner = ner_service
+        # Hallucination guard mode (ablation switch for thesis):
+        #   "strict"     — drop any LLM-output code not in candidate pool
+        #   "db_rescue"  — also accept LLM codes that exist in ICD-10 DB
+        #                  (lets LLM medical knowledge rescue vector recall misses
+        #                   like "diyabet" → E11.9, while still rejecting invented
+        #                   codes via DB existence check).
+        # Switched at runtime via ASR_ICD__VALIDATION_MODE env var.
+        self._validation_mode = validation_mode if validation_mode in {"strict", "db_rescue"} else "strict"
+        logger.info("ICD10SuggestionService validation_mode=%s", self._validation_mode)
 
     async def suggest(self, transcript: str) -> list[ICD10Suggestion]:
         """Full pipeline: NER → Vector DB → LLM selection."""
@@ -245,11 +255,14 @@ class ICD10SuggestionService:
 
         # Step 2a-bis: LLM-extracted explicit diagnoses + symptoms (proper Turkish form).
         # Bypasses keyword/embedding limitations for terms doctor explicitly named.
-        explicit_candidates = await self._llm_extract_diagnoses_and_symptoms(report_text)
-        for ec in explicit_candidates:
-            if ec["icd_kodu"] not in seen:
-                seen.add(ec["icd_kodu"])
-                candidates.append(ec)
+        # Skipped under db_rescue mode — DB-rescue at parse time covers the same
+        # use case (LLM medical knowledge → DB validation) with one fewer LLM call.
+        if self._validation_mode == "strict":
+            explicit_candidates = await self._llm_extract_diagnoses_and_symptoms(report_text)
+            for ec in explicit_candidates:
+                if ec["icd_kodu"] not in seen:
+                    seen.add(ec["icd_kodu"])
+                    candidates.append(ec)
 
         # Step 2b: Hierarchical fallback — for every candidate that's a
         # specific subcode (e.g. J44.0), make sure the "unspecified" sibling
@@ -301,7 +314,7 @@ class ICD10SuggestionService:
                 for c in candidates[:5]
             ]
 
-        return self._parse_llm_selection(raw, candidates)
+        return await self._parse_llm_selection(raw, candidates)
 
     # ------------------------------------------------------------------
     # Step 1: NER extraction
@@ -573,16 +586,24 @@ class ICD10SuggestionService:
                 for c in candidates[:5]
             ]
 
-        return self._parse_llm_selection(raw, candidates)
+        return await self._parse_llm_selection(raw, candidates)
 
-    @staticmethod
-    def _parse_llm_selection(
-        raw: str, candidates: list[dict[str, Any]] | None = None
+    async def _parse_llm_selection(
+        self,
+        raw: str,
+        candidates: list[dict[str, Any]] | None = None,
     ) -> list[ICD10Suggestion]:
         """Parse LLM's JSON selection response.
 
-        If candidates is provided, drops codes not in the candidates list
-        (LLM hallucination guard).
+        Hallucination guard depends on ``self._validation_mode`` (set at init,
+        switched via ASR_ICD__VALIDATION_MODE env var) — for thesis ablation:
+
+          - "strict"     drop any code not in candidate pool (high precision,
+                         lower recall: vector DB misses are unrecoverable)
+          - "db_rescue"  also accept LLM codes that exist in ICD-10 DB
+                         (LLM medical knowledge rescues vector recall failures
+                         like "diyabet" → E11.9; invented codes still rejected
+                         by DB existence check)
         """
         cleaned = raw.strip()
         if "```" in cleaned:
@@ -596,22 +617,33 @@ class ICD10SuggestionService:
             logger.warning("Failed to parse LLM ICD-10 selection: %s", raw[:200])
             return []
 
-        valid_codes: set[str] | None = None
         cand_by_code: dict[str, dict[str, Any]] = {}
         if candidates is not None:
             cand_by_code = {str(c.get("icd_kodu", "")): c for c in candidates}
-            valid_codes = set(cand_by_code.keys())
 
         suggestions: list[ICD10Suggestion] = []
         dropped: list[str] = []
+        rescued: list[str] = []
         for item in parsed[:8]:
-            kodu = str(item.get("icd_kodu", ""))
-            if valid_codes is not None and kodu not in valid_codes:
-                dropped.append(kodu)
+            kodu = str(item.get("icd_kodu", "")).strip()
+            if not kodu:
                 continue
             tani = item.get("tani", "")
+
             if kodu in cand_by_code:
                 tani = cand_by_code[kodu].get("tani", tani)
+            elif self._validation_mode == "db_rescue":
+                # Aday listesinde yok — DB'de var mı diye sor
+                db_row = await self._icd10.get_by_code(kodu)
+                if db_row is None:
+                    dropped.append(kodu)
+                    continue
+                tani = db_row.tani or tani
+                rescued.append(kodu)
+            else:  # strict
+                dropped.append(kodu)
+                continue
+
             source = item.get("source", "tani")
             if source not in {"tani", "semptom"}:
                 source = "tani"
@@ -626,6 +658,12 @@ class ICD10SuggestionService:
             )
         if dropped:
             logger.warning(
-                "Dropped %d hallucinated ICD code(s): %s", len(dropped), dropped,
+                "Dropped %d hallucinated ICD code(s) [mode=%s]: %s",
+                len(dropped), self._validation_mode, dropped,
+            )
+        if rescued:
+            logger.info(
+                "DB-rescued %d ICD code(s) (LLM proposed, DB validated): %s",
+                len(rescued), rescued,
             )
         return suggestions

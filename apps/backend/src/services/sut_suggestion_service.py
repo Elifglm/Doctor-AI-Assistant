@@ -392,11 +392,18 @@ class SUTSuggestionService:
         sut_service: SUTService,
         vector_service: SUTVectorService | None = None,
         ner_service: Any | None = None,
+        validation_mode: str = "strict",
     ) -> None:
         self._llm = llm
         self._sut = sut_service
         self._vectors = vector_service
         self._ner = ner_service
+        # Hallucination guard mode (ablation switch — mirrors ICD pipeline):
+        #   "strict"     — drop any LLM-output code not in candidate pool
+        #   "db_rescue"  — also accept LLM codes that exist in SUT DB
+        # Switched at runtime via ASR_SUT__VALIDATION_MODE env var.
+        self._validation_mode = validation_mode if validation_mode in {"strict", "db_rescue"} else "strict"
+        logger.info("SUTSuggestionService validation_mode=%s", self._validation_mode)
 
     async def suggest(
         self, transcript: str, brans: str | None = None,
@@ -487,7 +494,13 @@ class SUTSuggestionService:
 
         candidates = await self._find_vector_candidates(ner_terms, brans=brans)
         text_candidates = await self._text_search_fallback(ner_terms, brans=brans)
-        explicit_candidates = await self._llm_extract_and_search(report_text, brans=brans)
+        # LLM-explicit extraction skipped under db_rescue mode — DB-rescue at
+        # parse time covers the same use case (LLM medical knowledge → DB
+        # validation) with one fewer LLM call.
+        if self._validation_mode == "strict":
+            explicit_candidates = await self._llm_extract_and_search(report_text, brans=brans)
+        else:
+            explicit_candidates = []
         seen = {c["kodu"] for c in candidates}
         for src in (text_candidates, explicit_candidates):
             for tc in src:
@@ -495,8 +508,10 @@ class SUTSuggestionService:
                     seen.add(tc["kodu"])
                     candidates.append(tc)
         logger.info(
-            "Report combined %d candidates (vector + text + llm-explicit)",
+            "Report combined %d candidates (vector + text%s) [mode=%s]",
             len(candidates),
+            " + llm-explicit" if self._validation_mode == "strict" else "",
+            self._validation_mode,
         )
         logger.debug(
             f"[SUT-DEBUG] candidate sources: vector={len(candidates) - len(text_candidates) - len(explicit_candidates)} "
@@ -542,7 +557,7 @@ class SUTSuggestionService:
                 for c in candidates[:10]
             ]
 
-        return self._parse_llm_selection(raw, candidates)
+        return await self._parse_llm_selection(raw, candidates)
 
     # ------------------------------------------------------------------
     # Step 1: NER extraction
@@ -856,7 +871,7 @@ class SUTSuggestionService:
                 for c in candidates[:10]
             ]
 
-        suggestions = self._parse_llm_selection(raw, candidates)
+        suggestions = await self._parse_llm_selection(raw, candidates)
 
         # Confidence gate: dusuk guvenli REQUEST -> NOT_REQUEST. Yanlis
         # pozitif (gereksiz lab istegi → gercek hasta zarari) icin guvenlik.
@@ -876,14 +891,19 @@ class SUTSuggestionService:
 
         return suggestions
 
-    @staticmethod
-    def _parse_llm_selection(
-        raw: str, candidates: list[dict[str, Any]] | None = None
+    async def _parse_llm_selection(
+        self,
+        raw: str,
+        candidates: list[dict[str, Any]] | None = None,
     ) -> list[SUTSuggestion]:
         """Parse LLM's JSON selection response.
 
-        If candidates is provided, drops any code not in the candidates list
-        (LLM hallucination guard — codes must exist in the SUT DB).
+        Hallucination guard depends on ``self._validation_mode`` (set at init,
+        switched via ASR_SUT__VALIDATION_MODE env var) — mirrors ICD pipeline
+        for thesis ablation:
+
+          - "strict"     drop any code not in candidate pool
+          - "db_rescue"  also accept LLM codes that exist in SUT DB
         """
         cleaned = raw.strip()
         if "```" in cleaned:
@@ -897,25 +917,36 @@ class SUTSuggestionService:
             logger.warning("Failed to parse LLM SUT tetkik selection: %s", raw[:200])
             return []
 
-        valid_codes: set[str] | None = None
         cand_by_code: dict[str, dict[str, Any]] = {}
         if candidates is not None:
             cand_by_code = {str(c.get("kodu", "")): c for c in candidates}
-            valid_codes = set(cand_by_code.keys())
 
         suggestions: list[SUTSuggestion] = []
         dropped: list[str] = []
+        rescued: list[str] = []
         for item in parsed[:10]:
-            kodu = str(item.get("kodu", ""))
-            if valid_codes is not None and kodu not in valid_codes:
-                dropped.append(kodu)
+            kodu = str(item.get("kodu", "")).strip()
+            if not kodu:
                 continue
             adi = item.get("adi", "")
             brans = item.get("brans", "")
+
             if kodu in cand_by_code:
                 cand = cand_by_code[kodu]
                 adi = cand.get("adi", adi)
                 brans = cand.get("brans", brans)
+            elif self._validation_mode == "db_rescue":
+                # Aday listesinde yok — DB'de var mı diye sor
+                db_row = await self._sut.get_by_code(kodu)
+                if db_row is None:
+                    dropped.append(kodu)
+                    continue
+                adi = db_row.adi or adi
+                brans = db_row.brans or brans
+                rescued.append(kodu)
+            else:  # strict
+                dropped.append(kodu)
+                continue
 
             # V2 alanlari: yeni LLM cevabi kaynak_cumle + intent_etiketi
             # iceriyorsa parse et. V1 cevabinda alanlar yok → safe defaults.
@@ -943,7 +974,12 @@ class SUTSuggestionService:
             )
         if dropped:
             logger.warning(
-                "Dropped %d hallucinated SUT code(s) not in candidates: %s",
-                len(dropped), dropped,
+                "Dropped %d hallucinated SUT code(s) [mode=%s]: %s",
+                len(dropped), self._validation_mode, dropped,
+            )
+        if rescued:
+            logger.info(
+                "DB-rescued %d SUT code(s) (LLM proposed, DB validated): %s",
+                len(rescued), rescued,
             )
         return suggestions

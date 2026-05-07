@@ -119,11 +119,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception:
         logger.warning("ICD-10 vector service initialization failed")
 
+    # Ablation switch: ASR_ICD__VALIDATION_MODE=strict (default) | db_rescue
+    icd_validation_mode = os.getenv("ASR_ICD__VALIDATION_MODE", "strict").lower()
     icd10_suggestion_service = ICD10SuggestionService(
         llm=llm_service,
         icd10_service=icd10_service,
         vector_service=icd10_vector_service,
         ner_service=ner_service,
+        validation_mode=icd_validation_mode,
     )
 
     # ---- SUT tetkik services ----
@@ -138,11 +141,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception:
         logger.warning("SUT tetkik vector service initialization failed")
 
+    # Ablation switch: ASR_SUT__VALIDATION_MODE=strict (default) | db_rescue
+    sut_validation_mode = os.getenv("ASR_SUT__VALIDATION_MODE", "strict").lower()
     sut_suggestion_service = SUTSuggestionService(
         llm=llm_service,
         sut_service=sut_service,
         vector_service=sut_vector_service,
         ner_service=ner_service,
+        validation_mode=sut_validation_mode,
     )
 
     # ---- Anamnez RAG (real hospital corpus, BGE-M3 × metadata) ----
