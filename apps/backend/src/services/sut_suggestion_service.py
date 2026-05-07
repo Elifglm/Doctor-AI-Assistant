@@ -247,6 +247,136 @@ Hiçbir aday REQUEST değilse: []
 """
 
 
+# ============================================================================
+# V3 PROMPT — V2 + üç bug-fix:
+#   1) Liste-mirası: ana fiil FUTURE/OPTATIVE/IMPERATIVE ise virgüllü/iki noktalı
+#      liste öğeleri o tense'i miras alır
+#   2) Pasif imperative tense (-sIn, -mAlI) ayrı kategori; REQUEST'e dahil
+#   3) 1. çoğul "isteyeceğiz/yapacağız/bakacağız" net pozitif örnek
+#   4) HYPOTHETICAL ("gerekirse...") güçlendirilmiş negatif örnek
+# Selected via ASR_SUT__INTENT_PROMPT_VERSION=v3 (default).
+# ============================================================================
+
+SUT_SELECTION_PROMPT_V3 = """\
+Sen Türkçe tıbbi tetkik/tahlil uzmanısın. Aşağıda doktor-hasta görüşme \
+transkripti ve aday SUT tetkik kodları var.
+
+GÖREV: Transkriptteki her tetkik mention'ını analiz et, sadece DOKTORUN \
+ŞİMDİ İSTEDİĞİ tetkikleri seç. Geçmiş mention'ları, hasta sorularını, \
+hipotetik/şartlı/reddedilen tetkikleri DAHIL ETME.
+
+ADIM ADIM AKIL YÜRÜTME (her aday için):
+
+1. **kaynak_cumle**: tetkikin geçtiği TAM cümleyi transkriptten kelimesi \
+   kelimesine çıkar. Konuşmacı prefix'ini ("Doktor:" / "Hasta:") koru.
+
+2. **konuşmacı**: cümle "Doktor:" ile başlıyorsa DOCTOR, "Hasta:" ile \
+   başlıyorsa PATIENT. Belirsizse OTHER.
+
+3. **liste_kontekst** (KRİTİK YENİ KURAL): Cümlede iki nokta (":") veya \
+   "şunlar/şunları/aşağıdakileri" gibi liste başlatıcı varsa VE liste içinde \
+   virgülle ayrılmış birden fazla tetkik adı varsa → liste başındaki ANA \
+   FİİLİ tespit et ve onun tense'ini liste öğelerine MİRAS olarak uygula.
+   Örnek:
+     "Tahliller isteyeceğiz: TSH, T3, T4, anti-TPO, hemogram"
+     → ana fiil: "isteyeceğiz" (FUTURE)
+     → liste öğeleri (TSH, T3, T4, anti-TPO, hemogram) HEPSİ FUTURE miras alır
+     → her biri için intent: REQUEST
+   Liste başında ana fiil yoksa veya tetkik tek başına geçiyorsa, kelime \
+   düzeyinde tense kontrolü yap (4. adım).
+
+4. **zaman_kipi**: Türkçe morfoloji ipuçları:
+   - PAST_NARRATIVE: -mIştI, -mIş, -dI ekleri ("baktırmıştım", \
+     "yaptırdım", "geldi", "bakmıştık")
+   - OPTATIVE: -AlIm 1.çoğul ("isteyelim", "bakalım", "yapalım")
+   - FUTURE: -AcAk ("isteyeceğim" 1.tekil, "isteyeceğiz" 1.çoğul, \
+     "yapacağız", "bakacağız", "yazacağız")
+   - **IMPERATIVE_PASSIVE: -sIn 3.tekil pasif emir** ("bakılsın", \
+     "yapılsın", "istensin", "ölçülsün") — REQUEST sayılır
+   - IMPERATIVE_ACTIVE: 2.tekil/çoğul emir ("iste", "bak", "yap", "isteyin")
+   - HYPOTHETICAL: -sA + ana cümle ("şeker yüksekse insülin bakarız", \
+     "**gerekirse holter takarız**", "olursa yapacağız")
+   - INTERROGATIVE: soru ("- mi?", "- mı?", "lazım mı?", "bakalım mı?")
+   - DECLARATIVE: düz haber cümlesi (yalın isim cümlesi, fiil yok ya da \
+     -DIr eki ile durum belirten)
+
+5. **intent_etiketi** (KARAR):
+   - **REQUEST** ← konuşmacı=DOCTOR + zaman_kipi (FUTURE | OPTATIVE | \
+     IMPERATIVE_ACTIVE | IMPERATIVE_PASSIVE) + olumlu cümle
+     VEYA liste_kontekst varsa ve ana fiil REQUEST üreten kategoride
+   - **PAST_DONE** ← zaman_kipi=PAST_NARRATIVE (kim söylerse söylesin: \
+     doktor "iki yıl önce şeker baktınız" dese de geçmiş!)
+   - **PATIENT_QUESTION** ← konuşmacı=PATIENT + (INTERROGATIVE veya kendi \
+     anlatısı). Veya konuşmacı=DOCTOR + INTERROGATIVE + hastaya yöneltilmiş \
+     soru ("Şeker, kolesterol var mı?")
+   - **RESULT_DISCUSS** ← tetkik sonucu konuşuluyor ("CRP 5 gelmiş", \
+     "ferritin 20", "tiroid normal"), istek değil
+   - **OTHER** ← HYPOTHETICAL ("gerekirse"), reddedilen ("önerir misiniz? \
+     - hayır gerek yok"), kapanış cümlesi
+
+6. **include**: intent_etiketi == REQUEST AND aday listesinde ilgili kod var
+
+NEGATİF ÖRNEKLER (HİÇ DAHIL ETME):
+- "Hasta: öz geçmişte hemogram baktırdım" → PATIENT/PAST_NARRATIVE/PAST_DONE → EXCLUDE
+- "Doktor: iki yıl önce şeker baktınız" → DOCTOR/PAST_NARRATIVE/PAST_DONE → EXCLUDE \
+  (DİKKAT: doktor söylese bile PAST!)
+- "Doktor: şekerin yüksekse insülin bakarız" → DOCTOR/HYPOTHETICAL/OTHER → EXCLUDE
+- **"Doktor: gerekirse holter takarız"** → DOCTOR/HYPOTHETICAL/OTHER → EXCLUDE \
+  (şartlı ifade — şu an istemiyor)
+- **"Doktor: olursa biz tomografi de çekeriz"** → HYPOTHETICAL/OTHER → EXCLUDE
+- "Hasta: D vitamini bakar mıyız?" → PATIENT/INTERROGATIVE/PATIENT_QUESTION → EXCLUDE
+- "Doktor: Şeker, kolesterol var mı?" → DOCTOR/INTERROGATIVE/PATIENT_QUESTION → \
+  EXCLUDE (hastaya yöneltilmiş tarama sorusu)
+- "Doktor: CRP 12 gelmiş" → DOCTOR/DECLARATIVE/RESULT_DISCUSS → EXCLUDE \
+  (sonuç paylaşımı, istek değil)
+- "Doktor: tiroid normal, hemoglobin 12.1, ferritin 20" → 3 mention DECLARATIVE/\
+  RESULT_DISCUSS → HEPSİ EXCLUDE
+
+POZİTİF ÖRNEKLER (SEÇ):
+- "Doktor: tam kan isteyelim" → DOCTOR/OPTATIVE/REQUEST → INCLUDE
+- "Doktor: troponin ve EKG isteyeceğim" → DOCTOR/FUTURE/REQUEST → INCLUDE \
+  (iki ayrı mention)
+- "Doktor: bir de B12 bakalım" → DOCTOR/OPTATIVE/REQUEST → INCLUDE
+- **"Doktor: rutin tahliller isteyeceğiz: kan şekeri, hemogram, TSH, idrar"** \
+  → DOCTOR/FUTURE liste-mirası → 4 mention HEPSİ REQUEST → 4'ünü de INCLUDE \
+  (kan şekeri, hemogram, TSH, idrar tahlili)
+- **"Doktor: Tahliller isteyeceğiz: TSH, T3, T4, anti-TPO, hemogram, açlık \
+  kan şekeri, tiroid USG"** → DOCTOR/FUTURE liste-mirası → 7 mention HEPSİ \
+  REQUEST → hepsini INCLUDE
+- **"Doktor: 8 saat aç kaldıktan sonra açlık kan şekerine bakılsın"** → \
+  DOCTOR/IMPERATIVE_PASSIVE/REQUEST → INCLUDE ("bakılsın" pasif emir!)
+- **"Doktor: HbA1c ve lipid profili isteyeceğiz"** → DOCTOR/FUTURE 1.çoğul/\
+  REQUEST → INCLUDE (1. çoğul "biz" hekim ekibi anlamında ama emir doktorun)
+- "Doktor: Açlık kan şekeri, HbA1c ve lipid profili isteyeceğiz. Ön tanı tip 2 \
+  diyabet" → 3 mention DOCTOR/FUTURE liste-mirası → REQUEST → INCLUDE
+
+KOD KAYNAĞI KURALI: SADECE aday listesindeki kodları kullan. Aday listesinde \
+OLMAYAN bir kodu ASLA UYDURMA. Bilmediğin kodu yazma.
+
+GÜVEN SKORU: kaynak cümle açık ve niyet net ise ≥0.90. Belirsizse 0.60-0.80.
+
+TRANSKRIPT:
+{transcript}
+{icd_context}
+ADAY TETKIKLER:
+{candidates}
+
+ÇIKTI (sadece JSON array, markdown fence yok, açıklama yok):
+[
+  {{
+    "kodu": "<adaydan>",
+    "adi": "<adaydan>",
+    "confidence": 0.95,
+    "kaynak_cumle": "<transkriptten tam cümle>",
+    "intent_etiketi": "REQUEST",
+    "reasoning": "DOCTOR/FUTURE liste-mirası — ana fiil 'isteyeceğiz', tetkik liste öğesi"
+  }}
+]
+
+Hiçbir aday REQUEST değilse: []
+"""
+
+
 class SUTSuggestionService:
     """NER → Vector DB search → LLM selection pipeline for SUT tetkik codes.
 
@@ -461,12 +591,15 @@ class SUTSuggestionService:
             "kan sayımı", "kan sayimi", "hemogram", "kan tahlili",
             "şeker", "seker", "açlık kan şekeri", "hba1c",
             "idrar", "idrar tahlili", "tam idrar",
-            "tiroit", "tiroid", "tsh", "t3", "t4",
+            "tiroit", "tiroid", "tsh", "t3", "t4", "anti-tpo", "trab",
+            "tsh reseptör antikoru", "tsh reseptor antikoru",
             "karaciğer", "karaciger", "ast", "alt",
             "böbrek", "bobrek", "kreatinin", "üre",
             "kolesterol", "lipid", "trigliserid",
             "röntgen", "rontgen", "mr", "tomografi", "bt",
             "ultrason", "ekg", "eko", "eforlu",
+            "akciğer grafisi", "akciger grafisi", "akciğer testi", "akciger testi",
+            "tüm batın", "tum batin", "tümbatım", "tum batim",
             "kültür", "kultur", "balgam", "gaita",
             "sedimantasyon", "crp", "demir", "ferritin",
             "d vitamini", "b12", "folik asit",
@@ -510,6 +643,32 @@ class SUTSuggestionService:
                 word_count = len(token.split())
                 if word_count <= 5:
                     found.append(token)
+
+        # ASR-typo handling: fuzzy match for likely transcription errors
+        # ("hemogran" → "hemogram", "tümbatım" → "tüm batın", etc.)
+        # Only run on tokens not already captured by exact-match above.
+        try:
+            from rapidfuzz import fuzz, process
+            existing_lower = {f.lower() for f in found}
+            tokens = set(_re.findall(r"\b\w{5,}\b", transcript_lower))
+            for token in tokens:
+                if token in tetkik_keywords or token in existing_lower:
+                    continue
+                # 85% threshold: catches single-char typos in 5-8 char words
+                result = process.extractOne(
+                    token, tetkik_keywords, scorer=fuzz.ratio, score_cutoff=85
+                )
+                if result:
+                    canonical_keyword = result[0]
+                    if canonical_keyword not in existing_lower:
+                        found.append(canonical_keyword)
+                        existing_lower.add(canonical_keyword)
+                        logger.debug(
+                            "[SUT-DEBUG] fuzzy match: %r → %r (score=%d)",
+                            token, canonical_keyword, int(result[1]),
+                        )
+        except ImportError:
+            logger.debug("rapidfuzz not available, skipping fuzzy ASR-typo match")
 
         logger.debug(f"[SUT-DEBUG] keyword extraction found: {found}")
         return found[:25]
@@ -668,9 +827,12 @@ class SUTSuggestionService:
         settings = AppSettings()
         prompt_version = settings.sut.intent_prompt_version
         intent_threshold = settings.sut.intent_min_confidence
-        prompt_template = (
-            SUT_SELECTION_PROMPT_V2 if prompt_version == "v2" else SUT_SELECTION_PROMPT
-        )
+        if prompt_version == "v3":
+            prompt_template = SUT_SELECTION_PROMPT_V3
+        elif prompt_version == "v2":
+            prompt_template = SUT_SELECTION_PROMPT_V2
+        else:
+            prompt_template = SUT_SELECTION_PROMPT
         logger.debug("[SUT-DEBUG] using prompt version=%s", prompt_version)
 
         prompt = prompt_template.format(

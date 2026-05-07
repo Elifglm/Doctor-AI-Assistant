@@ -73,7 +73,7 @@ class NERSettings(BaseModel):
 
 class SUTSettings(BaseModel):
     """SUT tetkik intent disambiguation settings."""
-    intent_prompt_version: str = "v2"  # "v1" = legacy, "v2" = per-mention CoT
+    intent_prompt_version: str = "v2"  # "v1" legacy, "v2" per-mention CoT (default, tested), "v3" +list-inheritance/passive/1pl (eval pending)
     intent_min_confidence: float = 0.70  # below this, REQUEST → NOT_REQUEST
 
 
