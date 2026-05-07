@@ -61,8 +61,9 @@ data/icd10_chroma/
 data/sut_tetkik_chroma/
 data/sut_tetkik.db
 data/rag/
-data/anamnez.db
-data/anamnez_chroma_*/
+# Note: data/anamnez.db + data/anamnez_chroma_bge-m3_metadata/ ARE committed
+# (de-identified, repo self-contained for RAG demo). Only old ablation chromas excluded:
+data/anamnez_chroma_e5-base_*/
 
 # MariaDB volume + dumps (PHI riski — Whatsapp/Drive ile paylas)
 data/mariadb/
@@ -81,11 +82,15 @@ data/missing_sut_codes.csv
 *.bak
 *.tsbuildinfo
 
-# PHI / hospital data (never commit)
-data/Anemnez_tetkik/
+# Hospital data — Anemnez_tetkik IS committed (de-identified, PHI scan = 0 hits)
+# Other potentially-sensitive paths still ignored:
 data/icd10_backfill_output/
 reports_for_claude.json
 batch_*.json
+
+# Local archive backups
+data/eval_intent/*.rar
+data/eval_intent/*.zip
 
 # Scratch / local-only outputs
 phi_check.txt
