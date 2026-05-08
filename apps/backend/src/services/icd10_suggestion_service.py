@@ -155,11 +155,13 @@ class ICD10SuggestionService:
         vector_service: ICD10VectorService | None = None,
         ner_service: Any | None = None,
         validation_mode: str = "strict",
+        reranker: Any | None = None,
     ) -> None:
         self._llm = llm
         self._icd10 = icd10_service
         self._vectors = vector_service
         self._ner = ner_service
+        self._reranker = reranker  # opsiyonel; None ise rerank atlanır
         # Hallucination guard mode (ablation switch for thesis):
         #   "strict"     — drop any LLM-output code not in candidate pool
         #   "db_rescue"  — also accept LLM codes that exist in ICD-10 DB
@@ -244,21 +246,38 @@ class ICD10SuggestionService:
                         ner_terms.append(fragment)
 
         # Step 2: Find candidate ICD-10 codes via vector DB + text search
-        candidates = await self._find_vector_candidates(ner_terms)
-        # Also add text search results for better coverage
+        vector_candidates = await self._find_vector_candidates(ner_terms)
         text_candidates = await self._text_search_fallback(ner_terms)
-        seen = {c["icd_kodu"] for c in candidates}
-        for tc in text_candidates:
-            if tc["icd_kodu"] not in seen:
-                seen.add(tc["icd_kodu"])
-                candidates.append(tc)
 
         # Step 2a-bis: LLM-extracted explicit diagnoses + symptoms (proper Turkish form).
         # Bypasses keyword/embedding limitations for terms doctor explicitly named.
         # Skipped under db_rescue mode — DB-rescue at parse time covers the same
         # use case (LLM medical knowledge → DB validation) with one fewer LLM call.
+        explicit_candidates: list[dict[str, Any]] = []
         if self._validation_mode == "strict":
             explicit_candidates = await self._llm_extract_diagnoses_and_symptoms(report_text)
+
+        # Merge channels — RRF fusion if enabled, else naive dedup-concat
+        from apps.backend.src.services.rrf_fusion import rrf_fuse, is_rrf_enabled
+        if is_rrf_enabled():
+            candidates = rrf_fuse(
+                [vector_candidates, text_candidates, explicit_candidates],
+                id_field="icd_kodu",
+                k=60,
+            )
+            seen = {c["icd_kodu"] for c in candidates}
+            logger.info(
+                "RRF fused: vector=%d + text=%d + explicit=%d → %d unique",
+                len(vector_candidates), len(text_candidates),
+                len(explicit_candidates), len(candidates),
+            )
+        else:
+            candidates = list(vector_candidates)
+            seen = {c["icd_kodu"] for c in candidates}
+            for tc in text_candidates:
+                if tc["icd_kodu"] not in seen:
+                    seen.add(tc["icd_kodu"])
+                    candidates.append(tc)
             for ec in explicit_candidates:
                 if ec["icd_kodu"] not in seen:
                     seen.add(ec["icd_kodu"])
@@ -279,6 +298,20 @@ class ICD10SuggestionService:
 
         if not candidates:
             return []
+
+        # Step 2c (optional): Cross-encoder reranker — biencoder→cross-encoder
+        # cascade. Sıkı top-K precision boost (Reimers & Gurevych 2019).
+        # Feature flag: ASR_RERANKER_ENABLED. Disabled olduğunda bu adım NO-OP.
+        if self._reranker is not None and getattr(self._reranker, "is_ready", False):
+            before_n = len(candidates)
+            candidates = await self._reranker.rerank(
+                query=report_text, candidates=candidates,
+                top_k=15, doc_field="tani",
+            )
+            logger.info(
+                "Reranker applied: %d → %d candidates (top-K by cross-encoder)",
+                before_n, len(candidates),
+            )
 
         # Step 3: LLM selects from candidates using report context
         suggestions = await self._llm_select_from_report(report_text, candidates)

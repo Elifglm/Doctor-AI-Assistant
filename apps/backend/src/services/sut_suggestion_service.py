@@ -393,11 +393,13 @@ class SUTSuggestionService:
         vector_service: SUTVectorService | None = None,
         ner_service: Any | None = None,
         validation_mode: str = "strict",
+        reranker: Any | None = None,
     ) -> None:
         self._llm = llm
         self._sut = sut_service
         self._vectors = vector_service
         self._ner = ner_service
+        self._reranker = reranker  # opsiyonel; None ise rerank atlanır
         # Hallucination guard mode (ablation switch — mirrors ICD pipeline):
         #   "strict"     — drop any LLM-output code not in candidate pool
         #   "db_rescue"  — also accept LLM codes that exist in SUT DB
@@ -492,27 +494,43 @@ class SUTSuggestionService:
         ner_terms = await self._extract_ner_terms(report_text)
         logger.info("Report NER extracted %d terms: %s", len(ner_terms), ner_terms[:5])
 
-        candidates = await self._find_vector_candidates(ner_terms, brans=brans)
+        vector_candidates = await self._find_vector_candidates(ner_terms, brans=brans)
         text_candidates = await self._text_search_fallback(ner_terms, brans=brans)
         # LLM-explicit extraction skipped under db_rescue mode — DB-rescue at
         # parse time covers the same use case (LLM medical knowledge → DB
         # validation) with one fewer LLM call.
+        explicit_candidates: list[dict[str, Any]] = []
         if self._validation_mode == "strict":
             explicit_candidates = await self._llm_extract_and_search(report_text, brans=brans)
+
+        # Merge — RRF if enabled, else naive dedup-concat
+        from apps.backend.src.services.rrf_fusion import rrf_fuse, is_rrf_enabled
+        if is_rrf_enabled():
+            candidates = rrf_fuse(
+                [vector_candidates, text_candidates, explicit_candidates],
+                id_field="kodu",
+                k=60,
+            )
+            logger.info(
+                "RRF fused (SUT): vector=%d + text=%d + explicit=%d → %d unique [mode=%s]",
+                len(vector_candidates), len(text_candidates),
+                len(explicit_candidates), len(candidates),
+                self._validation_mode,
+            )
         else:
-            explicit_candidates = []
-        seen = {c["kodu"] for c in candidates}
-        for src in (text_candidates, explicit_candidates):
-            for tc in src:
-                if tc["kodu"] not in seen:
-                    seen.add(tc["kodu"])
-                    candidates.append(tc)
-        logger.info(
-            "Report combined %d candidates (vector + text%s) [mode=%s]",
-            len(candidates),
-            " + llm-explicit" if self._validation_mode == "strict" else "",
-            self._validation_mode,
-        )
+            candidates = list(vector_candidates)
+            seen = {c["kodu"] for c in candidates}
+            for src in (text_candidates, explicit_candidates):
+                for tc in src:
+                    if tc["kodu"] not in seen:
+                        seen.add(tc["kodu"])
+                        candidates.append(tc)
+            logger.info(
+                "Report combined %d candidates (vector + text%s) [mode=%s]",
+                len(candidates),
+                " + llm-explicit" if self._validation_mode == "strict" else "",
+                self._validation_mode,
+            )
         logger.debug(
             f"[SUT-DEBUG] candidate sources: vector={len(candidates) - len(text_candidates) - len(explicit_candidates)} "
             f"text={len(text_candidates)} llm-explicit={len(explicit_candidates)}",
@@ -520,6 +538,19 @@ class SUTSuggestionService:
 
         if not candidates:
             return []
+
+        # Cross-encoder reranker (opsiyonel, ASR_RERANKER_ENABLED flag'i ile)
+        # NO-OP if reranker disabled veya henüz init edilmemiş.
+        if self._reranker is not None and getattr(self._reranker, "is_ready", False):
+            before_n = len(candidates)
+            candidates = await self._reranker.rerank(
+                query=report_text, candidates=candidates,
+                top_k=15, doc_field="adi",
+            )
+            logger.info(
+                "Reranker applied (SUT): %d → %d candidates",
+                before_n, len(candidates),
+            )
 
         suggestions = await self._llm_select_from_report(report_text, candidates)
         logger.info("Report LLM selected %d SUT tetkik", len(suggestions))

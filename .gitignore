@@ -30,6 +30,9 @@ models/
 !data/icd10_chroma_bge/**/*.bin
 !data/sut_tetkik_chroma_bge/**/*.bin
 
+# Eval test outputs (runtime artifacts, not source of truth)
+data/eval_results/
+
 # Output
 output/
 logs/
