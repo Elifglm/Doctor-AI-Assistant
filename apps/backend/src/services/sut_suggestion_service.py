@@ -393,13 +393,11 @@ class SUTSuggestionService:
         vector_service: SUTVectorService | None = None,
         ner_service: Any | None = None,
         validation_mode: str = "strict",
-        reranker: Any | None = None,
     ) -> None:
         self._llm = llm
         self._sut = sut_service
         self._vectors = vector_service
         self._ner = ner_service
-        self._reranker = reranker  # opsiyonel; None ise rerank atlanır
         # Hallucination guard mode (ablation switch — mirrors ICD pipeline):
         #   "strict"     — drop any LLM-output code not in candidate pool
         #   "db_rescue"  — also accept LLM codes that exist in SUT DB
@@ -538,19 +536,6 @@ class SUTSuggestionService:
 
         if not candidates:
             return []
-
-        # Cross-encoder reranker (opsiyonel, ASR_RERANKER_ENABLED flag'i ile)
-        # NO-OP if reranker disabled veya henüz init edilmemiş.
-        if self._reranker is not None and getattr(self._reranker, "is_ready", False):
-            before_n = len(candidates)
-            candidates = await self._reranker.rerank(
-                query=report_text, candidates=candidates,
-                top_k=15, doc_field="adi",
-            )
-            logger.info(
-                "Reranker applied (SUT): %d → %d candidates",
-                before_n, len(candidates),
-            )
 
         suggestions = await self._llm_select_from_report(report_text, candidates)
         logger.info("Report LLM selected %d SUT tetkik", len(suggestions))

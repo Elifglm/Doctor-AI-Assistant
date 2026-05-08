@@ -19,7 +19,7 @@ ortadan kaldırır.
 
 Kullanım:
     python -m apps.backend.src.scripts.eval_e2e --label baseline
-    python -m apps.backend.src.scripts.eval_e2e --label after_reranker --max-cost-usd 5.0
+    python -m apps.backend.src.scripts.eval_e2e --label after_rrf --max-cost-usd 5.0
 """
 from __future__ import annotations
 
@@ -227,25 +227,13 @@ async def init_pipeline(logger: logging.Logger):
     icd_mode = os.getenv("ASR_ICD__VALIDATION_MODE", "strict").lower()
     sut_mode = os.getenv("ASR_SUT__VALIDATION_MODE", "strict").lower()
 
-    # Reranker (opsiyonel, ASR_RERANKER_ENABLED flag'i)
-    from apps.backend.src.services.reranker_service import RerankerService
-    reranker = RerankerService()
-    if reranker.is_enabled:
-        try:
-            await reranker.initialize()
-        except Exception:
-            logger.warning("Reranker init failed in eval — disabled")
-            reranker = None
-
     icd_pipeline = ICD10SuggestionService(
         llm=llm, icd10_service=icd_svc, vector_service=icd_vec,
         ner_service=ner, validation_mode=icd_mode,
-        reranker=reranker,
     )
     sut_pipeline = SUTSuggestionService(
         llm=llm, sut_service=sut_svc, vector_service=sut_vec,
         ner_service=ner, validation_mode=sut_mode,
-        reranker=reranker,
     )
 
     # Anamnez RAG (skip if disabled)
@@ -283,7 +271,6 @@ async def init_pipeline(logger: logging.Logger):
         "sut_mode": sut_mode,
         "rag_profile": settings.rag.anamnez_profile,
         "embedding_model": os.getenv("EMBEDDING_MODEL", "minilm"),
-        "reranker_enabled": reranker is not None and getattr(reranker, "is_ready", False),
     }
 
 
@@ -636,7 +623,6 @@ async def main(args: argparse.Namespace) -> None:
             "sut_validation_mode": services["sut_mode"],
             "rag_profile": services["rag_profile"],
             "rag_enabled": services["anamnez_rag"] is not None,
-            "reranker_enabled": services.get("reranker_enabled", False),
             "rrf_enabled": os.getenv("ASR_RRF_ENABLED", "false").lower() in ("true", "1"),
         },
         "averages": {
@@ -697,11 +683,6 @@ if __name__ == "__main__":
         help="Override ASR_SUT__VALIDATION_MODE for this run",
     )
     parser.add_argument(
-        "--reranker", type=str, default=None,
-        choices=["true", "false"],
-        help="Override ASR_RERANKER_ENABLED for this run",
-    )
-    parser.add_argument(
         "--rrf", type=str, default=None,
         choices=["true", "false"],
         help="Override ASR_RRF_ENABLED for this run (Reciprocal Rank Fusion)",
@@ -720,8 +701,6 @@ if __name__ == "__main__":
         os.environ["ASR_ICD__VALIDATION_MODE"] = args.validation_mode_icd
     if args.validation_mode_sut:
         os.environ["ASR_SUT__VALIDATION_MODE"] = args.validation_mode_sut
-    if args.reranker:
-        os.environ["ASR_RERANKER_ENABLED"] = args.reranker
     if args.rrf:
         os.environ["ASR_RRF_ENABLED"] = args.rrf
     if args.embedding_model:

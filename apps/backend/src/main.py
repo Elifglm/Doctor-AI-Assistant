@@ -119,21 +119,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception:
         logger.warning("ICD-10 vector service initialization failed")
 
-    # Cross-encoder reranker (opsiyonel, biencoder→cross-encoder cascade).
-    # ASR_RERANKER_ENABLED=false (default) → reranker oluşmaz, davranış değişmez.
-    from apps.backend.src.services.reranker_service import RerankerService
-    reranker_service: RerankerService | None = RerankerService()
-    if reranker_service.is_enabled:
-        try:
-            await reranker_service.initialize()
-        except Exception:
-            logger.warning("Reranker init failed — disabled at runtime")
-            reranker_service = None
-    else:
-        # Disabled state — keep instance but no model load
-        # (services check is_ready before calling rerank())
-        pass
-
     # Ablation switch: ASR_ICD__VALIDATION_MODE=strict (default) | db_rescue
     icd_validation_mode = os.getenv("ASR_ICD__VALIDATION_MODE", "strict").lower()
     icd10_suggestion_service = ICD10SuggestionService(
@@ -142,7 +127,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         vector_service=icd10_vector_service,
         ner_service=ner_service,
         validation_mode=icd_validation_mode,
-        reranker=reranker_service,
     )
 
     # ---- SUT tetkik services ----
@@ -165,7 +149,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         vector_service=sut_vector_service,
         ner_service=ner_service,
         validation_mode=sut_validation_mode,
-        reranker=reranker_service,
     )
 
     # ---- Anamnez RAG (real hospital corpus, BGE-M3 × metadata) ----
