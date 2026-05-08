@@ -8,7 +8,6 @@ const statusClassMap: Record<SessionStatus, string> = {
   PROCESSING: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-800',
   AWAITING_REVIEW: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 ring-yellow-200',
   COMPLETED: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-800',
-  ARCHIVED: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 ring-gray-200',
 }
 
 const statusKeyMap: Record<SessionStatus, string> = {
@@ -17,7 +16,6 @@ const statusKeyMap: Record<SessionStatus, string> = {
   PROCESSING: 'status_processing',
   AWAITING_REVIEW: 'status_awaitingReview',
   COMPLETED: 'status_completed',
-  ARCHIVED: 'status_archived',
 }
 
 interface StatusBadgeProps {

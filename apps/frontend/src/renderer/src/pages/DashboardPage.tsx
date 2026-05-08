@@ -11,13 +11,14 @@ import { confirm } from '../stores/confirmStore'
 import type { Session, SessionStatus } from '../types/session'
 
 function getSessionRoute(session: Session): string {
+  // PROCESSING typically means an interrupted recording — route back to the
+  // live recorder so the doctor can re-take the audio.
   const routes: Record<SessionStatus, string> = {
     NOT_STARTED: `/session/${session.id}/live`,
     RECORDING: `/session/${session.id}/live`,
-    PROCESSING: `/session/${session.id}/processing`,
+    PROCESSING: `/session/${session.id}/live`,
     AWAITING_REVIEW: `/session/${session.id}/review`,
     COMPLETED: `/session/${session.id}/review`,
-    ARCHIVED: `/session/${session.id}/review`,
   }
   return routes[session.status]
 }
@@ -31,8 +32,8 @@ export function DashboardPage(): React.JSX.Element {
 
   const handleDelete = useCallback(async (sessionId: number) => {
     const accepted = await confirm({
-      title: t('confirm_archiveTitle'),
-      message: t('dash_archiveConfirm'),
+      title: t('confirm_deleteTitle'),
+      message: t('dash_deleteConfirm'),
       confirmText: t('confirm_delete'),
       variant: 'danger',
     })

@@ -6,7 +6,6 @@ export type SessionStatus =
   | 'PROCESSING'
   | 'AWAITING_REVIEW'
   | 'COMPLETED'
-  | 'ARCHIVED'
 
 export interface Session {
   id: number

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Info, AlertCircle, RotateCcw, Loader2 } from 'lucide-react'
 import { useRecording } from '../hooks/useRecording'
 import { useTranscription } from '../hooks/useTranscription'
@@ -26,28 +26,36 @@ function getStageInfo(stage: string): { index: number; total: number } {
 export function LiveSessionPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const sessionId = id ? Number(id) : null
   const lastStartedId = useRef<number | null>(null)
   const t = useT()
 
-  const { startRecording, pauseRecording, resumeRecording, stopRecording, recordingState, error } =
+  // PreSessionPage'den seçilmiş mevcut WAV path (varsa). Replay modunda mikrofon
+  // yerine backend bu dosyayı işler.
+  const replayPath = (location.state as { replayPath?: string } | null)?.replayPath ?? null
+
+  const { startRecording, startReplay, pauseRecording, resumeRecording, stopRecording, recordingState, error } =
     useRecording(sessionId)
   const { processingStage, processingMessage, processingProgress, hasResults, reportFlowDone } =
     useTranscription()
   const recordingStateFromStore = useSessionStore((s) => s.recordingState)
 
-  // Auto-start recording when sessionId changes (handles React StrictMode)
+  // Auto-start when sessionId changes. Replay modu varsa mikrofonsuz başlat.
   useEffect(() => {
     if (sessionId && lastStartedId.current !== sessionId) {
       lastStartedId.current = sessionId
-      startRecording().catch((err) => {
-        console.error('Auto-start recording failed:', err)
+      const starter = replayPath
+        ? startReplay(replayPath)
+        : startRecording()
+      starter.catch((err) => {
+        console.error('Auto-start failed:', err)
       })
     }
     return () => {
       lastStartedId.current = null
     }
-  }, [sessionId, startRecording])
+  }, [sessionId, startRecording, startReplay, replayPath])
 
   // Navigate to review when results are ready AND report flow is done
   useEffect(() => {
@@ -67,8 +75,9 @@ export function LiveSessionPage(): React.JSX.Element {
   }
 
   const handleRetry = (): void => {
-    startRecording().catch((err) => {
-      console.error('Retry recording failed:', err)
+    const retryFn = replayPath ? startReplay(replayPath) : startRecording()
+    retryFn.catch((err) => {
+      console.error('Retry failed:', err)
     })
   }
 

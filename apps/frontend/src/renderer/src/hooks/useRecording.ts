@@ -223,6 +223,138 @@ export function useRecording(sessionId: number | null) {
     }
   }, [sessionId, cleanup, resetTranscription, setProcessing, setSegments, setAutoReportReady, setReportFlowDone, setRecordingState, setElapsedTime, setAudioLevel])
 
+  // Replay flow: bağlan, mikrofon açma, mevcut WAV path'i ile 'replay' yolla.
+  // Backend pipeline'ı tıpkı canlı kayıttaki gibi çalıştırır; progress/result/
+  // report_ready handler'ları aynen kullanılır.
+  const startReplay = useCallback(
+    async (replayPath: string) => {
+      if (!sessionId || !replayPath) return
+
+      if (wsClient.current?.isConnected) {
+        setError(t('err_recordingActive'))
+        return
+      }
+
+      const thisCall = ++callGeneration.current
+      cleanup()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      setError(null)
+      setElapsedTime(0)
+      setAudioLevel(0)
+      resetTranscription()
+
+      try {
+        const baseUrl =
+          (typeof window !== 'undefined' && window.electronAPI?.getBackendUrl()) ||
+          'http://127.0.0.1:8700'
+        const wsUrl = baseUrl.replace('http', 'ws') + `/api/v1/sessions/ws/${sessionId}`
+        wsClient.current = new WSClient(wsUrl)
+
+        wsClient.current.on('progress', (data) => {
+          const msg = data as WSProgress
+          setProcessing(msg.stage, msg.message, msg.progress)
+        })
+
+        wsClient.current.on('processing_start', () => {
+          setRecordingState('processing')
+        })
+
+        wsClient.current.on('result', (data) => {
+          const msg = data as WSResult
+          const segments = msg.segments.map((seg, i) => ({
+            id: i,
+            session_id: msg.session_id,
+            segment_index: seg.segment_index,
+            text: seg.text,
+            speaker: seg.speaker,
+            speaker_label: seg.speaker_label,
+            start_time: seg.start_time,
+            end_time: seg.end_time,
+            confidence: seg.confidence ?? null,
+            words: seg.words || null,
+            is_edited: false,
+          }))
+          setSegments(segments)
+          clearReportTimeout()
+          reportTimeoutRef.current = setTimeout(() => {
+            if (!useTranscriptionStore.getState().reportFlowDone) {
+              setReportFlowDone()
+              setRecordingState('idle')
+              wsClient.current?.close()
+              wsClient.current = null
+            }
+            reportTimeoutRef.current = null
+          }, 60_000)
+        })
+
+        wsClient.current.on('report_ready', (data) => {
+          const msg = data as { report_id: number; session_id: number }
+          setAutoReportReady(msg.report_id)
+          setRecordingState('idle')
+          clearReportTimeout()
+          wsClient.current?.close()
+          wsClient.current = null
+        })
+
+        wsClient.current.on('report_warning', () => {
+          setReportFlowDone()
+          setRecordingState('idle')
+          clearReportTimeout()
+          wsClient.current?.close()
+          wsClient.current = null
+        })
+
+        wsClient.current.on('error', (data) => {
+          const msg = data as WSError
+          console.error('WS replay error:', msg.message)
+          setError(msg.message)
+          setRecordingState('idle')
+          cleanup()
+        })
+
+        wsClient.current.on('close', () => {
+          if (useSessionStore.getState().recordingState === 'processing') {
+            const store = useTranscriptionStore.getState()
+            if (store.segments.length > 0) {
+              if (!store.reportFlowDone) setReportFlowDone()
+              setRecordingState('idle')
+            } else {
+              setError(t('err_disconnected'))
+              setRecordingState('idle')
+            }
+          }
+        })
+
+        await wsClient.current.connect()
+        if (thisCall !== callGeneration.current) return
+
+        // Replay'de mikrofon yok; doğrudan backend'e mevcut kaydı işlemesini söyle.
+        wsClient.current.sendJSON({ type: 'replay', path: replayPath })
+        setRecordingState('processing')
+      } catch (err: unknown) {
+        if (thisCall !== callGeneration.current) return
+        console.error('Replay start failed:', err)
+        const message = err instanceof Error ? err.message : String(err)
+        setError(message)
+        setRecordingState('idle')
+        cleanup()
+      }
+    },
+    [
+      sessionId,
+      cleanup,
+      resetTranscription,
+      setProcessing,
+      setSegments,
+      setAutoReportReady,
+      setReportFlowDone,
+      setRecordingState,
+      setElapsedTime,
+      setAudioLevel,
+    ],
+  )
+
   const pauseRecording = useCallback(() => {
     // Save current elapsed time and stop the timer
     elapsedTimeOffset.current = useSessionStore.getState().elapsedTime
@@ -276,6 +408,7 @@ export function useRecording(sessionId: number | null) {
 
   return {
     startRecording,
+    startReplay,
     pauseRecording,
     resumeRecording,
     stopRecording,

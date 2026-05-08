@@ -8,7 +8,9 @@ export function useSutTetkikSearch(query: string, brans?: string, debounceMs = 3
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const trimmed = query.trim()
+    // Locale-aware lowercase + Unicode NFC: ensures "İdrar"/"IDRAR"/"idrar"
+    // produce the same query string and the same TanStack/HTTP cache key.
+    const trimmed = query.trim().normalize('NFC').toLocaleLowerCase('tr-TR')
     if (trimmed.length < 2) {
       setResults([])
       setIsLoading(false)

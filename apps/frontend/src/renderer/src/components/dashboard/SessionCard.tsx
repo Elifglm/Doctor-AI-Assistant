@@ -80,7 +80,7 @@ export function SessionCard({ session, onClick, onDelete, isDeleting }: SessionC
             }}
             disabled={isDeleting}
             className="p-1.5 rounded-md text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
-            title={t('card_archiveTooltip')}
+            title={t('card_deleteTooltip')}
           >
             {isDeleting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
