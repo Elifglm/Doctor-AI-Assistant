@@ -43,29 +43,56 @@ logging.basicConfig(
 logger = logging.getLogger("eval_intent")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
-EVAL_DIR = PROJECT_ROOT / "data" / "eval_intent"
-TRANSCRIPT_DIR = Path(
+
+# Defaults — overridable via CLI. Real data lives in data/eval_intent/ + the
+# friend's hardcoded transcript dir; synthetic data in data/eval_synthetic/.
+DEFAULT_EVAL_DIR = PROJECT_ROOT / "data" / "eval_intent"
+DEFAULT_TRANSCRIPT_DIR = Path(
     "C:/Users/Furkan/Desktop/kontrollu-veri/.manuel-transkripsiyonlar/dahiliye"
 )
-FORM_IDS = ["105", "106", "108", "109", "110", "111"]
+DEFAULT_FORM_IDS = ["105", "106", "108", "109", "110", "111"]
+
+# Mutable runtime config (set in main() from CLI args).
+EVAL_DIR: Path = DEFAULT_EVAL_DIR
+TRANSCRIPT_DIR: Path = DEFAULT_TRANSCRIPT_DIR
+FORM_IDS: list[str] = list(DEFAULT_FORM_IDS)
 
 # Code-name fuzzy match threshold for matching system output to gold canonicals
 CANONICAL_MATCH_THRESHOLD = 75
 
 
 def _read_transcript(form_id: str) -> str:
-    """Read .docx for a form_id, return as raw 'Doktor: ... Hasta: ...' text."""
+    """Read transcript for a form_id from TRANSCRIPT_DIR.
+
+    Prefers ``transcript_<form_id>.txt`` (synthetic dataset format); falls back
+    to ``Kayıt <form_id>*.docx`` for legacy real-data form IDs.
+    """
+    txt_path = TRANSCRIPT_DIR / f"transcript_{form_id}.txt"
+    if txt_path.exists():
+        return txt_path.read_text(encoding="utf-8")
+
     paths = list(TRANSCRIPT_DIR.glob(f"Kayıt {form_id}*.docx"))
-    if not paths:
-        raise FileNotFoundError(f"No transcript .docx for FORM {form_id} in {TRANSCRIPT_DIR}")
-    doc = Document(str(paths[0]))
-    lines = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
-    return "\n".join(lines)
+    if paths:
+        doc = Document(str(paths[0]))
+        lines = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+        return "\n".join(lines)
+
+    raise FileNotFoundError(
+        f"No transcript for FORM {form_id} in {TRANSCRIPT_DIR} "
+        f"(looked for transcript_{form_id}.txt and Kayıt {form_id}*.docx)"
+    )
 
 
 def _load_gold(form_id: str) -> dict:
-    path = EVAL_DIR / f"gold_{form_id}.json"
-    return json.loads(path.read_text(encoding="utf-8"))
+    """Load gold annotations. Tries ``gold_<form_id>.json`` first (real data
+    naming), then ``gold_<form_id>_intent.json`` (synthetic naming)."""
+    for name in (f"gold_{form_id}.json", f"gold_{form_id}_intent.json"):
+        path = EVAL_DIR / name
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    raise FileNotFoundError(
+        f"No gold file for FORM {form_id} in {EVAL_DIR}"
+    )
 
 
 def _gold_request_canonicals(gold: dict) -> list[str]:
@@ -264,7 +291,38 @@ async def main(label: str) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--label", type=str, default="run", help="run label tag")
+    parser.add_argument(
+        "--transcript-dir", type=Path, default=None,
+        help=f"Directory containing transcripts (default: {DEFAULT_TRANSCRIPT_DIR})",
+    )
+    parser.add_argument(
+        "--eval-dir", type=Path, default=None,
+        help=f"Directory containing gold_<id>.json files (default: {DEFAULT_EVAL_DIR})",
+    )
+    parser.add_argument(
+        "--form-ids", type=str, default=None,
+        help="Comma-separated form IDs (default: 105,106,108,109,110,111). "
+             "For synthetic dataset use: S001,S002,S003,S004,S005",
+    )
+    parser.add_argument(
+        "--synthetic", action="store_true",
+        help="Shorthand for --transcript-dir data/eval_synthetic --eval-dir data/eval_synthetic "
+             "--form-ids S001,S002,S003,S004,S005",
+    )
     args = parser.parse_args()
+
+    if args.synthetic:
+        TRANSCRIPT_DIR = PROJECT_ROOT / "data" / "eval_synthetic"
+        EVAL_DIR = PROJECT_ROOT / "data" / "eval_synthetic"
+        FORM_IDS = ["S001", "S002", "S003", "S004", "S005"]
+    else:
+        if args.transcript_dir is not None:
+            TRANSCRIPT_DIR = args.transcript_dir
+        if args.eval_dir is not None:
+            EVAL_DIR = args.eval_dir
+        if args.form_ids is not None:
+            FORM_IDS = [s.strip() for s in args.form_ids.split(",") if s.strip()]
+
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         if hasattr(sys.stdout, "reconfigure"):
