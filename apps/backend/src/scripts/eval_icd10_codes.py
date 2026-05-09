@@ -41,6 +41,15 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# Load .env so EMBEDDING_MODEL and other env vars match the running backend.
+# Without this, get_profile() falls back to "minilm" default — which uses a
+# different ChromaDB and previously crashed on this dataset.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -50,7 +59,7 @@ logger = logging.getLogger("eval_icd10")
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_DATA_DIR = PROJECT_ROOT / "data" / "eval_synthetic"
 DEFAULT_OUT_DIR = PROJECT_ROOT / "data" / "eval_icd10"
-DEFAULT_FORM_IDS = ["S001", "S002", "S003", "S004", "S005"]
+DEFAULT_FORM_IDS = [f"T{i:02d}" for i in range(1, 21)]  # T01..T20 (v2 dataset)
 
 
 def _load_gold_icd10(data_dir: Path, form_id: str) -> list[dict]:
@@ -158,7 +167,11 @@ async def init_pipeline(mode: str):
             llm=llm, sut_service=sut_svc, vector_service=sut_vec, ner_service=ner
         )
         report_gen = ReportGenerator(
-            llm=llm, ner=ner, icd10=suggestion, sut_tetkik=sut_suggestion
+            ner=ner,
+            rag=None,
+            llm=llm,
+            icd10_suggestion_service=suggestion,
+            sut_suggestion_service=sut_suggestion,
         )
         return {"icd": suggestion, "report_gen": report_gen, "validation_mode": validation_mode}
 

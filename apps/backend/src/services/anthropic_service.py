@@ -120,18 +120,41 @@ class AnthropicLLMService:
         if system:
             body["system"] = self._wrap_system_for_cache(system)
 
-        try:
-            resp = await self._client.post("/messages", json=body)
-            resp.raise_for_status()
-            data = resp.json()
-            self._log_cache_usage(data.get("usage", {}))
-            content_blocks = data.get("content", [])
-            return "".join(
-                block.get("text", "") for block in content_blocks if block.get("type") == "text"
-            )
-        except Exception:
-            logger.exception("Anthropic generation failed")
-            raise
+        # Retry on transient API issues. 529 = Anthropic overloaded, 502/503/504 =
+        # gateway/server errors, 429 = rate limit. Exponential backoff.
+        import asyncio as _asyncio
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                resp = await self._client.post("/messages", json=body)
+                if resp.status_code in (429, 502, 503, 504, 529) and attempt < max_retries - 1:
+                    wait = min(2 ** attempt, 30)
+                    logger.warning(
+                        "Anthropic %d on attempt %d/%d; retrying in %ds",
+                        resp.status_code, attempt + 1, max_retries, wait,
+                    )
+                    await _asyncio.sleep(wait)
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                self._log_cache_usage(data.get("usage", {}))
+                content_blocks = data.get("content", [])
+                return "".join(
+                    block.get("text", "") for block in content_blocks if block.get("type") == "text"
+                )
+            except httpx.RequestError as e:
+                # Network-level errors — also worth retrying
+                if attempt < max_retries - 1:
+                    wait = min(2 ** attempt, 30)
+                    logger.warning("Anthropic network error: %s; retrying in %ds", e, wait)
+                    await _asyncio.sleep(wait)
+                    continue
+                logger.exception("Anthropic generation failed (network exhausted)")
+                raise
+            except Exception:
+                logger.exception("Anthropic generation failed")
+                raise
+        raise RuntimeError("Anthropic generate exhausted retries")
 
     def _supports_temperature(self) -> bool:
         """Whether the current model accepts the `temperature` parameter.

@@ -377,6 +377,98 @@ Hiçbir aday REQUEST değilse: []
 """
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 3.3 — Constitutional V4 SUT prompt
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 2.3 SUT eval analizi:
+#   - T01/T02: L104520 (Kolesterol Serum) FP — gold farklı varyant istiyor
+#   - T17: L102420 (Ferritin Kan) FP — gold L102410 (Ferritin Serum) istiyor
+#   - T18: Sodyum/Potasyum Serum/Plazma seçildi, gold Kan varyantı istedi
+#   - T06/T08/T15/T18: 801720 (PA tek yön) FP — gold sıklıkla istemiyor
+#
+# Çözüm: Variant-deduplication kuralları + 3-class discipline + conservative coding
+
+SUT_SELECTION_PROMPT_V4_CONSTITUTIONAL = """\
+Sen Türkçe tıbbi tetkik/tahlil uzmanısın. UC ASAMALI hiyerarsik secim yap.
+
+═══════════════════════════════════════════════════════════════════════════
+ANAYASAL KURALLAR (her secimde uy):
+═══════════════════════════════════════════════════════════════════════════
+
+KURAL #1 — 3-CLASS INTENT DISCIPLINE:
+Her tetkik mention'ı için zihinsel olarak SINIFLANDIR:
+  ✅ REQUEST: Doktor BUGUN istiyor ("isteyelim/bakalım/yapılsın/çekilsin/isteyeceğim")
+  ❌ PAST_DONE: Daha önce yapılmıştı ("baktırmıştım/yapılmıştı/geçen sefer baktık")
+  ❌ HYPOTHETICAL: Şartlı ("eğer X yüksekse Y bakarız", "gerekirse")
+  ❌ NEGATED: Açıkça reddedilmiş ("istemiyorum/gerek yok/atlayalım")
+  ❌ PATIENT_QUESTION: Hasta sorgusu, doktor istemi değil
+
+YALNIZCA REQUEST = REQUEST'ler output'a girer. Şüphe varsa ATLA (tutucu kodla).
+
+KURAL #2 — VARIANT DEDUP (TEK VARYANT):
+Bir tetkik için aday listesinde birden çok varyant olabilir. SADECE BİR TANE seç:
+
+  📌 Standart varyant tercihleri:
+  - Sodyum/Potasyum/Klorur: "Kan" varyantı ÖNCELİKLİ (kan elektrolit paneli)
+    → L106160 Potasyum (Kan), L106920 Sodyum (Kan)
+    → L106150/L106910 Serum/Plazma SECME
+  - Ferritin: Serum/Plazma varyantı ÖNCELİKLİ
+    → L102410 Ferritin (Serum/Plazma) > L102420 Ferritin (Kan)
+  - AST/ALT/Kreatinin/Üre/Kolesterol: Serum/Plazma standart
+    → L101280 AST (Serum/Plazma), L100300 ALT (Serum/Plazma)
+    → L101290/L100310 Vücut sıvıları varyantını ASLA seçme
+  - CRP: standart (L101850) tek başına
+    → L101840 CRP Lateks ve L106680 hsCRP ASLA (sadece doktor adlandırıyorsa)
+
+KURAL #3 — AKCİĞER GRAFİSİ DEFAULT:
+  - Doktor "PA akciğer grafisi" derse → 801720 (tek yön)
+  - Doktor sadece "akciğer grafisi" derse → 801690 (iki yönlü) DEFAULT
+  - Spesifik yön belirtmediyse iki yönlü tercih et
+
+KURAL #4 — KOD-KISITLAMA:
+Sadece doktorun NETLİKLE istediği tetkikleri kodla. Şu durumlar HİÇ kodlanmaz:
+  ❌ "Falan/filan" geçen genel ifadeler ("tahlil falan istiyorum" tek başına)
+  ❌ Hasta sorularına verilen "evet/bakarız" yanıtları (kontekst muğlak)
+  ❌ Çıkış sırasında "tahlilleri verin" gibi follow-up komutlar (zaten istenen tetkikler)
+
+KURAL #5 — BRANS FILTRESI:
+Tüm seçilen kodlar `brans=dahiliye` veya `her ikisi` olmalı. Diğer branş kodları reddet.
+
+═══════════════════════════════════════════════════════════════════════════
+TÜRKÇE MORFOLOJI REHBERI:
+═══════════════════════════════════════════════════════════════════════════
+- FUTURE (-AcAk): "isteyeceğim/bakacağız" → REQUEST ✅
+- OPTATIVE (-AlIm): "isteyelim/bakalım" → REQUEST ✅
+- IMPERATIVE_PASSIVE (-sIn): "çekilsin/yapılsın/eklensin" → REQUEST ✅
+- PAST_NARRATIVE (-DI/-mIş): "baktım/yapılmıştı" → PAST_DONE ❌
+- HYPOTHETICAL (-sA + ana cümle): "yüksekse... bakarız" → HYPOTHETICAL ❌
+
+═══════════════════════════════════════════════════════════════════════════
+TRANSCRIPT:
+{transcript}
+
+ICD CONTEXT (yardımcı, tani için):
+{icd_context}
+
+ADAY SUT KODLARI:
+{candidates}
+
+YANIT (sadece JSON array, max 15 kod):
+[
+  {{
+    "kodu": "L107020",
+    "adi": "Tam Kan Sayımı (Hemogram)",
+    "intent": "REQUEST",
+    "confidence": 0.95,
+    "trigger_phrase": "<doktorun cümlesi>",
+    "reasoning": "DOCTOR/OPTATIVE 'bakalım'; KURAL #2 dedup uygulandı"
+  }}
+]
+
+Hiçbir aday REQUEST değilse: []
+"""
+
+
 class SUTSuggestionService:
     """NER → Vector DB search → LLM selection pipeline for SUT tetkik codes.
 

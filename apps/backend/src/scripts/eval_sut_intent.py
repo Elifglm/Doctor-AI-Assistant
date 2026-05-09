@@ -33,8 +33,19 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from docx import Document
+try:
+    from docx import Document  # noqa: F401  Only needed for legacy .docx forms
+    _HAS_DOCX = True
+except ImportError:
+    _HAS_DOCX = False
+    Document = None  # type: ignore[assignment]
 from rapidfuzz import fuzz
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,6 +84,11 @@ def _read_transcript(form_id: str) -> str:
 
     paths = list(TRANSCRIPT_DIR.glob(f"Kayıt {form_id}*.docx"))
     if paths:
+        if not _HAS_DOCX:
+            raise RuntimeError(
+                f"Found .docx for FORM {form_id} but python-docx not installed. "
+                "pip install python-docx"
+            )
         doc = Document(str(paths[0]))
         lines = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
         return "\n".join(lines)
@@ -314,7 +330,7 @@ if __name__ == "__main__":
     if args.synthetic:
         TRANSCRIPT_DIR = PROJECT_ROOT / "data" / "eval_synthetic"
         EVAL_DIR = PROJECT_ROOT / "data" / "eval_synthetic"
-        FORM_IDS = ["S001", "S002", "S003", "S004", "S005"]
+        FORM_IDS = [f"T{i:02d}" for i in range(1, 21)]  # T01..T20 (v2 dataset)
     else:
         if args.transcript_dir is not None:
             TRANSCRIPT_DIR = args.transcript_dir

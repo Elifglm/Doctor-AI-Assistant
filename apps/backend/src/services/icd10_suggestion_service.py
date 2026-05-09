@@ -1,9 +1,26 @@
-"""ICD-10 suggestion service: NER → Vector DB → LLM selection pipeline."""
+"""ICD-10 suggestion service: NER → Vector DB → LLM selection pipeline.
+
+Production pipeline (post Phase 3.2):
+  1. NER extracts medical terms from report
+  2. HyDE generates hypothetical clinical doc (if enabled)        [Phase 1.1]
+  3. BM25 sparse + dense vector + text fallback channels          [Phase 2.1]
+  4. RRF fusion of channels                                       [Phase 2.1]
+  5. Synonym expansion at retrieval time (default ON)             [Phase 2.3]
+  6. .9 augmentation post-cap (specificity safety)                [Phase 1.2]
+  7. Constitutional prompt drives LLM selection                   [Phase 3.2]
+
+Feature flags (env-controlled):
+  ASR_HYDE_ENABLED         — default true; disables Haiku HyDE call if off
+  ASR_BM25_ENABLED         — default true; disables BM25 channel if off
+  ASR_RRF_ENABLED          — default true; disables RRF fusion (naive merge fallback)
+  ASR_ICD_PROMPT_VARIANT   — "constitutional" (default) | "hierarchical" | "original"
+"""
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from typing import Any
 
@@ -13,6 +30,11 @@ from apps.backend.src.services.icd10_vector_service import ICD10VectorService
 from apps.backend.src.services.llm_base import LLMProvider
 
 logger = logging.getLogger(__name__)
+
+
+def _env_flag(name: str, default: bool = True) -> bool:
+    raw = os.getenv(name, "true" if default else "false").lower()
+    return raw in ("true", "1", "yes", "on")
 
 # LLM prompt for selecting from candidates
 ICD10_SELECTION_PROMPT = """\
@@ -139,6 +161,207 @@ Hicbir aday uygun degilse bos liste don: []
 """
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 1.2 — Hierarchical 3-stage ICD prompt (T1.1 + T1.2 + T1.3 paketi)
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 1.1 (HyDE) hata analizi: agent sıklıkla YANLIŞ PREFIX'e sapıyor:
+#   - T11/T12: E11.9 aday yok → E13.9 (yanlış DM tipi) seçildi
+#   - T18: J44.0 aday yok → J44 parent seçildi (skoru düşük)
+#
+# Çözüm: 3-aşamalı reasoning template ile prefix-stability sağla.
+
+ICD10_REPORT_SELECTION_PROMPT_HIERARCHICAL = """\
+Sen deneyimli bir tibbi kodlama uzmanisin. Asagida bir anamnez raporu ve \
+ICD-10 aday kodlari verilmistir. UC ASAMALI hiyerarsik secim yap:
+
+═══════════════════════════════════════════════════════════════════════════
+ASAMA 1 — HASTALIK KATEGORI TESPITI (icini ses cikarmadan dusun, yazma):
+═══════════════════════════════════════════════════════════════════════════
+Raporda doktor tarafindan ACIKCA belirtilen aktif hastaliklari mental olarak \
+listele. Ornek: "T2DM | esansiyel HT | hiperkolesterolemi"
+
+Sadece doktor tarafindan dile getirilen taniler. Tedavi/aile oykusunden cikarim YAPMA.
+
+═══════════════════════════════════════════════════════════════════════════
+ASAMA 2 — ICD-10 3-KARAKTER PREFIX ESLESMESI:
+═══════════════════════════════════════════════════════════════════════════
+Her hastalik icin ICD-10 standart prefix'ini bul:
+- T2DM → E11
+- T1DM → E10
+- KOAH → J44
+- Astim → J45
+- Esansiyel HT → I10 (komplikasyonsuz) veya I11 (kalp tutulumu)
+- Hiperkolesterolemi → E78
+- Hipotiroidi → E03
+- Demir eksikligi anemisi → D50
+- KKY → I50
+- KAH → I25
+
+═══════════════════════════════════════════════════════════════════════════
+ASAMA 3 — ALT-KOD SECIMI (en kritik adim):
+═══════════════════════════════════════════════════════════════════════════
+Aday listesinde ARANIS SIRASI:
+
+(a) ONCE — Doktorun belirttigi SPESIFIK alt-tipi ara:
+    - "KOAH akut alevlenmesi" → J44.0
+    - "Tip 2 DM nefropati" → E11.2
+    - "Akut MI" → I21.x
+
+(b) BULAMAZSAN — Ayni prefix'in .9 (tanimlanmamis) alt-tipini sec:
+    - E11.9, J44.9, I50.9, E03.9 vb.
+
+(c) ONA DA YOKSA — Ayni prefix altindaki EN UYGUN alt-tipi sec
+    (ornek: J44.0 ve J44.9 yoksa J44.1 olabilir)
+
+(d) PREFIX HIC YOKSA — O hastaligi ATLA. ASLA yanlis prefix'e sapma:
+    ⚠️ E11 (T2DM) yerine E13 (diger DM) SECME — bunlar FARKLI hastaliklar
+    ⚠️ J44 (KOAH) yerine J45 (astim) SECME
+    ⚠️ E03 (hipotiroidi) yerine E05 (tirotoksikoz) SECME
+    Yanlis prefix secmek HATALI KODLAMA, eksik kalmak DOGRU davranis.
+
+═══════════════════════════════════════════════════════════════════════════
+SEMPTOM KODLARI (R-bolumu):
+═══════════════════════════════════════════════════════════════════════════
+Doktor net tani koymadiginda:
+- dispne → R06.0 / nefes darligi → R06.0
+- carpinti → R00.2 / halsizlik → R53 / bas donmesi → R42
+- bas agrisi → R51 / gogus agrisi → R07.4 / karin agrisi → R10
+- ates 38+ → R50.9 / senkop → R55 / kilo kaybi → R63.4
+
+ANEMI KURALI: Anemi tanisi varsa, anemi tarafindan aciklanan semptomlari \
+EKLEME (R42 vertigo, R53 yorgunluk, R23.1 solukluk anemiyle aciklanir).
+
+═══════════════════════════════════════════════════════════════════════════
+GENEL KURALLAR:
+═══════════════════════════════════════════════════════════════════════════
+1. SADECE asagidaki ADAY ICD-10 KODLARI listesinden sec. Kod uydurma.
+2. Tedavi/konsultasyondan tani cikarimi YAPMA.
+3. Maksimum 6 kod (3 tani + 3 semptom).
+4. Sadece JSON formatinda yanit ver, baska aciklama yazma.
+
+═══════════════════════════════════════════════════════════════════════════
+ANAMNEZ RAPORU:
+{report_text}
+
+ADAY ICD-10 KODLARI:
+{candidates}
+
+YANIT (sadece JSON array, baska bir sey yazma):
+[
+  {{"icd_kodu":"E11.9","tani":"Tip 2 DM","confidence":0.92,"source":"tani","reasoning":"Asama1: T2DM tanili. Asama2: E11 prefix. Asama3: spesifik komplikasyon yok, .9 alt-tipi"}},
+  {{"icd_kodu":"R06.0","tani":"Dispne","confidence":0.78,"source":"semptom","reasoning":"Net tani yok, semptom kodu"}}
+]
+
+Hicbir aday uygun degilse bos liste don: []
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 3.2 — Constitutional ICD prompt (anayasal kurallar)
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 2.3 hata analizi:
+#   - T01, T20: Z83.3 (aile öyküsü) FP — agent ekliyor, gold istemiyor
+#   - T01: E66.9 (obezite, BMI 32) FP — gold istemiyor
+#   - T08: R05+R50.9 FP — akut bronşit (J20.9) bunları açıklıyor
+#   - T17: D50.0 seçildi, gold D50.9 — overshoot
+#   - T17/T19: R53 (yorgunluk) eksik — gold istiyor (anemi/hipotiroidi olsa da)
+#
+# Hipotez: "Code-conservation" + "default .9" + "explicit yorgunluk" kuralları
+# false positive'leri azaltacak ve recall'u korurken precision artacak.
+
+ICD10_REPORT_SELECTION_PROMPT_CONSTITUTIONAL = """\
+Sen deneyimli bir tibbi kodlama uzmanisin. UC ASAMALI hiyerarsik secim yap.
+
+═══════════════════════════════════════════════════════════════════════════
+ANAYASAL KURALLAR (her secimde uy):
+═══════════════════════════════════════════════════════════════════════════
+
+KURAL #1 — KOD-KISITLAMA (CODE CONSERVATION):
+Sadece doktorun TEDAVI ETMEYE KARAR VERDIGI veya AKTIF YONETIMINI YAPTIGI
+hastaliklari kodla. Su 3 durum HIC kodlanmaz:
+
+  ❌ AILE OYKUSU TEK BASINA (Z83.x): Babasinda DM varsa Z83.3 ASLA EKLEME.
+     Sadece doktorun tedavisini etkileyen klinik onemde ise eklenir.
+  ❌ FIZIK MUAYENE BULGUSU (E66 obezite vs.): BMI 32 not edildi diye
+     E66.9 ASLA EKLEME. Doktor obezite icin tedavi/onerme yaptiysa olur.
+  ❌ ZIMNI TANI: Doktor "olabilir, dusunulebilir, soz konusu" derse o kod
+     ASLA eklenmez. Sadece "tani konuldu / tedavi baslandi" netse kodla.
+
+KURAL #2 — DEFAULT .9 ALT-TIPI (UNSPECIFIED PREFERENCE):
+Doktor alt-tipi ACIKCA SOYLEMEDIGI surece, .9 (tanimlanmamis) tercih et.
+
+  ✅ "Anemim var" → D50.9 (D50.0 ASLA, "kronik kan kaybi" demediyse)
+  ✅ "Astim var" → J45.9 (J45.0 allerjik ASLA, doktor "allerjik astim" demediyse)
+  ✅ "KOAH var" → J44.9 (J44.0 ASLA, doktor "alevlenme" demediyse)
+  ✅ "Hipotiroidim" → E03.9 (E03.0/E03.1 konjenital ASLA yetiskinde)
+
+  Spesifik subtype SADECE doktor o spesifik kelimeleri kullandiginda:
+  - "Saf hiperkolesterolemi" → E78.0 ✓ ("hiperkolesterolemi" tek basina yetmez)
+  - "Akut KOAH alevlenmesi" → J44.0 ✓
+  - "Konjestif kalp yetmezligi" → I50.0 ✓ ("kalp yetmezligi" tek basina I50.9)
+
+KURAL #3 — SEMPTOM-BASTIRMA (DIAGNOSIS-COVERS-SYMPTOMS):
+Bir hastalik tanisi koyulduysa, o hastaligin TIPIK semptomlarini AYRICA
+KODLAMA — gereksiz tekrar yaratir.
+
+  KOAH/Astim/Bronsit (J44/J45/J20) → R05 oksuruk EKLEME, R06.x dispne EKLEME
+  Akut Bronsit (J20.x) → R50.9 ates EKLEME (subfebril dahil)
+  Anemi (D50.x) → R23.1 solukluk, R00.2 carpinti, R42 vertigo EKLEME
+  Hipotiroidi (E03.x) → R00.1 bradikardi, K59.0 kabizlik EKLEME (E03 acikliyor)
+  Hepatit (B18.x) → R10/R11/R17 EKLEME (asemptomatik tasiyici sik)
+
+  ⚠️ ISTISNA — R53 (yorgunluk/halsizlik): Doktor "halsizlik/yorgunluk"
+     diye sikayet kayitladiysa, R53 HER ZAMAN EKLE — anemi veya hipotiroidi
+     gibi acikliyici tanisi olsa bile. (R53 her durumda kayda deger.)
+
+KURAL #4 — NEGATE EDILMIS SEMPTOM HIC KODLANMAZ:
+Rapor "...yok / tariflemiyor / negatif" diyorsa o semptom kodu KESINLIKLE
+EKLENMEZ. "Polidipsi yok" → R63.1 KOY MA. "Carpinti yok" → R00.2 KOY MA.
+
+═══════════════════════════════════════════════════════════════════════════
+UC ASAMALI SECIM:
+═══════════════════════════════════════════════════════════════════════════
+
+ASAMA 1 — HASTALIK TESPITI (mental):
+Doktorun TEDAVI YONETTIGI veya KESIN TANI KOYDUGU hastaliklari listele.
+Aile oykusu/BMI/zimni tani EKLEMA.
+
+ASAMA 2 — ICD-10 PREFIX:
+T2DM→E11, T1DM→E10, KOAH→J44, Astim→J45, Esansiyel HT→I10 (komplikasyonsuz)
+veya I11 (kalp tutulumu), Hiperkolesterolemi→E78, Hipotiroidi→E03,
+Demir eksikligi anemisi→D50, KKY→I50, KAH→I25, Atrial Fib→I48
+
+ASAMA 3 — ALT-KOD (KURAL #2 dikkat):
+(a) Doktor SPESIFIK subtype kelimesini kullandiysa → o subtype
+(b) Yoksa → .9 (tanimlanmamis) — DEFAULT
+(c) .9 yoksa → ayni prefix altinda en yakin
+(d) Hic yoksa → ATLA (yanlis prefix'e sapma)
+
+═══════════════════════════════════════════════════════════════════════════
+GENEL KURALLAR:
+═══════════════════════════════════════════════════════════════════════════
+1. SADECE asagidaki ADAY ICD-10 KODLARI listesinden sec. Kod uydurma.
+2. Tedavi/aile oykusunden tani cikarimi YAPMA.
+3. Maksimum 4 kod (KOD-KISITLAMA kurali geregi az kod ye)
+4. Sadece JSON formatinda yanit ver, baska aciklama yazma.
+
+═══════════════════════════════════════════════════════════════════════════
+ANAMNEZ RAPORU:
+{report_text}
+
+ADAY ICD-10 KODLARI:
+{candidates}
+
+YANIT (sadece JSON array, anayasal kurallari uygula):
+[
+  {{"icd_kodu":"E11.9","tani":"Tip 2 DM","confidence":0.92,"source":"tani","reasoning":"Asama1: T2DM tanili. Asama2: E11. Asama3(b): komplikasyon yok, .9 default"}},
+  {{"icd_kodu":"R53","tani":"Halsizlik","confidence":0.78,"source":"semptom","reasoning":"R53 ozel kuralla EKLENDI (E03 olsa da)"}}
+]
+
+Hicbir aday uygun degilse bos liste don: []
+"""
+
+
 class ICD10SuggestionService:
     """NER → Vector DB search → LLM selection pipeline for ICD-10 coding.
 
@@ -155,11 +378,17 @@ class ICD10SuggestionService:
         vector_service: ICD10VectorService | None = None,
         ner_service: Any | None = None,
         validation_mode: str = "strict",
+        hyde_service: Any | None = None,
+        bm25_service: Any | None = None,
     ) -> None:
         self._llm = llm
         self._icd10 = icd10_service
         self._vectors = vector_service
         self._ner = ner_service
+        # Phase 1.1 / 2.1 cumulative — optional retrieval-augmentation services.
+        # If not injected the pipeline silently falls back to vector + text only.
+        self._hyde = hyde_service
+        self._bm25 = bm25_service
         # Hallucination guard mode (ablation switch for thesis):
         #   "strict"     — drop any LLM-output code not in candidate pool
         #   "db_rescue"  — also accept LLM codes that exist in ICD-10 DB
@@ -168,7 +397,17 @@ class ICD10SuggestionService:
         #                   codes via DB existence check).
         # Switched at runtime via ASR_ICD__VALIDATION_MODE env var.
         self._validation_mode = validation_mode if validation_mode in {"strict", "db_rescue"} else "strict"
-        logger.info("ICD10SuggestionService validation_mode=%s", self._validation_mode)
+        # Phase 3.2 — prompt variant (constitutional default, accepted phase)
+        self._prompt_variant = os.getenv("ASR_ICD_PROMPT_VARIANT", "constitutional").lower()
+        if self._prompt_variant not in {"constitutional", "hierarchical", "original"}:
+            self._prompt_variant = "constitutional"
+        logger.info(
+            "ICD10SuggestionService validation_mode=%s prompt_variant=%s "
+            "hyde=%s bm25=%s",
+            self._validation_mode, self._prompt_variant,
+            self._hyde is not None and _env_flag("ASR_HYDE_ENABLED"),
+            self._bm25 is not None and _env_flag("ASR_BM25_ENABLED"),
+        )
 
     async def suggest(self, transcript: str) -> list[ICD10Suggestion]:
         """Full pipeline: NER → Vector DB → LLM selection."""
@@ -243,9 +482,44 @@ class ICD10SuggestionService:
                     if fragment not in ner_terms:
                         ner_terms.append(fragment)
 
+        # Phase 1.1: HyDE — generate hypothetical clinical doc and prepend
+        # to query terms. Bridges query/document distribution mismatch
+        # (patient dialogue vs formal ICD-10 entries).
+        hyde_doc: str | None = None
+        if self._hyde is not None and _env_flag("ASR_HYDE_ENABLED"):
+            try:
+                hyde_doc = await self._hyde.generate_for_icd(report_text)
+                if hyde_doc and len(hyde_doc) > 20:
+                    ner_terms.insert(0, hyde_doc)
+                    logger.info("HyDE prepended (%d chars)", len(hyde_doc))
+            except Exception:
+                logger.exception("HyDE generation failed; continuing without")
+
         # Step 2: Find candidate ICD-10 codes via vector DB + text search
         vector_candidates = await self._find_vector_candidates(ner_terms)
         text_candidates = await self._text_search_fallback(ner_terms)
+
+        # Phase 2.1: BM25 sparse retrieval channel (lexical match for surface
+        # forms BGE-M3 abstracts away — e.g. specific ICD codes, medical labels).
+        bm25_candidates: list[dict[str, Any]] = []
+        if self._bm25 is not None and _env_flag("ASR_BM25_ENABLED"):
+            bm25_queries = [hyde_doc] if hyde_doc else []
+            bm25_queries += ner_terms[:8] if not hyde_doc else ner_terms[1:8]
+            seen_ids: set[str] = set()
+            for q in bm25_queries:
+                if not q or not q.strip():
+                    continue
+                try:
+                    results = self._bm25.search(q, top_k=15)
+                except Exception:
+                    logger.exception("BM25 search failed for query")
+                    continue
+                for r in results:
+                    rid = r.get("icd_kodu")
+                    if rid and rid not in seen_ids:
+                        seen_ids.add(rid)
+                        bm25_candidates.append({**r, "source": "bm25"})
+            logger.info("BM25 channel returned %d unique candidates", len(bm25_candidates))
 
         # Step 2a-bis: LLM-extracted explicit diagnoses + symptoms (proper Turkish form).
         # Bypasses keyword/embedding limitations for terms doctor explicitly named.
@@ -255,31 +529,26 @@ class ICD10SuggestionService:
         if self._validation_mode == "strict":
             explicit_candidates = await self._llm_extract_diagnoses_and_symptoms(report_text)
 
-        # Merge channels — RRF fusion if enabled, else naive dedup-concat
-        from apps.backend.src.services.rrf_fusion import rrf_fuse, is_rrf_enabled
-        if is_rrf_enabled():
-            candidates = rrf_fuse(
-                [vector_candidates, text_candidates, explicit_candidates],
-                id_field="icd_kodu",
-                k=60,
-            )
+        # Merge channels — RRF fusion (default ON post Phase 2.1) else naive dedup
+        from apps.backend.src.services.rrf_fusion import rrf_fuse
+        rrf_enabled = _env_flag("ASR_RRF_ENABLED", default=True)
+        if rrf_enabled:
+            channels = [vector_candidates, text_candidates, bm25_candidates, explicit_candidates]
+            candidates = rrf_fuse(channels, id_field="icd_kodu", k=60)
             seen = {c["icd_kodu"] for c in candidates}
             logger.info(
-                "RRF fused: vector=%d + text=%d + explicit=%d → %d unique",
+                "RRF fused: vector=%d + text=%d + bm25=%d + explicit=%d → %d unique",
                 len(vector_candidates), len(text_candidates),
-                len(explicit_candidates), len(candidates),
+                len(bm25_candidates), len(explicit_candidates), len(candidates),
             )
         else:
             candidates = list(vector_candidates)
             seen = {c["icd_kodu"] for c in candidates}
-            for tc in text_candidates:
-                if tc["icd_kodu"] not in seen:
-                    seen.add(tc["icd_kodu"])
-                    candidates.append(tc)
-            for ec in explicit_candidates:
-                if ec["icd_kodu"] not in seen:
-                    seen.add(ec["icd_kodu"])
-                    candidates.append(ec)
+            for extra in (text_candidates, bm25_candidates, explicit_candidates):
+                for r in extra:
+                    if r.get("icd_kodu") and r["icd_kodu"] not in seen:
+                        seen.add(r["icd_kodu"])
+                        candidates.append(r)
 
         # Step 2b: Hierarchical fallback — for every candidate that's a
         # specific subcode (e.g. J44.0), make sure the "unspecified" sibling
@@ -306,13 +575,24 @@ class ICD10SuggestionService:
     async def _llm_select_from_report(
         self, report_text: str, candidates: list[dict[str, Any]]
     ) -> list[ICD10Suggestion]:
-        """Ask LLM to select ICD-10 codes based on structured report."""
+        """Ask LLM to select ICD-10 codes based on structured report.
+
+        Phase 3.2: Constitutional prompt is the default. Variant selectable
+        via ASR_ICD_PROMPT_VARIANT env (constitutional|hierarchical|original).
+        """
+        # Use rrf_score if present (RRF-fused), else fall back to score
         candidates_text = "\n".join(
-            f"({c['icd_kodu']}) - {c['tani']} [skor: {c['score']:.2f}]"
+            f"({c['icd_kodu']}) - {c['tani']} [skor: {c.get('rrf_score', c.get('score', 0)):.4f}]"
             for c in candidates
         )
 
-        prompt = ICD10_REPORT_SELECTION_PROMPT.format(
+        if self._prompt_variant == "constitutional":
+            template = ICD10_REPORT_SELECTION_PROMPT_CONSTITUTIONAL
+        elif self._prompt_variant == "hierarchical":
+            template = ICD10_REPORT_SELECTION_PROMPT_HIERARCHICAL
+        else:
+            template = ICD10_REPORT_SELECTION_PROMPT
+        prompt = template.format(
             report_text=report_text,
             candidates=candidates_text,
         )

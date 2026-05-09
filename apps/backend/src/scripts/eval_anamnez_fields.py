@@ -41,6 +41,12 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -50,7 +56,7 @@ logger = logging.getLogger("eval_anamnez")
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_DATA_DIR = PROJECT_ROOT / "data" / "eval_synthetic"
 DEFAULT_OUT_DIR = PROJECT_ROOT / "data" / "eval_anamnez"
-DEFAULT_FORM_IDS = ["S001", "S002", "S003", "S004", "S005"]
+DEFAULT_FORM_IDS = [f"T{i:02d}" for i in range(1, 21)]  # T01..T20 (v2 dataset)
 
 # Field-type classification (dahiliye 26 fields)
 NUMERIC_FIELDS = {"sistolik", "diyastolik", "nabiz", "ates", "kilo", "boy", "so2", "agri_skalasi"}
@@ -122,10 +128,26 @@ def _numeric_match(sys_val: str, gold_val: str) -> bool:
     return abs(s - g) <= tolerance
 
 
-def _list_overlap_f1(sys_val: str, gold_val: str) -> float:
-    """For list fields (comma-separated)."""
-    sys_items = {x.strip().lower() for x in sys_val.split(",") if x.strip()}
-    gold_items = {x.strip().lower() for x in gold_val.split(",") if x.strip()}
+def _list_overlap_f1(sys_val: str | list, gold_val: str | list) -> float:
+    """For list fields (comma-separated string OR list of dicts/strings)."""
+    def _to_set(val):
+        if isinstance(val, list):
+            out = set()
+            for item in val:
+                if isinstance(item, dict):
+                    # extract identifier — prefer code keys, fall back to name keys
+                    for k in ("icd_kodu", "kodu", "code", "tani", "adi"):
+                        if item.get(k):
+                            out.add(str(item[k]).strip().lower())
+                            break
+                else:
+                    s = str(item).strip().lower()
+                    if s: out.add(s)
+            return out
+        # string path
+        return {x.strip().lower() for x in str(val).split(",") if x.strip()}
+    sys_items = _to_set(sys_val)
+    gold_items = _to_set(gold_val)
     if not sys_items and not gold_items:
         return 1.0
     if not sys_items or not gold_items:
@@ -211,7 +233,11 @@ async def init_pipeline():
         llm=llm, sut_service=sut_svc, vector_service=sut_vec, ner_service=ner
     )
     return ReportGenerator(
-        llm=llm, ner=ner, icd10=icd_suggestion, sut_tetkik=sut_suggestion
+        ner=ner,
+        rag=None,
+        llm=llm,
+        icd10_suggestion_service=icd_suggestion,
+        sut_suggestion_service=sut_suggestion,
     )
 
 

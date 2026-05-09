@@ -121,12 +121,37 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Ablation switch: ASR_ICD__VALIDATION_MODE=strict (default) | db_rescue
     icd_validation_mode = os.getenv("ASR_ICD__VALIDATION_MODE", "strict").lower()
+
+    # Phase 1.1 — HyDE service (Haiku) for hypothetical clinical doc generation.
+    # Disable via ASR_HYDE_ENABLED=false to skip the extra LLM call per ICD request.
+    icd_hyde_service = None
+    if os.getenv("ASR_HYDE_ENABLED", "true").lower() in ("true", "1", "yes", "on"):
+        try:
+            from apps.backend.src.services.hyde_service import HyDEService
+            icd_hyde_service = HyDEService(llm=llm_service)
+            logger.info("ICD-10 HyDE service ready")
+        except Exception:
+            logger.warning("ICD-10 HyDE service initialization failed", exc_info=True)
+
+    # Phase 2.1 — BM25 sparse retrieval channel. Lazy-loads pickle on first use,
+    # so we eagerly init here to amortize cost. Disable via ASR_BM25_ENABLED=false.
+    icd_bm25_service = None
+    if os.getenv("ASR_BM25_ENABLED", "true").lower() in ("true", "1", "yes", "on"):
+        try:
+            from apps.backend.src.services.bm25_service import BM25Service
+            icd_bm25_service = await BM25Service.for_icd10()
+            logger.info("ICD-10 BM25 service ready")
+        except Exception:
+            logger.warning("ICD-10 BM25 service initialization failed", exc_info=True)
+
     icd10_suggestion_service = ICD10SuggestionService(
         llm=llm_service,
         icd10_service=icd10_service,
         vector_service=icd10_vector_service,
         ner_service=ner_service,
         validation_mode=icd_validation_mode,
+        hyde_service=icd_hyde_service,
+        bm25_service=icd_bm25_service,
     )
 
     # ---- SUT tetkik services ----
