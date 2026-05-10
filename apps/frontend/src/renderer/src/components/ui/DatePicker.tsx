@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useUIStore } from '../../stores/uiStore'
 import { useT } from '../../hooks/useT'
@@ -47,8 +47,19 @@ export function DatePicker({
   const t = useT()
 
   const [open, setOpen] = useState(false)
+  const [alignRight, setAlignRight] = useState(false)
   const [viewMonth, setViewMonth] = useState<Date>(() => parseISO(value) ?? new Date())
   const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Flip dropdown to right edge when button is near viewport right (overflow safety)
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return
+    const DROPDOWN_WIDTH = 260
+    const rect = buttonRef.current.getBoundingClientRect()
+    const spaceRight = window.innerWidth - rect.left
+    setAlignRight(spaceRight < DROPDOWN_WIDTH + 8)
+  }, [open])
 
   // Close on outside click
   useEffect(() => {
@@ -127,6 +138,7 @@ export function DatePicker({
     <div ref={containerRef} className={cn('relative', className)}>
       <button
         id={id}
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 hover:border-blue-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-w-[140px]"
@@ -147,7 +159,12 @@ export function DatePicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-20 mt-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-lg w-[260px]">
+        <div
+          className={cn(
+            'absolute top-full z-20 mt-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-lg w-[260px]',
+            alignRight ? 'right-0' : 'left-0',
+          )}
+        >
           <div className="flex items-center justify-between mb-2">
             <button
               type="button"
