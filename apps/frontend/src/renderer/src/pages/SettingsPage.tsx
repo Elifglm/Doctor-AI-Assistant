@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   User,
   Mic,
-  FileText,
   Monitor,
   Shield,
   Trash2,
@@ -24,7 +23,7 @@ import { useT } from '../hooks/useT'
 import type { HealthResponse, LLMSettingsResponse, LLMSettingsUpdate } from '../types/api'
 import { cn } from '../lib/utils'
 
-type TabKey = 'profil' | 'ses' | 'llm' | 'sablonlar' | 'goruntu' | 'gizlilik'
+type TabKey = 'profil' | 'ses' | 'llm' | 'goruntu' | 'gizlilik'
 
 function ProfilTab(): React.JSX.Element {
   const user = useAuthStore((s) => s.user)
@@ -67,6 +66,74 @@ function ProfilTab(): React.JSX.Element {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+interface RecordingsTestModeResponse {
+  keep_recordings: boolean
+}
+
+function AdminTestModeSection(): React.JSX.Element | null {
+  const user = useAuthStore((s) => s.user)
+  const queryClient = useQueryClient()
+  const t = useT()
+
+  const { data, isLoading } = useQuery<RecordingsTestModeResponse>({
+    queryKey: ['recordings-test-mode'],
+    queryFn: () =>
+      apiClient.get<RecordingsTestModeResponse>('/api/v1/recordings/test-mode'),
+    enabled: user?.role === 'admin',
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: (keep: boolean) =>
+      apiClient.put<RecordingsTestModeResponse>('/api/v1/recordings/test-mode', {
+        keep_recordings: keep,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['recordings-test-mode'] })
+    },
+  })
+
+  if (user?.role !== 'admin') return null
+
+  const enabled = data?.keep_recordings ?? false
+
+  return (
+    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-900/20 p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+            {t('settings_recordingsTestMode')}
+          </h4>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
+            {t('settings_recordingsTestModeDesc')}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={isLoading || toggleMutation.isPending}
+          onClick={() => toggleMutation.mutate(!enabled)}
+          className={cn(
+            'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors disabled:opacity-50',
+            enabled ? 'bg-amber-600' : 'bg-slate-300 dark:bg-slate-600'
+          )}
+          aria-pressed={enabled}
+        >
+          <span
+            className={cn(
+              'pointer-events-none inline-block h-5 w-5 rounded-full bg-white dark:bg-slate-100 shadow transition-transform',
+              enabled ? 'translate-x-5' : 'translate-x-0'
+            )}
+          />
+        </button>
+      </div>
+      {enabled && (
+        <p className="text-xs text-amber-700 dark:text-amber-300 italic">
+          {t('settings_recordingsTestModeOn')}
+        </p>
+      )}
     </div>
   )
 }
@@ -159,10 +226,25 @@ function SesTab(): React.JSX.Element {
           <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
             <p className="text-sm text-slate-600 dark:text-slate-300">{t('settings_audioQuality')}</p>
           </div>
+
+          <AdminTestModeSection />
         </div>
       </div>
     </div>
   )
+}
+
+type UIMode = 'gemma' | 'haiku' | 'opus'
+
+const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
+const OPUS_MODEL = 'claude-opus-4-7'
+
+function deriveUIMode(settings: LLMSettingsResponse | undefined): UIMode {
+  if (!settings) return 'gemma'
+  if (settings.mode === 'anthropic') {
+    return /opus/i.test(settings.anthropic_model) ? 'opus' : 'haiku'
+  }
+  return settings.mode === 'local' ? 'gemma' : 'gemma'
 }
 
 function LLMTab(): React.JSX.Element {
@@ -180,9 +262,8 @@ function LLMTab(): React.JSX.Element {
     queryFn: () => apiClient.get<LLMSettingsResponse>('/api/v1/settings/llm'),
   })
 
-  const [mode, setMode] = useState<'local' | 'api'>('local')
-  const [geminiApiKey, setGeminiApiKey] = useState('')
-  const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash')
+  const [uiMode, setUiMode] = useState<UIMode>('gemma')
+  const [anthropicApiKey, setAnthropicApiKey] = useState('')
   const [fallbackEnabled, setFallbackEnabled] = useState(true)
   const [temperature, setTemperature] = useState(0.3)
   const [anamnezTopK, setAnamnezTopK] = useState(() => {
@@ -195,8 +276,7 @@ function LLMTab(): React.JSX.Element {
 
   useEffect(() => {
     if (llmSettings) {
-      setMode(llmSettings.mode)
-      setGeminiModel(llmSettings.gemini_model)
+      setUiMode(deriveUIMode(llmSettings))
       setFallbackEnabled(llmSettings.ollama_fallback_enabled)
       setTemperature(llmSettings.temperature)
     }
@@ -214,15 +294,24 @@ function LLMTab(): React.JSX.Element {
   })
 
   const handleSave = (): void => {
-    const payload: LLMSettingsUpdate = {
-      mode,
-      gemini_model: geminiModel,
-      ollama_fallback_enabled: fallbackEnabled,
-      temperature,
+    const payload: LLMSettingsUpdate = {}
+
+    if (uiMode === 'gemma') {
+      payload.mode = 'local'
+      payload.ollama_fallback_enabled = fallbackEnabled
+      payload.temperature = temperature
+    } else {
+      payload.mode = 'anthropic'
+      payload.anthropic_model = uiMode === 'opus' ? OPUS_MODEL : HAIKU_MODEL
+      // Backend silently ignores temperature for Opus; safe to send for Haiku.
+      if (uiMode === 'haiku') {
+        payload.temperature = temperature
+      }
+      if (anthropicApiKey) {
+        payload.anthropic_api_key = anthropicApiKey
+      }
     }
-    if (geminiApiKey) {
-      payload.gemini_api_key = geminiApiKey
-    }
+
     // RAG top-k is client-side only; persisted in localStorage and read by
     // the report-generation flow when posting to /api/v1/reports.
     localStorage.setItem('anamnez_top_k', String(anamnezTopK))
@@ -261,10 +350,10 @@ function LLMTab(): React.JSX.Element {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setMode('local')}
+                onClick={() => setUiMode('gemma')}
                 className={cn(
                   'flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors text-center',
-                  mode === 'local'
+                  uiMode === 'gemma'
                     ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800'
                     : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 '
                 )}
@@ -273,21 +362,33 @@ function LLMTab(): React.JSX.Element {
               </button>
               <button
                 type="button"
-                onClick={() => setMode('api')}
+                onClick={() => setUiMode('haiku')}
                 className={cn(
                   'flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors text-center',
-                  mode === 'api'
+                  uiMode === 'haiku'
                     ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 ring-1 ring-violet-200 dark:ring-violet-800'
                     : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 '
                 )}
               >
-                {t('settings_api')}
+                {t('settings_haiku')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setUiMode('opus')}
+                className={cn(
+                  'flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors text-center',
+                  uiMode === 'opus'
+                    ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 ring-1 ring-violet-200 dark:ring-violet-800'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 '
+                )}
+              >
+                {t('settings_opus')}
               </button>
             </div>
           </div>
 
-          {/* KVKK warning for API mode */}
-          {mode === 'api' && (
+          {/* KVKK warning for cloud (Anthropic) modes */}
+          {uiMode !== 'gemma' && (
             <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-4">
               <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
@@ -297,8 +398,8 @@ function LLMTab(): React.JSX.Element {
             </div>
           )}
 
-          {/* Local (Ollama) settings */}
-          {mode === 'local' && (
+          {/* Local (Ollama / Gemma) settings */}
+          {uiMode === 'gemma' && (
             <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 space-y-3">
               <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('settings_ollamaStatus')}</h4>
 
@@ -389,56 +490,42 @@ function LLMTab(): React.JSX.Element {
             </div>
           )}
 
-          {/* API (Gemini) settings */}
-          {mode === 'api' && (
+          {/* Anthropic (Haiku/Opus) settings */}
+          {uiMode !== 'gemma' && (
             <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('settings_geminiSettings')}</h4>
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('settings_anthropicSettings')}</h4>
 
               <div>
-                <label htmlFor="geminiApiKey" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                <label htmlFor="anthropicApiKey" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
                   {t('settings_apiKey')}
                 </label>
                 <input
-                  id="geminiApiKey"
+                  id="anthropicApiKey"
                   type="password"
-                  value={geminiApiKey}
-                  onChange={(e) => setGeminiApiKey(e.target.value)}
-                  placeholder={llmSettings?.gemini_api_key_set ? '••••••••••••••••' : t('settings_apiKeyPlaceholder')}
+                  value={anthropicApiKey}
+                  onChange={(e) => setAnthropicApiKey(e.target.value)}
+                  placeholder={llmSettings?.anthropic_api_key_set ? '••••••••••••••••' : t('settings_apiKeyPlaceholder')}
                   className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                 />
-                {llmSettings?.gemini_api_key_set && !geminiApiKey && (
+                {llmSettings?.anthropic_api_key_set && !anthropicApiKey && (
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('settings_apiKeySet')}</p>
                 )}
               </div>
 
-              <div>
-                <label htmlFor="geminiModel" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
-                  {t('settings_model')}
-                </label>
-                <select
-                  id="geminiModel"
-                  value={geminiModel}
-                  onChange={(e) => setGeminiModel(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-                >
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash ({t('gemini_fast')})</option>
-                  <option value="gemini-2.5-pro">Gemini 2.5 Pro ({t('gemini_quality')})</option>
-                  <option value="gemini-2.0-flash">Gemini 2.0 Flash ({t('gemini_legacy')})</option>
-                </select>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600 dark:text-slate-300">{t('settings_model')}</span>
+                <span className="text-sm text-slate-700 dark:text-slate-200 font-mono">
+                  {uiMode === 'opus' ? OPUS_MODEL : HAIKU_MODEL}
+                </span>
               </div>
 
               {/* Connection status */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
                 <span className="text-sm text-slate-600 dark:text-slate-300">{t('settings_connectionStatus')}</span>
-                {health?.llm_provider === 'gemini' && health?.ollama_status === 'connected' ? (
+                {llmSettings?.anthropic_api_key_set ? (
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     <span className="text-sm text-emerald-700 dark:text-emerald-300">{t('settings_connected')}</span>
-                  </div>
-                ) : health?.llm_provider === 'gemini' ? (
-                  <div className="flex items-center gap-1.5">
-                    <XCircle className="h-4 w-4 text-red-500" />
-                    <span className="text-sm text-red-700 dark:text-red-300">{t('settings_notConnected')}</span>
                   </div>
                 ) : (
                   <span className="text-sm text-slate-400 dark:text-slate-500">{t('settings_notSaved')}</span>
@@ -451,7 +538,10 @@ function LLMTab(): React.JSX.Element {
           <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 space-y-3">
             <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('settings_params')}</h4>
             <div>
-              <label htmlFor="temperatureSlider" className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
+              <label htmlFor="temperatureSlider" className={cn(
+                'block text-sm mb-1',
+                uiMode === 'opus' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-300'
+              )}>
                 {t('settings_temperature', { value: temperature.toFixed(1) })}
               </label>
               <input
@@ -462,12 +552,21 @@ function LLMTab(): React.JSX.Element {
                 step={0.1}
                 value={temperature}
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                className="w-full accent-blue-600"
+                disabled={uiMode === 'opus'}
+                className={cn(
+                  'w-full accent-blue-600',
+                  uiMode === 'opus' && 'opacity-50 cursor-not-allowed'
+                )}
               />
               <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mt-1">
                 <span>{t('settings_tempDeterministic')}</span>
                 <span>{t('settings_tempCreative')}</span>
               </div>
+              {uiMode === 'opus' && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+                  {t('settings_opusTempLocked')}
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="anamnezTopKSlider" className="block text-sm text-slate-600 dark:text-slate-300 mb-1">
@@ -553,25 +652,9 @@ function LLMTab(): React.JSX.Element {
           {/* Privacy note */}
           <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {mode === 'local' ? t('settings_localPrivacy') : t('settings_apiPrivacy')}
+              {uiMode === 'gemma' ? t('settings_localPrivacy') : t('settings_apiPrivacy')}
             </p>
           </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function SablonlarTab(): React.JSX.Element {
-  const t = useT()
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">{t('settings_templates_title')}</h3>
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-12">
-          <FileText className="h-10 w-10 text-slate-300 dark:text-slate-600 mb-3" />
-          <p className="text-sm text-slate-500 dark:text-slate-400 text-center">{t('settings_templatesComing')}</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 text-center">{t('settings_templatesDesc')}</p>
         </div>
       </div>
     </div>
@@ -769,7 +852,6 @@ const tabComponentMap: Record<TabKey, React.ComponentType> = {
   profil: ProfilTab,
   ses: SesTab,
   llm: LLMTab,
-  sablonlar: SablonlarTab,
   goruntu: GoruntuTab,
   gizlilik: GizlilikTab,
 }
@@ -778,7 +860,6 @@ const tabDefs: { key: TabKey; labelKey: string; icon: React.ComponentType<{ clas
   { key: 'profil', labelKey: 'settings_tab_profile', icon: User },
   { key: 'ses', labelKey: 'settings_tab_audio', icon: Mic },
   { key: 'llm', labelKey: 'settings_tab_llm', icon: BrainCircuit },
-  { key: 'sablonlar', labelKey: 'settings_tab_templates', icon: FileText },
   { key: 'goruntu', labelKey: 'settings_tab_display', icon: Monitor },
   { key: 'gizlilik', labelKey: 'settings_tab_privacy', icon: Shield },
 ]

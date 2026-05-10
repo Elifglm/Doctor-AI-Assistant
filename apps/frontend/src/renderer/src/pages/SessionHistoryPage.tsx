@@ -36,13 +36,13 @@ function formatDuration(seconds: number | null, minLabel: string, secLabel: stri
 }
 
 function getSessionRoute(session: Session): string {
+  // PROCESSING is treated as an interrupted recording; route to live recorder.
   const routes: Record<SessionStatus, string> = {
     NOT_STARTED: `/session/${session.id}/live`,
     RECORDING: `/session/${session.id}/live`,
-    PROCESSING: `/session/${session.id}/processing`,
+    PROCESSING: `/session/${session.id}/live`,
     AWAITING_REVIEW: `/session/${session.id}/review`,
     COMPLETED: `/session/${session.id}/review`,
-    ARCHIVED: `/session/${session.id}/review`,
   }
   return routes[session.status]
 }
@@ -58,7 +58,6 @@ export function SessionHistoryPage(): React.JSX.Element {
     { value: '', labelKey: 'history_all' },
     { value: 'AWAITING_REVIEW', labelKey: 'history_pending' },
     { value: 'COMPLETED', labelKey: 'history_completed' },
-    { value: 'ARCHIVED', labelKey: 'history_archived' },
   ]
 
   const visitTypeLabelKeys: Record<VisitType, string> = {
@@ -71,8 +70,8 @@ export function SessionHistoryPage(): React.JSX.Element {
   const handleDelete = useCallback(async (e: React.MouseEvent, sessionId: number) => {
     e.stopPropagation()
     const accepted = await confirm({
-      title: t('confirm_archiveTitle'),
-      message: t('history_archiveConfirm'),
+      title: t('confirm_deleteTitle'),
+      message: t('history_deleteConfirm'),
       confirmText: t('confirm_delete'),
       variant: 'danger',
     })
@@ -184,42 +183,44 @@ export function SessionHistoryPage(): React.JSX.Element {
             />
           </div>
 
-          {/* Date from */}
-          <div className="flex-shrink-0">
-            <label
-              htmlFor="fromDate"
-              className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300"
-            >
-              <Calendar className="inline h-3.5 w-3.5 mr-1" />
-              {t('history_startDate')}
-            </label>
-            <DatePicker
-              id="fromDate"
-              value={fromDate}
-              onChange={(v) => {
-                setFromDate(v)
-                setPage(1)
-              }}
-            />
-          </div>
-
-          {/* Date to */}
-          <div className="flex-shrink-0">
-            <label
-              htmlFor="toDate"
-              className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300"
-            >
-              <Calendar className="inline h-3.5 w-3.5 mr-1" />
-              {t('history_endDate')}
-            </label>
-            <DatePicker
-              id="toDate"
-              value={toDate}
-              onChange={(v) => {
-                setToDate(v)
-                setPage(1)
-              }}
-            />
+          {/* Date range (start + end share the same row, equal widths) */}
+          <div className="flex flex-shrink-0 items-end gap-3">
+            <div className="w-[170px]">
+              <label
+                htmlFor="fromDate"
+                className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300"
+              >
+                <Calendar className="inline h-3.5 w-3.5 mr-1" />
+                {t('history_startDate')}
+              </label>
+              <DatePicker
+                id="fromDate"
+                value={fromDate}
+                onChange={(v) => {
+                  setFromDate(v)
+                  setPage(1)
+                }}
+                className="w-full"
+              />
+            </div>
+            <div className="w-[170px]">
+              <label
+                htmlFor="toDate"
+                className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300"
+              >
+                <Calendar className="inline h-3.5 w-3.5 mr-1" />
+                {t('history_endDate')}
+              </label>
+              <DatePicker
+                id="toDate"
+                value={toDate}
+                onChange={(v) => {
+                  setToDate(v)
+                  setPage(1)
+                }}
+                className="w-full"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -227,9 +228,12 @@ export function SessionHistoryPage(): React.JSX.Element {
       {/* Sessions table */}
       <div className="rounded-xl bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-200/60 dark:ring-slate-700/60 overflow-hidden">
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr_0.6fr_auto] gap-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3">
+        <div className="grid grid-cols-[0.9fr_1fr_1fr_0.7fr_0.8fr_0.55fr_auto] gap-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {t('history_col_date')}
+          </span>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            {t('history_col_patient')}
           </span>
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {t('history_col_doctor')}
@@ -281,13 +285,16 @@ export function SessionHistoryPage(): React.JSX.Element {
           sessions.map((session) => (
             <div
               key={session.id}
-              className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr_0.6fr_auto] gap-4 w-full items-center border-b border-slate-100 dark:border-slate-700 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50  last:border-b-0 cursor-pointer"
+              className="grid grid-cols-[0.9fr_1fr_1fr_0.7fr_0.8fr_0.55fr_auto] gap-4 w-full items-center border-b border-slate-100 dark:border-slate-700 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50  last:border-b-0 cursor-pointer"
               onClick={() => navigate(getSessionRoute(session))}
             >
-              <span className="text-sm text-slate-700 dark:text-slate-200">
+              <span className="text-sm text-slate-700 dark:text-slate-200 tabular-nums">
                 {formatDateTime(session.created_at)}
               </span>
               <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                {session.patient_name || '-'}
+              </span>
+              <span className="text-sm text-slate-700 dark:text-slate-200 truncate">
                 {session.doctor_name}
               </span>
               <span className="text-sm text-slate-600 dark:text-slate-300">
@@ -302,7 +309,7 @@ export function SessionHistoryPage(): React.JSX.Element {
                 onClick={(e) => handleDelete(e, session.id)}
                 disabled={deletingId === session.id}
                 className="p-1.5 rounded-md text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
-                title={t('history_archiveTooltip')}
+                title={t('history_deleteTooltip')}
               >
                 {deletingId === session.id ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

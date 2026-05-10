@@ -1,10 +1,30 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Mic, Loader2, AlertCircle } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { Mic, Loader2, AlertCircle, ShieldCheck, ShieldAlert, History } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { useCreateSession } from '../hooks/useSession'
 import { useT } from '../hooks/useT'
+import { KvkkConsentModal } from '../components/ui/KvkkConsentModal'
+import { apiClient } from '../services/apiClient'
 import type { VisitType } from '../types/session'
+
+interface RecordingsTestModeResponse {
+  keep_recordings: boolean
+}
+
+interface RecordingItem {
+  path: string
+  filename: string
+  session_id: number | null
+  timestamp: number | null
+  size_bytes: number
+}
+
+interface RecordingListResponse {
+  patient_id: string
+  items: RecordingItem[]
+}
 
 export function PreSessionPage(): React.JSX.Element {
   const navigate = useNavigate()
@@ -22,19 +42,36 @@ export function PreSessionPage(): React.JSX.Element {
   // If no appointment data, redirect to calendar
   const hasAppointment = Boolean(appointmentPatientId && appointmentPatientName)
 
-  const visitTypeOptions: { value: VisitType; labelKey: string }[] = [
-    { value: 'ilk_muayene', labelKey: 'pre_ilkMuayene' },
-    { value: 'kontrol', labelKey: 'pre_kontrol' },
-    { value: 'konsultasyon', labelKey: 'pre_konsultasyon' },
-    { value: 'acil', labelKey: 'pre_acil' },
-  ]
-
-  const [visitType, setVisitType] = useState<VisitType>('ilk_muayene')
+  const visitType: VisitType = 'ilk_muayene'
   const [preDiagnosis, setPreDiagnosis] = useState('')
   const [location, setLocation] = useState('')
   const [kvkkConsent, setKvkkConsent] = useState(false)
+  const [kvkkModalOpen, setKvkkModalOpen] = useState(false)
+  const [selectedRecordingPath, setSelectedRecordingPath] = useState<string | null>(null)
 
   const doctorName = appointmentProvider || user?.display_name || ''
+
+  // Test modu yalnızca admin tarafından açılabilir; kayıt seçici sadece açıkken
+  // ve hasta için mevcut WAV varsa gösterilir.
+  const { data: testMode } = useQuery<RecordingsTestModeResponse>({
+    queryKey: ['recordings-test-mode'],
+    queryFn: () =>
+      apiClient.get<RecordingsTestModeResponse>('/api/v1/recordings/test-mode'),
+    enabled: hasAppointment,
+  })
+
+  const { data: recordings } = useQuery<RecordingListResponse>({
+    queryKey: ['recordings', appointmentPatientId],
+    queryFn: () =>
+      apiClient.get<RecordingListResponse>(
+        `/api/v1/recordings/by-patient/${encodeURIComponent(appointmentPatientId)}`
+      ),
+    enabled: Boolean(testMode?.keep_recordings) && Boolean(appointmentPatientId),
+  })
+
+  const recordingItems = recordings?.items ?? []
+  const showRecordingPicker =
+    Boolean(testMode?.keep_recordings) && recordingItems.length > 0
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault()
@@ -54,7 +91,11 @@ export function PreSessionPage(): React.JSX.Element {
       },
       {
         onSuccess: (session) => {
-          navigate(`/session/${session.id}/live`)
+          // Seçili kayıt varsa LivePage'e replayPath olarak geçir; orada
+          // mikrofon yerine WS replay mesajı gönderilecek.
+          navigate(`/session/${session.id}/live`, {
+            state: selectedRecordingPath ? { replayPath: selectedRecordingPath } : undefined,
+          })
         },
       }
     )
@@ -114,24 +155,6 @@ export function PreSessionPage(): React.JSX.Element {
           </div>
 
           <div>
-            <label htmlFor="visitType" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
-              {t('pre_visitType')}
-            </label>
-            <select
-              id="visitType"
-              value={visitType}
-              onChange={(e) => setVisitType(e.target.value as VisitType)}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              {visitTypeOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {t(opt.labelKey)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
             <label
               htmlFor="preDiagnosis"
               className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
@@ -162,19 +185,108 @@ export function PreSessionPage(): React.JSX.Element {
             />
           </div>
 
+          {showRecordingPicker && (
+            <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-900/20 p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <History className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                    {t('pre_existingRecordings')}
+                  </h3>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                    {t('pre_existingRecordingsDesc')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRecordingPath(null)}
+                  className={`w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-left transition-colors ${
+                    selectedRecordingPath === null
+                      ? 'bg-amber-100 dark:bg-amber-900/40 ring-1 ring-amber-300 dark:ring-amber-700 text-amber-900 dark:text-amber-100'
+                      : 'bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Mic className="h-4 w-4" />
+                    {t('pre_recordNew')}
+                  </span>
+                  {selectedRecordingPath === null && (
+                    <span className="text-xs font-medium">{t('pre_selected')}</span>
+                  )}
+                </button>
+
+                {recordingItems.map((rec) => {
+                  const isSelected = selectedRecordingPath === rec.path
+                  const ts = rec.timestamp ? new Date(rec.timestamp * 1000) : null
+                  const sizeMb = (rec.size_bytes / (1024 * 1024)).toFixed(1)
+                  return (
+                    <button
+                      key={rec.path}
+                      type="button"
+                      onClick={() => setSelectedRecordingPath(rec.path)}
+                      className={`w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-left transition-colors ${
+                        isSelected
+                          ? 'bg-amber-100 dark:bg-amber-900/40 ring-1 ring-amber-300 dark:ring-amber-700 text-amber-900 dark:text-amber-100'
+                          : 'bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 text-slate-700 dark:text-slate-200 ring-1 ring-slate-200 dark:ring-slate-700'
+                      }`}
+                    >
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span className="font-mono text-xs">{rec.filename}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {ts ? ts.toLocaleString('tr-TR') : '—'} · {sizeMb} MB
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <span className="text-xs font-medium">{t('pre_selected')}</span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={kvkkConsent}
-                onChange={(e) => setKvkkConsent(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                {t('pre_kvkkConsent')}
-              </span>
-            </label>
+            {kvkkConsent ? (
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                    {t('pre_kvkkAccepted')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setKvkkConsent(false)}
+                    className="mt-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline"
+                  >
+                    {t('kvkk_decline')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setKvkkModalOpen(true)}
+                className="flex w-full items-center justify-between gap-3 text-left transition-colors group"
+              >
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300 leading-relaxed underline-offset-4 group-hover:underline">
+                    {t('pre_kvkkOpenModal')}
+                  </span>
+                </div>
+              </button>
+            )}
           </div>
+
+          <KvkkConsentModal
+            open={kvkkModalOpen}
+            onClose={() => setKvkkModalOpen(false)}
+            onAccept={() => setKvkkConsent(true)}
+          />
 
           {createSession.error && (
             <div className="flex items-center gap-3 rounded-lg bg-red-50 dark:bg-red-900/30 p-3 ring-1 ring-red-200 dark:ring-red-800">

@@ -65,7 +65,7 @@ const tr: TranslationMap = {
   confirm_delete: 'Sil',
   confirm_leave: 'Çık',
   confirm_logout: 'Çıkış Yap',
-  confirm_archiveTitle: 'Görüşmeyi Arşivle',
+  confirm_deleteTitle: 'Görüşmeyi Sil',
   confirm_leaveTitle: 'Sayfadan Ayrıl',
   confirm_logoutTitle: 'Çıkış Yap',
   confirm_deleteUserTitle: 'Kullanıcıyı Sil',
@@ -115,7 +115,7 @@ const tr: TranslationMap = {
   dash_unknownError: 'Bilinmeyen hata',
   dash_noSessions: 'Henüz görüşme bulunmuyor',
   dash_viewAppointments: 'Randevularınızı görün',
-  dash_archiveConfirm: 'Bu görüşmeyi arşivlemek istediğinizden emin misiniz?',
+  dash_deleteConfirm: 'Bu görüşmeyi silmek istediğinizden emin misiniz?',
   dash_deleteError: 'Görüşme silinemedi',
 
   // ── Stats Bar ────────────────────────────────────────────────────────────────
@@ -127,10 +127,9 @@ const tr: TranslationMap = {
   // ── Status Badge ─────────────────────────────────────────────────────────────
   status_notStarted: 'Başlamadı',
   status_recording: 'Kayıt Yapılıyor',
-  status_processing: 'İşleniyor',
+  status_processing: 'Ses kaydı alınacak',
   status_awaitingReview: 'İnceleme Bekliyor',
   status_completed: 'Tamamlandı',
-  status_archived: 'Arşivlendi',
 
   // ── Session Card ─────────────────────────────────────────────────────────────
   card_firstConsult: 'İlk Muayene',
@@ -138,7 +137,7 @@ const tr: TranslationMap = {
   card_consultation: 'Konsültasyon',
   card_emergency: 'Acil',
   card_patient: 'Hasta:',
-  card_archiveTooltip: 'Görüşmeyi arşivle',
+  card_deleteTooltip: 'Görüşmeyi sil',
 
   // ── Pre-Session Page ──────────────────────────────────────────────────────────
   pre_noAppt: 'Randevu Seçilmedi',
@@ -161,7 +160,45 @@ const tr: TranslationMap = {
   pre_locationPlaceholder: 'Poliklinik / Oda',
   pre_kvkkConsent:
     'Hasta KVKK aydınlatma metnini okumuş ve ses kaydına onay vermiştir',
+  pre_kvkkOpenModal: 'KVKK Aydınlatma Metnini Görüntüle ve Onayla',
+  pre_kvkkAccepted: 'KVKK aydınlatma metni okundu ve onaylandı.',
+  pre_existingRecordings: 'Bu hasta için mevcut ses kayıtları',
+  pre_existingRecordingsDesc:
+    'Test modu açık. Yeni bir ses kaydı yapmak yerine mevcut bir kayıttan görüşmeyi yeniden başlatabilirsiniz.',
+  pre_recordNew: 'Yeni ses kaydı yap',
+  pre_selected: 'Seçili',
   pre_startRecording: 'Kaydı Başlat',
+
+  // ── KVKK Consent Modal (Turkish only — legal text) ────────────────────────────
+  kvkk_modalTitle: 'KVKK Aydınlatma Metni — Klinik Asistan',
+  kvkk_legalDisclaimer:
+    '⚠️ Bu metin, Klinik Asistan uygulamasının teknik veri akışını yansıtmaktadır. Hukuki incelemeden geçmemiştir; klinik kullanım öncesi mutlaka avukat denetiminden geçirilmesi zorunludur. Mevcut hâliyle yalnızca demo/test amaçlıdır.',
+  kvkk_intro:
+    '6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında, sağlık hizmeti süresince işlenecek kişisel verileriniz ve özel nitelikli kişisel verileriniz (sağlık verileri) hakkında sizi bilgilendirmek amacıyla bu aydınlatma metni hazırlanmıştır. Sağlık verisi KVKK Madde 6 kapsamında "özel nitelikli kişisel veri" sayılır ve işlenmesi açık rızaya bağlıdır.',
+  kvkk_h1_controller: '1. Veri Sorumlusu',
+  kvkk_b1_controller:
+    'Bu uygulamayı kullanan sağlık kuruluşu, KVKK kapsamında "veri sorumlusu" sıfatıyla hareket eder. Klinik Asistan yazılımı, hekiminizin tıbbi dokümantasyon süreçlerini desteklemek üzere kullanılan yardımcı bir araçtır.',
+  kvkk_h2_dataTypes: '2. İşlenen Kişisel Veriler',
+  kvkk_b2_dataTypes:
+    '• Kimlik verileri: ad-soyad, hasta kimlik numarası (OpenEMR ID)\n• Sağlık verileri (özel nitelikli): doktor görüşmenizin ses kaydı, ses kaydından üretilen yazılı transkript, anamnez metni, ön tanı, ICD-10 tanı kodları, SUT tetkik kodları\n• Randevu/iletişim verileri: hekim adı, randevu tarihi-saati, görüşme konumu (poliklinik/oda)',
+  kvkk_h3_purposes: '3. İşleme Amaçları',
+  kvkk_b3_purposes:
+    '• Hekimin sizi muayene ettiği görüşmenin yapay zekâ desteğiyle yazıya dökülmesi ve özetlenerek anamnez/rapor üretilmesi\n• Üretilen anamnez ve raporun OpenEMR elektronik sağlık kayıt sisteminize aktarılması\n• Tıbbi karar destek: ICD-10 tanı kodu önerisi, SUT tetkik kodu önerisi\n• Hizmetin kalite ve güvenliğinin sağlanması, yasal yükümlülüklerin yerine getirilmesi',
+  kvkk_h4_transfers: '4. Yurt İçi/Yurt Dışı Aktarım',
+  kvkk_b4_transfers:
+    '• Anthropic, Inc. (ABD): Görüşmenize ait ses kaydının yapay zekâ tarafından metne dönüştürülmesi ve metnin anamnez/rapor olarak özetlenmesi için Anthropic Claude API hizmetine, şifreli HTTPS bağlantısı üzerinden aktarılır. Bu aktarım, hizmetin sunulması için zorunludur ve KVKK Madde 9 kapsamında değerlendirilir.\n• OpenEMR: Anamnez metni, raporlar ve tetkik kodları, kurumunuzun yerel/şirket içi OpenEMR sunucusuna aktarılarak elektronik hasta kaydınıza eklenir.\n• Üçüncü taraf reklam, pazarlama veya analiz hizmetleri ile veri paylaşımı yapılmaz.',
+  kvkk_h5_retention: '5. Saklama Süreleri',
+  kvkk_b5_retention:
+    '• Ham ses kaydı: Kayıt, transkripsiyon ve anamnez üretimi tamamlandıktan sonra sunucudan otomatik olarak silinir. (İstisna: yöneticinin etkinleştirdiği test/geliştirme modunda, sınırlı süreli olarak yerel diskte saklanabilir.)\n• Transkript ve anamnez: OpenEMR sisteminin tıbbi kayıt saklama politikasına tabi olarak, mevzuatın öngördüğü süre boyunca saklanır.\n• Denetim/audit kayıtları: Veri erişim izlerinin tutulması amacıyla yasal süreler boyunca saklanır.',
+  kvkk_h6_rights: '6. Haklarınız (KVKK Madde 11)',
+  kvkk_b6_rights:
+    'KVKK Madde 11 uyarınca veri sorumlusuna başvurarak şu haklara sahipsiniz:\n• Kişisel verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme\n• İşlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme\n• Verilerin aktarıldığı üçüncü tarafları öğrenme\n• Eksik/yanlış işlenen verilerin düzeltilmesini isteme\n• Verilerin silinmesini veya yok edilmesini isteme (yasal saklama yükümlülüğü olmadığı durumlarda)\n• Bu işlemlerin verilerin aktarıldığı üçüncü taraflara da bildirilmesini isteme\n• Otomatik sistemlerle yapılan analiz sonucu aleyhinize bir sonuç çıkmasına itiraz etme\n• Hukuka aykırı işleme nedeniyle uğranılan zararın giderilmesini talep etme',
+  kvkk_h7_consent: '7. Açık Rıza',
+  kvkk_b7_consent:
+    'Bu metni okudum, anladım. Sağlık verilerimin (görüşme ses kaydı, transkript, anamnez) yukarıda belirtilen amaçlarla işlenmesine, Anthropic Claude API hizmetine yurt dışı aktarımına ve OpenEMR sistemine kaydedilmesine KVKK Madde 6 ve Madde 9 kapsamında AÇIK RIZA ile onay veriyorum.',
+  kvkk_accept: 'Okudum, Açık Rıza ile Onaylıyorum',
+  kvkk_decline: 'Onaylamıyorum',
+
 
   // ── Live Session / Processing ─────────────────────────────────────────────────
   live_validating: 'Ses dosyası doğrulanıyor...',
@@ -217,6 +254,7 @@ const tr: TranslationMap = {
   review_generateHint: 'Transkriptten otomatik veya boş rapor oluşturun',
   review_regenerate: 'AI ile Yeniden Oluştur',
   review_generate: 'AI ile Oluştur',
+  review_regenerateError: 'AI rapor oluşturulamadı.',
   review_showTranscript: 'Transkripti Göster',
   review_hideTranscript: 'Transkripti Gizle',
 
@@ -227,16 +265,16 @@ const tr: TranslationMap = {
   history_all: 'Tümü',
   history_pending: 'Bekleyen',
   history_completed: 'Tamamlanan',
-  history_archived: 'Arşivlenen',
-  history_archiveConfirm: 'Bu görüşmeyi arşivlemek istediğinizden emin misiniz?',
+  history_deleteConfirm: 'Bu görüşmeyi silmek istediğinizden emin misiniz?',
   history_deleteError: 'Görüşme silinemedi',
   history_min: 'dk',
   history_sec: 'sn',
   history_search: 'Arama',
-  history_searchPlaceholder: 'Doktor adı veya hasta ID ara...',
+  history_searchPlaceholder: 'Hasta adı, doktor adı veya hasta ID ara...',
   history_startDate: 'Başlangıç',
   history_endDate: 'Bitiş',
   history_col_date: 'Tarih',
+  history_col_patient: 'Hasta',
   history_col_doctor: 'Doktor',
   history_col_visitType: 'Ziyaret Tipi',
   history_col_status: 'Durum',
@@ -246,7 +284,7 @@ const tr: TranslationMap = {
   history_unknownError: 'Bilinmeyen hata',
   history_noSessions: 'Görüşme bulunamadı',
   history_noSessionsHint: 'Filtrelerinizi değiştirmeyi deneyin',
-  history_archiveTooltip: 'Görüşmeyi arşivle',
+  history_deleteTooltip: 'Görüşmeyi sil',
   history_total: 'Toplam {total} görüşme',
   history_page: ', Sayfa {page}/{totalPages}',
   history_prev: 'Önceki',
@@ -262,7 +300,6 @@ const tr: TranslationMap = {
   settings_tab_profile: 'Profil',
   settings_tab_audio: 'Ses',
   settings_tab_llm: 'LLM',
-  settings_tab_templates: 'Şablonlar',
   settings_tab_display: 'Görüntü',
   settings_tab_privacy: 'Gizlilik',
   settings_profile_title: 'Profil Bilgileri',
@@ -283,13 +320,20 @@ const tr: TranslationMap = {
   settings_micNotFound: 'Mikrofon bulunamadı',
   settings_audioQuality:
     'Ses kalitesi: Mono kanal, 16kHz örnekleme oranı. Tıbbi konuşmalar için optimize edilmiştir.',
+  settings_recordingsTestMode: 'Test modu: Ses kayıtlarını sakla',
+  settings_recordingsTestModeDesc:
+    'Açıkken, görüşme sonrası ses dosyaları diskte kalır. Doktor mevcut bir kaydı seçip görüşmeyi yeniden başlatabilir. Üretimde KVKK gereği KAPALI olmalı.',
+  settings_recordingsTestModeOn:
+    'Şu anda açık — bu cihazdaki tüm ses kayıtları silinmeden saklanıyor.',
   settings_llm_title: 'LLM Ayarları',
   settings_llmMode: 'LLM Modu',
-  settings_local: 'Yerel (Ollama)',
+  settings_local: 'Yerel (Gemma)',
   settings_api: 'API (Google Gemini)',
+  settings_haiku: 'Claude Haiku 4.5',
+  settings_opus: 'Claude Opus 4.7',
   settings_kvkkWarning: 'KVKK Uyarısı',
   settings_kvkkWarningMsg:
-    'API modunda hasta verileri (transkript metni) Google sunucularına gönderilecektir. Hasta onamının alındığından emin olun.',
+    'API modunda hasta verileri (transkript metni) Anthropic sunucularına gönderilecektir. Hasta onamının alındığından emin olun.',
   settings_ollamaStatus: 'Ollama Durumu',
   settings_connection: 'Bağlantı',
   settings_connected: 'Bağlı',
@@ -303,9 +347,11 @@ const tr: TranslationMap = {
   settings_fallbackDesc: 'Ana model hata verirse qwen3:8b dene',
   settings_ollamaStartCmd: "Ollama'yı başlatmak için: ollama serve",
   settings_geminiSettings: 'Google Gemini Ayarları',
+  settings_anthropicSettings: 'Anthropic Ayarları',
   settings_apiKey: 'API Key',
   settings_apiKeyPlaceholder: 'API key giriniz',
   settings_apiKeySet: 'API key zaten tanımlı. Değiştirmek için yeni key girin.',
+  settings_opusTempLocked: 'Opus 4.x bu ayarı desteklemez (sabit varsayılan kullanılır).',
   settings_connectionStatus: 'Bağlantı Durumu',
   settings_notSaved: 'Kaydedilmemiş',
   settings_params: 'Parametreler',
@@ -323,10 +369,7 @@ const tr: TranslationMap = {
   settings_localPrivacy:
     'Tüm işlem yerel olarak yapılır. Veriler dışarıya gönderilmez (KVKK uyumlu).',
   settings_apiPrivacy:
-    'API modunda transkript metni Google sunucularına gönderilir. KVKK kapsamında hasta onamı gereklidir.',
-  settings_templates_title: 'Rapor Şablonları',
-  settings_templatesComing: 'Rapor şablonları yakın zamanda eklenecek',
-  settings_templatesDesc: 'Özel anamnez şablonları tanımlayabileceksiniz',
+    'API modunda transkript metni Anthropic sunucularına gönderilir. KVKK kapsamında hasta onamı gereklidir.',
   settings_display_title: 'Görüntü Ayarları',
   settings_theme: 'Tema',
   settings_light: 'Açık',
@@ -515,7 +558,7 @@ const en: TranslationMap = {
   confirm_delete: 'Delete',
   confirm_leave: 'Leave',
   confirm_logout: 'Log Out',
-  confirm_archiveTitle: 'Archive Session',
+  confirm_deleteTitle: 'Delete Session',
   confirm_leaveTitle: 'Leave Page',
   confirm_logoutTitle: 'Log Out',
   confirm_deleteUserTitle: 'Delete User',
@@ -565,7 +608,7 @@ const en: TranslationMap = {
   dash_unknownError: 'Unknown error',
   dash_noSessions: 'No sessions found yet',
   dash_viewAppointments: 'View your appointments',
-  dash_archiveConfirm: 'Are you sure you want to archive this session?',
+  dash_deleteConfirm: 'Are you sure you want to delete this session?',
   dash_deleteError: 'Session could not be deleted',
 
   // ── Stats Bar ────────────────────────────────────────────────────────────────
@@ -577,10 +620,9 @@ const en: TranslationMap = {
   // ── Status Badge ─────────────────────────────────────────────────────────────
   status_notStarted: 'Not Started',
   status_recording: 'Recording',
-  status_processing: 'Processing',
+  status_processing: 'Re-record audio',
   status_awaitingReview: 'Awaiting Review',
   status_completed: 'Completed',
-  status_archived: 'Archived',
 
   // ── Session Card ─────────────────────────────────────────────────────────────
   card_firstConsult: 'First Consultation',
@@ -588,7 +630,7 @@ const en: TranslationMap = {
   card_consultation: 'Consultation',
   card_emergency: 'Emergency',
   card_patient: 'Patient:',
-  card_archiveTooltip: 'Archive session',
+  card_deleteTooltip: 'Delete session',
 
   // ── Pre-Session Page ──────────────────────────────────────────────────────────
   pre_noAppt: 'No Appointment Selected',
@@ -611,6 +653,13 @@ const en: TranslationMap = {
   pre_locationPlaceholder: 'Clinic / Room',
   pre_kvkkConsent:
     'The patient has read the KVKK disclosure text and has consented to audio recording',
+  pre_kvkkOpenModal: 'View and Accept KVKK Disclosure',
+  pre_kvkkAccepted: 'KVKK disclosure has been read and accepted.',
+  pre_existingRecordings: 'Existing recordings for this patient',
+  pre_existingRecordingsDesc:
+    'Test mode is on. Instead of recording new audio, you can replay the session from an existing recording.',
+  pre_recordNew: 'Record new audio',
+  pre_selected: 'Selected',
   pre_startRecording: 'Start Recording',
 
   // ── Live Session / Processing ─────────────────────────────────────────────────
@@ -667,6 +716,7 @@ const en: TranslationMap = {
   review_generateHint: 'Generate an automatic or blank report from the transcript',
   review_regenerate: 'Regenerate with AI',
   review_generate: 'Generate with AI',
+  review_regenerateError: 'Failed to generate AI report.',
   review_showTranscript: 'Show Transcript',
   review_hideTranscript: 'Hide Transcript',
 
@@ -677,16 +727,16 @@ const en: TranslationMap = {
   history_all: 'All',
   history_pending: 'Pending',
   history_completed: 'Completed',
-  history_archived: 'Archived',
-  history_archiveConfirm: 'Are you sure you want to archive this session?',
+  history_deleteConfirm: 'Are you sure you want to delete this session?',
   history_deleteError: 'Session could not be deleted',
   history_min: 'min',
   history_sec: 'sec',
   history_search: 'Search',
-  history_searchPlaceholder: 'Search by doctor name or patient ID...',
+  history_searchPlaceholder: 'Search by patient name, doctor name or patient ID...',
   history_startDate: 'Start Date',
   history_endDate: 'End Date',
   history_col_date: 'Date',
+  history_col_patient: 'Patient',
   history_col_doctor: 'Doctor',
   history_col_visitType: 'Visit Type',
   history_col_status: 'Status',
@@ -696,7 +746,7 @@ const en: TranslationMap = {
   history_unknownError: 'Unknown error',
   history_noSessions: 'No sessions found',
   history_noSessionsHint: 'Try changing your filters',
-  history_archiveTooltip: 'Archive session',
+  history_deleteTooltip: 'Delete session',
   history_total: 'Total {total} sessions',
   history_page: ', Page {page}/{totalPages}',
   history_prev: 'Previous',
@@ -712,7 +762,6 @@ const en: TranslationMap = {
   settings_tab_profile: 'Profile',
   settings_tab_audio: 'Audio',
   settings_tab_llm: 'LLM',
-  settings_tab_templates: 'Templates',
   settings_tab_display: 'Display',
   settings_tab_privacy: 'Privacy',
   settings_profile_title: 'Profile Information',
@@ -733,10 +782,17 @@ const en: TranslationMap = {
   settings_micNotFound: 'No microphone found',
   settings_audioQuality:
     'Audio quality: Mono channel, 16kHz sample rate. Optimized for medical conversations.',
+  settings_recordingsTestMode: 'Test mode: Keep audio recordings',
+  settings_recordingsTestModeDesc:
+    'When on, recordings are kept on disk after a session. Doctors can pick an existing recording to replay. Must be OFF in production for KVKK compliance.',
+  settings_recordingsTestModeOn:
+    'Currently on — all audio recordings on this machine are retained.',
   settings_llm_title: 'LLM Settings',
   settings_llmMode: 'LLM Mode',
-  settings_local: 'Local (Ollama)',
+  settings_local: 'Local (Gemma)',
   settings_api: 'API (Google Gemini)',
+  settings_haiku: 'Claude Haiku 4.5',
+  settings_opus: 'Claude Opus 4.7',
   settings_kvkkWarning: 'KVKK Warning',
   settings_kvkkWarningMsg:
     'In API mode, patient data (transcript text) will be sent to Google servers. Ensure patient consent has been obtained.',
@@ -753,9 +809,11 @@ const en: TranslationMap = {
   settings_fallbackDesc: 'Try qwen3:8b if the main model fails',
   settings_ollamaStartCmd: 'To start Ollama: ollama serve',
   settings_geminiSettings: 'Google Gemini Settings',
+  settings_anthropicSettings: 'Anthropic Settings',
   settings_apiKey: 'API Key',
   settings_apiKeyPlaceholder: 'Enter API key',
   settings_apiKeySet: 'API key already set. Enter a new key to change it.',
+  settings_opusTempLocked: 'Opus 4.x does not support this setting (default is fixed).',
   settings_connectionStatus: 'Connection Status',
   settings_notSaved: 'Not saved',
   settings_params: 'Parameters',
@@ -773,10 +831,7 @@ const en: TranslationMap = {
   settings_localPrivacy:
     'All processing is done locally. Data is not sent externally (KVKK compliant).',
   settings_apiPrivacy:
-    'In API mode, transcript text is sent to Google servers. Patient consent is required under KVKK.',
-  settings_templates_title: 'Report Templates',
-  settings_templatesComing: 'Report templates coming soon',
-  settings_templatesDesc: 'You will be able to define custom anamnesis templates',
+    'In API mode, transcript text is sent to Anthropic servers. Patient consent is required under KVKK.',
   settings_display_title: 'Display Settings',
   settings_theme: 'Theme',
   settings_light: 'Light',

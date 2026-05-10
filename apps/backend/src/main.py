@@ -49,6 +49,7 @@ from apps.backend.src.routes import data as data_routes
 from apps.backend.src.routes import health as health_routes
 from apps.backend.src.routes import icd10 as icd10_routes
 from apps.backend.src.routes import sut_tetkik as sut_tetkik_routes
+from apps.backend.src.routes import recordings as recordings_routes
 from apps.backend.src.routes import reports as reports_routes
 from apps.backend.src.routes import sessions as sessions_routes
 from apps.backend.src.routes import settings as settings_routes
@@ -177,33 +178,38 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
 
     # ---- Anamnez RAG (real hospital corpus, BGE-M3 × metadata) ----
-    from apps.backend.src.services.anamnez_rag_service import AnamnezRAGService
+    _anamnez_rag_enabled = os.environ.get("ANAMNEZ_RAG_ENABLED", "true").lower() not in ("false", "0", "no")
+    anamnez_rag_service = None
+    if _anamnez_rag_enabled:
+        from apps.backend.src.services.anamnez_rag_service import AnamnezRAGService
 
-    anamnez_rag_service = AnamnezRAGService(
-        profile=app_settings.rag.anamnez_profile,
-        fmt=app_settings.rag.anamnez_fmt,
-    )
-    try:
-        await anamnez_rag_service.initialize()
-        if app_settings.rag.anamnez_warmup:
-            # 2 dummy encodes prime CUDA kernels / first-query latency cliff
-            await anamnez_rag_service.query_similar_cases("warmup", top_k=1)
-            await anamnez_rag_service.query_similar_cases("warmup", top_k=1)
-            logger.info("AnamnezRAG warmup done")
-    except FileNotFoundError as e:
-        logger.warning(
-            "AnamnezRAG disabled — chroma dir missing (%s). "
-            "To enable: python -m apps.backend.src.scripts.build_anamnez_vectors "
-            "--profile %s --format %s",
-            e, app_settings.rag.anamnez_profile, app_settings.rag.anamnez_fmt,
+        anamnez_rag_service = AnamnezRAGService(
+            profile=app_settings.rag.anamnez_profile,
+            fmt=app_settings.rag.anamnez_fmt,
         )
-        anamnez_rag_service = None
-    except Exception:
-        logger.warning(
-            "AnamnezRAG disabled — initialization error (chroma dir or model cache).",
-            exc_info=True,
-        )
-        anamnez_rag_service = None
+        try:
+            await anamnez_rag_service.initialize()
+            if app_settings.rag.anamnez_warmup:
+                # 2 dummy encodes prime CUDA kernels / first-query latency cliff
+                await anamnez_rag_service.query_similar_cases("warmup", top_k=1)
+                await anamnez_rag_service.query_similar_cases("warmup", top_k=1)
+                logger.info("AnamnezRAG warmup done")
+        except FileNotFoundError as e:
+            logger.warning(
+                "AnamnezRAG disabled — chroma dir missing (%s). "
+                "To enable: python -m apps.backend.src.scripts.build_anamnez_vectors "
+                "--profile %s --format %s",
+                e, app_settings.rag.anamnez_profile, app_settings.rag.anamnez_fmt,
+            )
+            anamnez_rag_service = None
+        except Exception:
+            logger.warning(
+                "AnamnezRAG disabled — initialization error (chroma dir or model cache).",
+                exc_info=True,
+            )
+            anamnez_rag_service = None
+    else:
+        logger.info("AnamnezRAG disabled via ANAMNEZ_RAG_ENABLED=false")
 
     report_generator = ReportGenerator(
         ner_service,
@@ -236,6 +242,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.sut_suggestion_service = sut_suggestion_service
     app.state.openemr_service = openemr_service
     app.state.app_settings = app_settings
+    # Test/dev mode: when True, recorded audio WAV files are not deleted after
+    # processing — admins can replay them from the patient detail UI. Off by
+    # default (PHI cleanup). Toggled at runtime via /api/v1/recordings/test-mode.
+    app.state.keep_recordings = False
 
     yield
 
@@ -284,4 +294,5 @@ app.include_router(reports_routes.router)
 app.include_router(settings_routes.router)
 app.include_router(icd10_routes.router)
 app.include_router(sut_tetkik_routes.router)
+app.include_router(recordings_routes.router)
 app.include_router(data_routes.router)

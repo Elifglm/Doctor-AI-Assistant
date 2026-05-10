@@ -3,6 +3,8 @@
 import json
 import logging
 import os
+import re
+import shutil
 import time
 import traceback
 from datetime import datetime, timezone
@@ -89,6 +91,11 @@ class AudioHandler:
                         await self._process_recording()
                         break
 
+                    if msg_type == "replay":
+                        replay_path = data.get("path")
+                        await self._process_replay(replay_path)
+                        break
+
         except WebSocketDisconnect:
             logger.info("WS disconnected for session %d", self.session_id)
         except Exception as e:
@@ -96,6 +103,11 @@ class AudioHandler:
             await self._send_error(str(e))
 
     # ── Batch Processing ────────────────────────────────────────────
+
+    def _patient_dir(self, patient_id: str) -> Path:
+        """Hasta-keyed klasör. patient_id güvenli karakterlere indirgenir."""
+        safe_pid = re.sub(r"[^a-zA-Z0-9_-]", "_", patient_id or "")[:50] or "unknown"
+        return RECORDINGS_DIR / f"patient_{safe_pid}"
 
     async def _process_recording(self) -> None:
         """Biriktirilmis sesi WAV'a donustur ve batch pipeline calistir."""
@@ -111,45 +123,18 @@ class AudioHandler:
 
         wav_path: str | None = None
         try:
-            # WebM → WAV (tek seferde, guvenilir)
-            RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
+            # Session'ı önce oku — WAV path'i hasta-keyed klasöre yazmak için
+            # patient_id'ye ihtiyacımız var.
+            session = await self._get_session()
+            patient_id = (session.patient_id if session else "") or "unknown"
+            patient_dir = self._patient_dir(patient_id)
+            patient_dir.mkdir(parents=True, exist_ok=True)
             wav_path = str(
-                RECORDINGS_DIR / f"session_{self.session_id}_{int(time.time())}.wav"
+                patient_dir / f"session_{self.session_id}_{int(time.time())}.wav"
             )
             wav_path = await self._accumulator.save_wav(wav_path)
 
-            # Session guncelle
-            session = await self._get_session()
-            if session:
-                session.status = "PROCESSING"
-                session.audio_file_path = wav_path
-                session.ended_at = datetime.now(timezone.utc)
-                await self.db.commit()
-
-            # Batch ASR pipeline
-            async def progress_cb(stage: str, message: str, progress: float) -> None:
-                await self._send_progress(stage, message, progress)
-
-            result = await asr_service.process_recording(wav_path, progress_cb)
-
-            # Segment'leri DB'ye kaydet
-            segments = await self._save_segments(result)
-
-            # Session durumunu guncelle
-            if session:
-                await self.db.refresh(session)
-                session.status = "AWAITING_REVIEW"
-                duration = result.get("metadata", {}).get(
-                    "audio_duration_seconds", 0
-                )
-                session.audio_duration_seconds = duration
-                await self.db.commit()
-
-            # Sonucu frontend'e gonder
-            await self._send_result(segments, result)
-
-            # Otomatik rapor olustur
-            await self._auto_generate_report(segments)
+            await self._run_pipeline(wav_path)
 
         except Exception as e:
             tb = traceback.format_exc()
@@ -163,11 +148,104 @@ class AudioHandler:
         finally:
             if wav_path and os.path.exists(wav_path):
                 try:
-                    session = await self._get_session()
-                    if session and session.status != "AWAITING_REVIEW":
-                        os.unlink(wav_path)
+                    # Test modu açıksa hiç silme — admin'in/doktorun replay
+                    # edebilmesi için tüm WAV'lar diskte kalır.
+                    keep = bool(getattr(self.ws.app.state, "keep_recordings", False))
+                    if not keep:
+                        session = await self._get_session()
+                        if session and session.status != "AWAITING_REVIEW":
+                            os.unlink(wav_path)
                 except Exception:
                     pass
+
+    async def _process_replay(self, src_path: str | None) -> None:
+        """Mevcut bir WAV'ı bu session için kopyala ve pipeline'ı çalıştır.
+
+        Test modu açıkken kullanılır — eski bir kayıttan yeni session türetir.
+        Kaynak path RECORDINGS_DIR içinde olmak zorunda (path traversal koruması).
+        """
+        if not src_path:
+            await self._send_error("Kayıt yolu belirtilmedi")
+            await self._reset_session_status("NOT_STARTED")
+            return
+
+        try:
+            src = Path(src_path).resolve()
+            recordings_root = RECORDINGS_DIR.resolve()
+            src.relative_to(recordings_root)
+        except (ValueError, OSError):
+            await self._send_error("Kayıt yolu geçersiz")
+            await self._reset_session_status("NOT_STARTED")
+            return
+
+        if not src.is_file():
+            await self._send_error("Kaynak ses kaydı bulunamadı")
+            await self._reset_session_status("NOT_STARTED")
+            return
+
+        await self._send_json({
+            "type": "processing_start",
+            "message": "Mevcut kayıt işleniyor...",
+        })
+
+        dst_path: str | None = None
+        try:
+            session = await self._get_session()
+            patient_id = (session.patient_id if session else "") or "unknown"
+            patient_dir = self._patient_dir(patient_id)
+            patient_dir.mkdir(parents=True, exist_ok=True)
+            dst_path = str(
+                patient_dir / f"session_{self.session_id}_{int(time.time())}.wav"
+            )
+            # Yeni session için kendi kopyasını oluştur — kaynak WAV bozulmaz.
+            shutil.copy2(src, dst_path)
+
+            await self._run_pipeline(dst_path)
+
+        except Exception as e:
+            tb = traceback.format_exc()
+            logger.error(
+                "Replay failed for session %d: %s\n%s",
+                self.session_id, repr(e), tb,
+            )
+            error_detail = repr(e) if not str(e) else str(e)
+            await self._send_error(f"Isleme hatasi: {error_detail[:500]}")
+            await self._reset_session_status("NOT_STARTED")
+        finally:
+            if dst_path and os.path.exists(dst_path):
+                try:
+                    keep = bool(getattr(self.ws.app.state, "keep_recordings", False))
+                    if not keep:
+                        session = await self._get_session()
+                        if session and session.status != "AWAITING_REVIEW":
+                            os.unlink(dst_path)
+                except Exception:
+                    pass
+
+    async def _run_pipeline(self, wav_path: str) -> None:
+        """Diskteki bir WAV üzerinde ASR + segment kaydet + raporu üret."""
+        session = await self._get_session()
+        if session:
+            session.status = "PROCESSING"
+            session.audio_file_path = wav_path
+            session.ended_at = datetime.now(timezone.utc)
+            await self.db.commit()
+
+        async def progress_cb(stage: str, message: str, progress: float) -> None:
+            await self._send_progress(stage, message, progress)
+
+        result = await asr_service.process_recording(wav_path, progress_cb)
+        segments = await self._save_segments(result)
+
+        if session:
+            await self.db.refresh(session)
+            session.status = "AWAITING_REVIEW"
+            duration = result.get("metadata", {}).get("audio_duration_seconds", 0)
+            session.audio_duration_seconds = duration
+            await self.db.commit()
+
+        await self._send_result(segments, result)
+        await self._auto_generate_report(segments)
 
     # ── DB Operations ───────────────────────────────────────────────
 
