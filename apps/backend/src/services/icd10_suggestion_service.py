@@ -482,22 +482,42 @@ class ICD10SuggestionService:
                     if fragment not in ner_terms:
                         ner_terms.append(fragment)
 
-        # Phase 1.1: HyDE — generate hypothetical clinical doc and prepend
-        # to query terms. Bridges query/document distribution mismatch
-        # (patient dialogue vs formal ICD-10 entries).
+        # Step 2 (initial): Find candidate ICD-10 codes via vector DB + text
+        # search using NER terms only. Used both as final result when retrieval
+        # is already strong, and as input to the conditional HyDE skip below.
+        vector_candidates = await self._find_vector_candidates(ner_terms)
+        text_candidates = await self._text_search_fallback(ner_terms)
+
+        # Phase 1.1 + Cost optimization: HyDE — generate hypothetical clinical
+        # doc only when initial retrieval is weak. If top-1 vector score >=
+        # ASR_HYDE_SKIP_THRESHOLD (default 0.85), HyDE is skipped (saves 1 LLM
+        # call without hurting metrics — strong retrieval doesn't need rescue).
         hyde_doc: str | None = None
-        if self._hyde is not None and _env_flag("ASR_HYDE_ENABLED"):
+        skip_threshold = float(os.environ.get("ASR_HYDE_SKIP_THRESHOLD", "0.85"))
+        top_score = max((c.get("score", 0.0) for c in vector_candidates), default=0.0)
+        if (
+            self._hyde is not None
+            and _env_flag("ASR_HYDE_ENABLED")
+            and top_score < skip_threshold
+        ):
             try:
                 hyde_doc = await self._hyde.generate_for_icd(report_text)
                 if hyde_doc and len(hyde_doc) > 20:
                     ner_terms.insert(0, hyde_doc)
-                    logger.info("HyDE prepended (%d chars)", len(hyde_doc))
+                    logger.info(
+                        "HyDE prepended (%d chars, top_score=%.3f < %.2f)",
+                        len(hyde_doc), top_score, skip_threshold,
+                    )
+                    # Re-run vector + text search WITH hyde doc prepended
+                    vector_candidates = await self._find_vector_candidates(ner_terms)
+                    text_candidates = await self._text_search_fallback(ner_terms)
             except Exception:
                 logger.exception("HyDE generation failed; continuing without")
-
-        # Step 2: Find candidate ICD-10 codes via vector DB + text search
-        vector_candidates = await self._find_vector_candidates(ner_terms)
-        text_candidates = await self._text_search_fallback(ner_terms)
+        elif self._hyde is not None and _env_flag("ASR_HYDE_ENABLED"):
+            logger.info(
+                "HyDE skipped (top_score=%.3f >= %.2f, retrieval already strong)",
+                top_score, skip_threshold,
+            )
 
         # Phase 2.1: BM25 sparse retrieval channel (lexical match for surface
         # forms BGE-M3 abstracts away — e.g. specific ICD codes, medical labels).

@@ -23,12 +23,31 @@ Expected gain (literature): +5-15 NDCG@10 in medical IR
 """
 from __future__ import annotations
 
+import hashlib
 import logging
+import os
+from pathlib import Path
 from typing import Any
 
 from apps.backend.src.services.llm_base import LLMProvider
 
 logger = logging.getLogger(__name__)
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[4]
+_DEFAULT_CACHE_DIR = _PROJECT_ROOT / "data" / "hyde_cache"
+
+
+def _cache_enabled() -> bool:
+    """Disk-cache is on by default; turn off with ASR_HYDE_CACHE_ENABLED=false."""
+    val = os.environ.get("ASR_HYDE_CACHE_ENABLED", "true").strip().lower()
+    return val not in ("false", "0", "no", "off")
+
+
+def _cache_key(layer: str, transcript: str) -> str:
+    """Stable cache key: layer + first 16 hex of sha256 of normalized text."""
+    norm = " ".join(transcript.split())[:3000]
+    digest = hashlib.sha256(norm.encode("utf-8")).hexdigest()[:16]
+    return f"{layer}_{digest}"
 
 
 # Prompt templates — task-specific HyDE per AutoMIR (Zhou & Liu 2024)
@@ -89,50 +108,62 @@ class HyDEService:
         # then: chroma.search(embedding, ...)
     """
 
-    def __init__(self, llm: LLMProvider) -> None:
+    def __init__(self, llm: LLMProvider, cache_dir: Path | None = None) -> None:
         self._llm = llm
+        self._cache_dir = cache_dir or _DEFAULT_CACHE_DIR
+
+    def _read_cache(self, layer: str, transcript: str) -> str | None:
+        if not _cache_enabled():
+            return None
+        path = self._cache_dir / f"{_cache_key(layer, transcript)}.txt"
+        if path.exists():
+            try:
+                cached = path.read_text(encoding="utf-8")
+                logger.info("HyDE %s cache HIT (%s, %d chars)", layer, path.name, len(cached))
+                return cached
+            except Exception:
+                logger.warning("HyDE cache read failed for %s", path)
+        return None
+
+    def _write_cache(self, layer: str, transcript: str, doc: str) -> None:
+        if not _cache_enabled():
+            return
+        try:
+            self._cache_dir.mkdir(parents=True, exist_ok=True)
+            path = self._cache_dir / f"{_cache_key(layer, transcript)}.txt"
+            path.write_text(doc, encoding="utf-8")
+        except Exception:
+            logger.warning("HyDE cache write failed", exc_info=True)
+
+    async def _generate(self, layer: str, prompt_template: str, transcript: str) -> str:
+        if not transcript or not transcript.strip():
+            return ""
+        cached = self._read_cache(layer, transcript)
+        if cached is not None:
+            return cached
+        try:
+            prompt = prompt_template.format(transcript=transcript[:3000])
+            response = await self._llm.generate(prompt, "")
+            cleaned = response.strip().strip('"\'')
+            if not cleaned:
+                logger.warning("HyDE %s returned empty, falling back to transcript", layer)
+                return transcript[:500]
+            logger.info("HyDE %s generated %d chars from %d-char transcript",
+                        layer, len(cleaned), len(transcript))
+            self._write_cache(layer, transcript, cleaned)
+            return cleaned
+        except Exception:
+            logger.exception("HyDE %s generation failed; using fallback", layer)
+            return transcript[:500]
 
     async def generate_for_icd(self, transcript: str) -> str:
         """Generate hypothetical clinical summary for ICD-10 retrieval.
 
-        Returns a formal 2-3 sentence epikriz suitable for embedding and
-        searching against the ICD-10 corpus.
-
-        On LLM failure, returns the original transcript truncated to first
-        500 chars (graceful fallback — no retrieval gets worse).
+        Cached on disk (sha256 of normalized transcript). Disable cache with
+        ASR_HYDE_CACHE_ENABLED=false.
         """
-        if not transcript or not transcript.strip():
-            return ""
-
-        try:
-            prompt = _HYDE_PROMPT_ICD.format(transcript=transcript[:3000])
-            response = await self._llm.generate(prompt, "")
-            cleaned = response.strip().strip('"\'')
-            if not cleaned:
-                logger.warning("HyDE ICD returned empty, falling back to transcript")
-                return transcript[:500]
-            logger.info("HyDE ICD generated %d chars from %d-char transcript",
-                        len(cleaned), len(transcript))
-            return cleaned
-        except Exception:
-            logger.exception("HyDE ICD generation failed; using fallback")
-            return transcript[:500]
+        return await self._generate("icd", _HYDE_PROMPT_ICD, transcript)
 
     async def generate_for_sut(self, transcript: str) -> str:
         """Generate hypothetical test order list for SUT retrieval."""
-        if not transcript or not transcript.strip():
-            return ""
-
-        try:
-            prompt = _HYDE_PROMPT_SUT.format(transcript=transcript[:3000])
-            response = await self._llm.generate(prompt, "")
-            cleaned = response.strip().strip('"\'')
-            if not cleaned:
-                logger.warning("HyDE SUT returned empty, falling back to transcript")
-                return transcript[:500]
-            logger.info("HyDE SUT generated %d chars from %d-char transcript",
-                        len(cleaned), len(transcript))
-            return cleaned
-        except Exception:
-            logger.exception("HyDE SUT generation failed; using fallback")
-            return transcript[:500]
+        return await self._generate("sut", _HYDE_PROMPT_SUT, transcript)
