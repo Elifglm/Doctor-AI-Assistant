@@ -69,6 +69,16 @@ PROFILES: dict[str, EmbeddingProfile] = {
         rag_chroma_dir=_PROJECT_ROOT / "data" / "rag" / "chroma_db_bge",
         # BGE-M3 has no required prefix — raw text encodes correctly.
     ),
+    # Domain-restricted variant: same BGE-M3 model + same SUT/RAG dirs, but
+    # ICD catalog filtered to dahiliye (internal medicine) scope (5,971 / 11,332).
+    # Use for Phase 4 ablation: EMBEDDING_MODEL=bge-m3-dahiliye
+    "bge-m3-dahiliye": EmbeddingProfile(
+        name="bge-m3-dahiliye",
+        model_id="BAAI/bge-m3",
+        icd_chroma_dir=_PROJECT_ROOT / "data" / "icd10_chroma_bge_dahiliye",
+        sut_chroma_dir=_PROJECT_ROOT / "data" / "sut_tetkik_chroma_bge",
+        rag_chroma_dir=_PROJECT_ROOT / "data" / "rag" / "chroma_db_bge",
+    ),
 }
 
 
