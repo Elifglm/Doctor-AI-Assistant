@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import unicodedata
 from dataclasses import dataclass
 
 from sqlalchemy import text
@@ -15,8 +16,17 @@ _TR_MAP = str.maketrans("ıİöÖüÜçÇşŞğĞ", "iIoOuUcCsSgG")
 
 
 def normalize_turkish(s: str) -> str:
-    """Normalize Turkish characters to ASCII equivalents for search."""
-    return s.lower().translate(_TR_MAP)
+    """Normalize Turkish characters to ASCII equivalents for search.
+
+    Critical: Python's default ``"İ".lower()`` produces ``"i" + U+0307`` (a
+    combining dot), not a plain ``"i"``. NFKD + combining-mark strip undoes
+    that so ``"İdrar"`` → ``"idrar"`` (5 chars) instead of ``"i̇drar"``
+    (6 chars). Without this, "idrar" queries miss DB rows whose
+    tani_normalized was written with the broken default lower().
+    """
+    s = unicodedata.normalize("NFKD", s.lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return s.translate(_TR_MAP)
 
 
 @dataclass

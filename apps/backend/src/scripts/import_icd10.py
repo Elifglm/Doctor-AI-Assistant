@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import sqlite3
 import sys
+import unicodedata
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[4]
@@ -15,8 +16,16 @@ _TR_MAP = str.maketrans("ıİöÖüÜçÇşŞğĞ", "iIoOuUcCsSgG")
 
 
 def normalize_turkish(text: str) -> str:
-    """Normalize Turkish characters to ASCII equivalents for search."""
-    return text.lower().translate(_TR_MAP)
+    """Normalize Turkish characters to ASCII equivalents for search.
+
+    NFKD + combining-mark strip is required because Python's default
+    ``"İ".lower()`` yields ``"i" + U+0307`` (combining dot), not a plain
+    ``"i"``. Without this strip, queries like "idrar" (5 chars) miss DB
+    rows whose tani_normalized was written as "i̇drar" (6 chars).
+    """
+    s = unicodedata.normalize("NFKD", text.lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return s.translate(_TR_MAP)
 
 
 def parse_mysql_dump(sql_path: str) -> list[tuple[str, str, str | None, int]]:

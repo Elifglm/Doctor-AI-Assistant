@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import unicodedata
 from dataclasses import dataclass
 
 from sqlalchemy import text
@@ -15,8 +16,17 @@ _TR_MAP = str.maketrans("ıİöÖüÜçÇşŞğĞ", "iIoOuUcCsSgG")
 
 
 def normalize_turkish(s: str) -> str:
-    """Normalize Turkish characters to ASCII equivalents for search."""
-    return s.lower().translate(_TR_MAP)
+    """Normalize Turkish characters to ASCII equivalents for search.
+
+    Critical: Python's default ``"İ".lower()`` produces ``"i" + U+0307`` (a
+    combining dot), not a plain ``"i"``. NFKD + combining-mark strip undoes
+    that so ``"İdrar"`` → ``"idrar"`` (5 chars) instead of ``"i̇drar"``
+    (6 chars). Without this, "idrar" queries miss DB rows whose
+    adi_normalized was written with the broken default lower().
+    """
+    s = unicodedata.normalize("NFKD", s.lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return s.translate(_TR_MAP)
 
 
 @dataclass
@@ -93,6 +103,32 @@ class SUTService:
                             f"ORDER BY kodu LIMIT :limit"
                         ),
                         word_params,
+                    )
+                    for row in rows:
+                        if row[0] not in seen_codes:
+                            seen_codes.add(row[0])
+                            results.append(SUTResult(
+                                kodu=row[0], adi=row[1], brans=row[2],
+                                ana_kategori=row[3] or "", alt_kategori=row[4] or "",
+                                puan=row[5] or 0.0,
+                            ))
+                        if len(results) >= limit:
+                            break
+
+                # Fallback: strict AND found nothing — try the longest (most
+                # specific) single word so "kültür" alone returns "İdrar Kültürü".
+                if len(results) == 0 and len(query_words) > 1:
+                    longest = max(query_words, key=len)
+                    fb_params: dict = {"limit": limit, "pattern": f"%{longest}%"}
+                    if brans:
+                        fb_params["brans"] = brans.lower()
+                    rows = await session.execute(
+                        text(
+                            f"SELECT kodu, adi, brans, ana_kategori, alt_kategori, puan FROM sut_tetkik "
+                            f"WHERE adi_normalized LIKE :pattern{brans_filter} "
+                            f"ORDER BY kodu LIMIT :limit"
+                        ),
+                        fb_params,
                     )
                     for row in rows:
                         if row[0] not in seen_codes:
