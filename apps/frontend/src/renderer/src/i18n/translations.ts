@@ -51,7 +51,7 @@ const tr: TranslationMap = {
   icd10_emptyHint: 'Tanı kodu seçilmedi. Arama yapın veya AI ile öneri alın.',
 
   // ── SUT Tetkik (additions) ─────────────────────────────────────────────────
-  sut_sendSuccess: '{count} tetkik OpenEMR\'e gönderildi ({brans})',
+  sut_sendSuccess: '{count} tetkik HBYS\'ye gönderildi ({brans})',
   sut_sendFiltered: '{count} tetkik branş uyumsuzluğu nedeniyle filtrelendi',
 
   // ── Settings purge ──────────────────────────────────────────────────────────
@@ -232,13 +232,13 @@ const tr: TranslationMap = {
   report_saveError: 'Kaydetme hatası',
   report_icd10Placeholder: 'ICD-10 tanı kodu seçiniz',
   report_downloadPdf: 'PDF İndir',
-  report_sendToOpenEMR: "OpenEMR'e Gönder",
+  report_sendToOpenEMR: "HBYS'ye Gönder",
   report_sentToOpenEMR:
-    "OpenEMR'e gönderildi (Encounter #{encounterId}, {icd10Count} ICD-10 kodu)",
+    "HBYS'ye gönderildi (Encounter #{encounterId}, {icd10Count} ICD-10 kodu)",
   report_sendFailed: 'Gönderim başarısız',
-  report_connectionError: "OpenEMR bağlantı hatası",
+  report_connectionError: "HBYS bağlantı hatası",
   report_sectionsNotApproved: '{count} bölüm henüz onaylanmadı',
-  report_sendTooltip: 'Raporu OpenEMR sistemine gönder',
+  report_sendTooltip: 'Raporu HBYS sistemine gönder',
 
   // ── Report Review Page ────────────────────────────────────────────────────────
   review_title: 'Rapor İnceleme - {doctorName}',
@@ -488,7 +488,7 @@ const tr: TranslationMap = {
   sut_searchPlaceholder: 'SÜT kodu veya tetkik adı yazın...',
   sut_noResults: 'Sonuç bulunamadı',
   sut_selectedTests: 'Seçilen tetkikler:',
-  sut_sendToOpenEMR: "OpenEMR'e Gönder ({brans})",
+  sut_sendToOpenEMR: "HBYS'ye Gönder ({brans})",
   sut_noTestSelected: 'Tetkik seçilmedi. Arama yapın veya AI ile öneri alın.',
 }
 
@@ -541,7 +541,7 @@ const en: TranslationMap = {
   icd10_emptyHint: 'No diagnosis code selected. Search or use AI suggestions.',
 
   // ── SUT Tetkik (additions) ─────────────────────────────────────────────────
-  sut_sendSuccess: '{count} test sent to OpenEMR ({brans})',
+  sut_sendSuccess: '{count} test sent to HBYS ({brans})',
   sut_sendFiltered: '{count} test(s) filtered out due to specialty mismatch',
 
   // ── Settings purge ──────────────────────────────────────────────────────────
@@ -691,13 +691,13 @@ const en: TranslationMap = {
   report_saveError: 'Save error',
   report_icd10Placeholder: 'Select ICD-10 diagnosis code',
   report_downloadPdf: 'Download PDF',
-  report_sendToOpenEMR: 'Send to OpenEMR',
+  report_sendToOpenEMR: 'Send to HBYS',
   report_sentToOpenEMR:
-    'Sent to OpenEMR (Encounter #{encounterId}, {icd10Count} ICD-10 codes)',
+    'Sent to HBYS (Encounter #{encounterId}, {icd10Count} ICD-10 codes)',
   report_sendFailed: 'Send failed',
-  report_connectionError: 'OpenEMR connection error',
+  report_connectionError: 'HBYS connection error',
   report_sectionsNotApproved: '{count} section(s) not yet approved',
-  report_sendTooltip: 'Send report to OpenEMR system',
+  report_sendTooltip: 'Send report to HBYS',
 
   // ── Report Review Page ────────────────────────────────────────────────────────
   review_title: 'Report Review - {doctorName}',
@@ -947,7 +947,7 @@ const en: TranslationMap = {
   sut_searchPlaceholder: 'Enter SUT code or test name...',
   sut_noResults: 'No results found',
   sut_selectedTests: 'Selected tests:',
-  sut_sendToOpenEMR: 'Send to OpenEMR ({brans})',
+  sut_sendToOpenEMR: 'Send to HBYS ({brans})',
   sut_noTestSelected: 'No test selected. Search or get AI suggestions.',
 }
 
