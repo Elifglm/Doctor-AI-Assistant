@@ -27,7 +27,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   // encounter id rapora kaydedildiği için sayfa her açıldığında geri yüklenir.
   const [openEMRResult, setOpenEMRResult] = useState<{ success: boolean; message: string } | null>(
     () =>
-      report.openemr_encounter_id != null
+      report.openemr_synced && report.openemr_encounter_id != null
         ? {
             success: true,
             message: t('report_sentToOpenEMR', { encounterId: report.openemr_encounter_id }),
@@ -66,6 +66,21 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
       if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current)
     }
   }, [])
+
+  // Rapor HBYS'ye gönderildikten sonra kullanıcı bölüm İÇERİĞİNİ değiştirirse
+  // "HBYS'ye işlendi" mesajını kaldır — gönderilen sürüm artık güncel değil.
+  // Yüklenen raporun içeriğiyle DEĞER kıyaslaması yapılır; bu yüzden mount /
+  // StrictMode çift render'ında yanlışlıkla temizlenmez (yalnızca gerçek
+  // içerik değişiminde temizlenir).
+  const sentContentRef = useRef(
+    report.content.sections.map((s) => s.content).join(''),
+  )
+  useEffect(() => {
+    const current = sections.map((s) => s.content).join('')
+    if (current !== sentContentRef.current) {
+      setOpenEMRResult(null)
+    }
+  }, [sections])
 
   const handleContentChange = useCallback((key: string, content: string) => {
     setSections((prev) =>

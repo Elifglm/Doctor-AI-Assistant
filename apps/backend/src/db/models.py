@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime, timezone
 
@@ -100,6 +101,22 @@ class TranscriptionSegment(Base):
         return None
 
 
+def report_content_hash(content_json: str | None) -> str:
+    """MD5 of a report's section contents — HBYS senkron tespiti için.
+
+    Yalnızca bölüm İÇERİKLERİ üzerinden hesaplanır (onay durumu/sayaç hariç),
+    böylece onaylama mesajı düşürmez, yalnızca gerçek metin değişikliği düşürür.
+    """
+    if not content_json:
+        return ""
+    try:
+        sections = json.loads(content_json).get("sections", [])
+        joined = "".join(s.get("content", "") for s in sections)
+    except (ValueError, TypeError, AttributeError):
+        joined = content_json
+    return hashlib.md5(joined.encode("utf-8")).hexdigest()
+
+
 class Report(Base):
     __tablename__ = "reports"
 
@@ -116,6 +133,9 @@ class Report(Base):
     # OpenEMR/HBYS'ye başarıyla işlendiğinde oluşan encounter id'si. Set ise
     # rapor HBYS ile entegre edilmiş demektir — kalıcı entegrasyon göstergesi.
     openemr_encounter_id: int | None = Column(Integer, nullable=True)
+    # HBYS'ye gönderildiği andaki rapor içeriğinin parmak izi. Güncel içerik
+    # bununla eşleşmiyorsa rapor gönderimden sonra değiştirilmiş demektir.
+    openemr_synced_hash: str | None = Column(String(32), nullable=True)
     created_at: datetime = Column(
         DateTime(timezone=True),
         nullable=False,
@@ -130,6 +150,17 @@ class Report(Base):
         if self.content_json:
             return json.loads(self.content_json)
         return {"sections": [], "approved_sections": 0, "total_sections": 12}
+
+    @property
+    def openemr_synced(self) -> bool:
+        """True if the report still matches what was last pushed to HBYS.
+
+        Hesaplanan alan; from_attributes ile her serialize yolundan okunur.
+        """
+        return (
+            self.openemr_synced_hash is not None
+            and self.openemr_synced_hash == report_content_hash(self.content_json)
+        )
 
 
 class User(Base):

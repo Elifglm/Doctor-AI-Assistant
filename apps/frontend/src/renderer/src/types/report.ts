@@ -26,5 +26,6 @@ export interface Report {
   approved_at: string | null
   approved_by: string | null
   openemr_encounter_id: number | null
+  openemr_synced: boolean
   created_at: string
 }

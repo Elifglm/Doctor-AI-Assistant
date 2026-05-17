@@ -99,6 +99,8 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
   const [lastSuggestFingerprint, setLastSuggestFingerprint] = useState<string>(
     () => anamnesisFingerprint(reportSections),
   )
+  // Uyarı yalnızca pasif butona tıklanınca gösterilir — sürekli durmaz.
+  const [showNoChangeHint, setShowNoChangeHint] = useState(false)
   const canSuggest =
     suggestions.length === 0 ||
     anamnesisFingerprint(reportSections) !== lastSuggestFingerprint
@@ -249,7 +251,12 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
           <button
             type="button"
             onClick={() => {
-              if (canSuggest) void handleSuggest()
+              if (canSuggest) {
+                void handleSuggest()
+              } else {
+                setShowNoChangeHint(true)
+                setTimeout(() => setShowNoChangeHint(false), 5000)
+              }
             }}
             disabled={isSuggesting}
             title={canSuggest ? t('sut_aiSuggest') : t('sut_suggestNoChange')}
@@ -267,7 +274,7 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
             )}
             {t('sut_aiSuggest')}
           </button>
-          {!canSuggest && (
+          {showNoChangeHint && !canSuggest && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
               {t('sut_suggestNoChange')}
             </p>

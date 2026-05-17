@@ -13,7 +13,12 @@ from sqlalchemy.orm import selectinload
 from sse_starlette.sse import EventSourceResponse
 
 from apps.backend.src.db.database import get_db
-from apps.backend.src.db.models import Report as ReportModel, Session as SessionModel, TranscriptionSegment
+from apps.backend.src.db.models import (
+    Report as ReportModel,
+    Session as SessionModel,
+    TranscriptionSegment,
+    report_content_hash,
+)
 from apps.backend.src.dependencies import get_audit_service, get_current_user
 from apps.backend.src.schemas.auth import UserInfo
 from apps.backend.src.schemas.report import (
@@ -51,6 +56,7 @@ def _to_response(report: ReportModel) -> ReportResponse:
         approved_at=report.approved_at,
         approved_by=report.approved_by,
         openemr_encounter_id=report.openemr_encounter_id,
+        openemr_synced=report.openemr_synced,
         created_at=report.created_at,
     )
 
@@ -474,6 +480,9 @@ async def push_report_to_openemr(
         icd10_codes=icd10_codes,
         sut_codes=sut_codes,
         facility_id=3,
+        # Rapora daha önce bağlanmış encounter varsa onu güncelle — aynı
+        # raporun tekrar gönderimi mükerrer encounter/billing yaratmasın.
+        existing_encounter_id=report.openemr_encounter_id,
     )
 
     # Audit
@@ -490,6 +499,9 @@ async def push_report_to_openemr(
     # tekrar girildiğinde "HBYS'ye işlendi" göstergesi korunsun.
     if push_result.get("success") and push_result.get("encounter_id"):
         report.openemr_encounter_id = int(push_result["encounter_id"])
+        # Gönderilen içeriğin parmak izini sakla — rapor sonradan düzenlenip
+        # kaydedilirse "HBYS'ye işlendi" göstergesi otomatik kaybolur.
+        report.openemr_synced_hash = report_content_hash(report.content_json)
         await db.commit()
 
     return push_result

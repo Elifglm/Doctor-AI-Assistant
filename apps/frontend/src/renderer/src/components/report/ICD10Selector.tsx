@@ -96,6 +96,8 @@ export function ICD10Selector({ value, reportSections, sessionId, onChange }: IC
   const [lastSuggestFingerprint, setLastSuggestFingerprint] = useState<string>(
     () => anamnesisFingerprint(reportSections),
   )
+  // Uyarı yalnızca pasif butona tıklanınca gösterilir — sürekli durmaz.
+  const [showNoChangeHint, setShowNoChangeHint] = useState(false)
   const canSuggest =
     suggestions.length === 0 ||
     anamnesisFingerprint(reportSections) !== lastSuggestFingerprint
@@ -214,7 +216,12 @@ export function ICD10Selector({ value, reportSections, sessionId, onChange }: IC
           <button
             type="button"
             onClick={() => {
-              if (canSuggest) void handleSuggest()
+              if (canSuggest) {
+                void handleSuggest()
+              } else {
+                setShowNoChangeHint(true)
+                setTimeout(() => setShowNoChangeHint(false), 5000)
+              }
             }}
             disabled={isSuggesting}
             title={canSuggest ? t('icd10_aiSuggest') : t('icd10_suggestNoChange')}
@@ -232,7 +239,7 @@ export function ICD10Selector({ value, reportSections, sessionId, onChange }: IC
             )}
             {t('icd10_aiSuggest')}
           </button>
-          {!canSuggest && (
+          {showNoChangeHint && !canSuggest && (
             <p className="text-xs text-amber-600 dark:text-amber-400">
               {t('icd10_suggestNoChange')}
             </p>

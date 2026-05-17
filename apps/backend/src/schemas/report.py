@@ -45,6 +45,7 @@ class ReportResponse(BaseModel):
     approved_at: Optional[datetime] = None
     approved_by: Optional[str] = None
     openemr_encounter_id: Optional[int] = None
+    openemr_synced: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

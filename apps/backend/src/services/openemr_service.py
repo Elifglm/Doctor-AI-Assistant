@@ -547,6 +547,7 @@ class OpenEMRService:
         icd10_codes: list[dict[str, str]],
         sut_codes: list[dict[str, str]] | None = None,
         facility_id: int = 3,
+        existing_encounter_id: int | None = None,
     ) -> dict:
         """Push a complete report to OpenEMR: encounter + vitals + SOAP + ICD-10 + procedure orders.
 
@@ -579,13 +580,24 @@ class OpenEMRService:
         try:
             reason = esc(report_sections.get("hastanin_yakinmasi", "Muayene")[:255])
 
-            # ---- 1. Find existing encounter for this patient today, or create ----
-            existing = await mysql(
-                f"SELECT id FROM form_encounter "
-                f"WHERE pid = {patient_pid} AND provider_id = {provider_id} "
-                f"AND DATE(date) = CURDATE() "
-                f"ORDER BY id DESC LIMIT 1;"
-            )
+            # ---- 1. Find encounter, or create ----
+            # Önce bu rapora daha önce bağlanmış encounter'ı tercih et —
+            # aynı raporun tekrar gönderimi mükerrer encounter/billing
+            # yaratmasın (idempotent re-push). Yoksa bugünkü encounter'a,
+            # o da yoksa yeni encounter'a düşülür.
+            if existing_encounter_id:
+                existing = await mysql(
+                    f"SELECT id FROM form_encounter "
+                    f"WHERE id = {int(existing_encounter_id)} AND pid = {patient_pid} "
+                    f"LIMIT 1;"
+                )
+            else:
+                existing = await mysql(
+                    f"SELECT id FROM form_encounter "
+                    f"WHERE pid = {patient_pid} AND provider_id = {provider_id} "
+                    f"AND DATE(date) = CURDATE() "
+                    f"ORDER BY id DESC LIMIT 1;"
+                )
 
             if existing.strip():
                 # Use existing encounter — update reason
@@ -613,7 +625,7 @@ class OpenEMRService:
                 )
                 await mysql(
                     f"DELETE FROM forms WHERE encounter = {encounter_id} AND pid = {patient_pid} "
-                    f"AND formdir IN ('vitals', 'soap');"
+                    f"AND formdir IN ('vitals', 'soap', 'procedure_order');"
                 )
 
                 logger.info("Mevcut encounter guncelleniyor: %d", encounter_id)
@@ -661,11 +673,21 @@ class OpenEMRService:
                 if val and val not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
                     try:
                         numeric = float(val.replace(",", "."))
-                        vital_cols.append(db_col)
-                        vital_vals.append(str(numeric))
-                        has_vitals = True
                     except ValueError:
-                        pass
+                        continue
+                    # OpenEMR form_vitals HER ZAMAN ABD birimi saklar (°F, lbs,
+                    # inç); metrik gösterim get_*_metric() ile hesaplanır. Doktor
+                    # metrik girdiği için ABD birimine çevirerek sakla.
+                    if db_col == "temperature":        # °C -> °F
+                        numeric = numeric * 9 / 5 + 32
+                    elif db_col == "weight":           # kg -> lbs
+                        numeric = numeric * 2.20462
+                    elif db_col == "height":           # m veya cm -> inç
+                        cm = numeric * 100 if numeric < 3 else numeric
+                        numeric = cm / 2.54
+                    vital_cols.append(db_col)
+                    vital_vals.append(f"{numeric:.2f}")
+                    has_vitals = True
 
             if has_vitals:
                 vitals_query = (
@@ -687,8 +709,11 @@ class OpenEMRService:
 
             # ---- 3. Push SOAP note ----
             subjective_parts = []
-            for key in ("hastanin_yakinmasi", "hastanin_oykusu", "oz_gecmisi_soy_gecmisi",
-                        "alerji", "sigara", "alkol"):
+            # SOAP Subjective = yalnızca güncel şikayet + öykü. Öz/soy geçmiş
+            # additional_history + Family History alanlarına, alerji
+            # Allergies'e, sigara/alkol Lifestyle'a ayrıca yazılır — bu
+            # kalıcı geçmiş bilgileri bu muayenenin SOAP notuna dahil edilmez.
+            for key in ("hastanin_yakinmasi", "hastanin_oykusu"):
                 val = report_sections.get(key, "").strip()
                 if val and val not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
                     subjective_parts.append(val.replace("----", ", "))
@@ -731,7 +756,11 @@ class OpenEMRService:
                 f"{patient_pid}, 'admin', 'Default', 1, 'soap', {provider_id});"
             )
 
-            # ---- 4. Push ICD-10 diagnoses to billing ----
+            # ---- 4. Push ICD-10 diagnoses to the problem list ----
+            # Tanı, faturalama (billing) tablosuna değil hastanın problem
+            # listesine (lists / medical_problem) yazılır — klinik kayıt için
+            # doğru yer. Aynı tanı zaten varsa tekrar eklenmez (idempotent),
+            # doktorun elle eklediği kayıtlara dokunulmaz.
             icd_count = 0
             for icd in icd10_codes:
                 code = esc(icd.get("code", ""))
@@ -739,18 +768,24 @@ class OpenEMRService:
                 if not code:
                     continue
                 await mysql(
-                    f"INSERT INTO billing (date, code_type, code, code_text, pid, "
-                    f"provider_id, user, encounter, authorized, activity, groupname) "
-                    f"VALUES (NOW(), 'ICD10', '{code}', '{text}', {patient_pid}, "
-                    f"{provider_id}, 1, {encounter_id}, 1, 1, 'Default');"
+                    f"INSERT INTO lists "
+                    f"(date, begdate, type, title, diagnosis, activity, pid, user, groupname) "
+                    f"SELECT NOW(), NOW(), 'medical_problem', '{code}', "
+                    f"'ICD10:{code}', 1, {patient_pid}, 'admin', 'Default' FROM DUAL "
+                    f"WHERE NOT EXISTS ("
+                    f"SELECT 1 FROM lists l WHERE l.pid = {patient_pid} "
+                    f"AND l.diagnosis = 'ICD10:{code}' AND l.type = 'medical_problem');"
                 )
                 icd_count += 1
             result["icd10_count"] = icd_count
 
             # ---- 5. Push SUT tetkik as procedure order ----
             if sut_codes:
-                # Build ICD diagnosis string for the order
-                icd_diag = ";".join(f"ICD10:{c['code']}" for c in icd10_codes) if icd10_codes else ""
+                # Tetkik–tanı eşlemesi elimizde yok: anamnez ayrı bir tetkik
+                # listesi ve ayrı bir ICD listesi üretir, aralarında bağ yoktur.
+                # Bu yüzden tetkiklere otomatik tanı YAZILMAZ — hatalı eşlemeyi
+                # önlemek için boş bırakılır; doktor OpenEMR'de elle eşler.
+                icd_diag = ""
 
                 order_query = (
                     f"INSERT INTO procedure_order "
@@ -766,18 +801,33 @@ class OpenEMRService:
                 order_id = int(raw.strip().split("\n")[-1].strip())
                 result["procedure_order_id"] = order_id
 
+                # forms tablosuna kaydet — procedure order'ın OpenEMR encounter
+                # ekranında görünüp editörde açılabilmesi için gerekli. Raporda
+                # bu form "-procedure" olarak bir kez render edilir; rapor
+                # oluştururken ayrıca "Procedures" kutusu işaretlenirse mükerrer
+                # görünür (aynı generate_order_report'u çağırırlar).
+                await mysql(
+                    f"INSERT INTO forms (date, encounter, form_name, form_id, pid, user, "
+                    f"groupname, authorized, formdir, provider_id) "
+                    f"VALUES (NOW(), {encounter_id}, '-procedure', {order_id}, "
+                    f"{patient_pid}, 'admin', 'Default', 1, 'procedure_order', {provider_id});"
+                )
+
                 # Insert each tetkik as a line item
                 for seq, sut in enumerate(sut_codes, 1):
                     sut_code = esc(sut.get("code", ""))
                     sut_name = esc(sut.get("name", ""))
                     if not sut_code:
                         continue
+                    # procedure_order_title='procedure' ŞART: OpenEMR procedure
+                    # order editörü "Procedure Test" satırlarını bu alana göre
+                    # render eder; boş olursa tetkik satırı editörde görünmez.
                     await mysql(
                         f"INSERT INTO procedure_order_code "
                         f"(procedure_order_id, procedure_order_seq, procedure_code, "
-                        f"procedure_name, diagnoses) "
+                        f"procedure_name, diagnoses, procedure_order_title) "
                         f"VALUES ({order_id}, {seq}, '{sut_code}', '{sut_name}', "
-                        f"'{esc(icd_diag[:255])}');"
+                        f"'{esc(icd_diag[:255])}', 'procedure');"
                     )
                 result["tetkik_count"] = len(sut_codes)
 
@@ -804,25 +854,61 @@ class OpenEMRService:
             if oz_gecmis and oz_gecmis not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
                 history_updates.append(f"additional_history = '{esc(oz_gecmis.replace(chr(10), ', '))}'")
 
-            # Soy geçmiş → family history fields
+            # Soy geçmiş → OpenEMR Family History alanları (Anne/Baba/Kardeş/
+            # Eş/Çocuk). "ANNE DM (10 YIL) ---- BABA HT" gibi girdiler ---- /
+            # satır ile ayrılır; her girdinin baştaki akraba kelimesine göre
+            # ilgili history_* alanına, akraba kelimesi atılarak yazılır.
             soy_gecmis = report_sections.get("soy_gecmisi", "").strip()
             if soy_gecmis and soy_gecmis not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
-                soy_lower = soy_gecmis.lower()
-                if "diyabet" in soy_lower or "seker" in soy_lower:
-                    history_updates.append("relatives_diabetes = 'Var'")
-                if "hipertansiyon" in soy_lower or "tansiyon" in soy_lower:
-                    history_updates.append("relatives_high_blood_pressure = 'Var'")
-                if "kalp" in soy_lower or "kardiy" in soy_lower:
-                    history_updates.append("relatives_heart_problems = 'Var'")
-                if "kanser" in soy_lower:
-                    history_updates.append("relatives_cancer = 'Var'")
-                if "inme" in soy_lower or "felc" in soy_lower:
-                    history_updates.append("relatives_stroke = 'Var'")
+                def _fold(s: str) -> str:
+                    return s.lower().translate(str.maketrans("şçığüö", "sciguo"))
 
-            # Alerji → Risk Factors (exams alanı)
+                relative_map = [
+                    (("anne", "anneanne", "babaanne", "valide"), "history_mother"),
+                    (("baba", "peder", "dede"), "history_father"),
+                    (("kardes", "abla", "abi", "agabey", "birader"), "history_siblings"),
+                    (("es", "esi", "hanim", "koca", "zevce"), "history_spouse"),
+                    (("cocuk", "ogul", "kiz", "evlat"), "history_offspring"),
+                ]
+                fam_fields: dict[str, list[str]] = {}
+                for entry in soy_gecmis.replace(chr(10), "----").split("----"):
+                    entry = entry.strip()
+                    words = entry.split()
+                    if not words:
+                        continue
+                    first = _fold(words[0])
+                    target = next(
+                        (col for kws, col in relative_map
+                         if any(first.startswith(k) for k in kws)),
+                        None,
+                    )
+                    if target is None:
+                        continue
+                    condition = " ".join(words[1:]).strip() or entry
+                    fam_fields.setdefault(target, []).append(condition)
+                for col, items in fam_fields.items():
+                    history_updates.append(f"{col} = '{esc(', '.join(items))}'")
+
+            # Alerji → problem listesine 'allergy' tipinde yazılır (OpenEMR
+            # Allergies bölümünün doğru yeri). Birden çok alerjen ---- / virgül
+            # / satır ile ayrılmış olabilir; her biri ayrı, tekrarsız kayıt.
             alerji = report_sections.get("alerji", "").strip()
             if alerji and alerji not in ("BELIRTILMEDI", "BELIRTILMEDI.", ""):
-                history_updates.append(f"exams = '{esc(alerji.replace(chr(10), ', '))}'")
+                seen_allergens: set[str] = set()
+                for chunk in alerji.replace("----", ",").replace(chr(10), ",").split(","):
+                    allergen = chunk.strip()
+                    if not allergen or allergen.lower() in seen_allergens:
+                        continue
+                    seen_allergens.add(allergen.lower())
+                    a = esc(allergen)
+                    await mysql(
+                        f"INSERT INTO lists "
+                        f"(date, begdate, type, title, activity, pid, user, groupname) "
+                        f"SELECT NOW(), NOW(), 'allergy', '{a}', 1, {patient_pid}, "
+                        f"'admin', 'Default' FROM DUAL WHERE NOT EXISTS ("
+                        f"SELECT 1 FROM lists l WHERE l.pid = {patient_pid} "
+                        f"AND l.title = '{a}' AND l.type = 'allergy');"
+                    )
 
             if history_updates:
                 update_sql = ", ".join(history_updates)
