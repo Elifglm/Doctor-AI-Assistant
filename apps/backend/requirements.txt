@@ -10,6 +10,7 @@ google-genai>=1.0.0
 pydantic-settings>=2.0.0
 rapidfuzz>=3.0.0
 datasketch>=1.6.0
+rank-bm25>=0.2.2
 reportlab>=4.0.0
 aiomysql>=0.2.0
 pymysql>=1.1.0
