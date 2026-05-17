@@ -96,8 +96,20 @@ class SessionService:
             # Hide archived sessions by default
             base = base.where(Session.status != "ARCHIVED")
         if from_date:
+            # Başlangıç tarihini günün başına sabitle (00:00:00) — tarih
+            # filtresi tüm günü kapsasın.
+            from_date = from_date.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             base = base.where(Session.created_at >= from_date)
         if to_date:
+            # Bitiş tarihini günün SONUNA genişlet (23:59:59.999999).
+            # Takvim sadece YYYY-MM-DD gönderdiği için to_date 00:00:00
+            # olarak gelir; aksi halde o güne ait tüm görüşmeler (örn.
+            # 14:30) aralık dışında kalır.
+            to_date = to_date.replace(
+                hour=23, minute=59, second=59, microsecond=999999
+            )
             base = base.where(Session.created_at <= to_date)
         if search:
             pattern = f"%{search}%"
