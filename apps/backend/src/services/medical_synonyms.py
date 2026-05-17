@@ -95,9 +95,19 @@ _SYNONYM_GROUPS: list[set[str]] = [
     {"holter", "holter", "ritim", "rhythm"},
     {"tsh", "stimulating", "stimulan", "tirotropin", "thyrotropin"},
     {"ldl", "hdl", "lipid", "lipoprotein", "trigliserid", "triglyceride"},
-    {"ast", "alt", "alanin", "aspartat", "transaminaz", "transaminase"},
+    # Liver enzymes / KCFT — "karaciğer enzimi" trigger phrase included.
+    # Variant note: GGT/ALP serum/plazma varyantı SUT V4 KURAL #1 ile seçilir.
+    {"ast", "alt", "ggt", "alp",
+     "alanin", "aspartat", "transaminaz", "transaminase",
+     "gama", "glutamil", "transferaz",
+     "alkalen", "fosfataz",
+     "karaciger", "hepatik", "kcft", "lft"},
     {"hbv", "dna"},
     {"arter", "arterial", "kan", "gaz", "gas", "blood"},
+
+    # ─── Abdomen / Batın USG (eş anlamlı) ───
+    {"abdomen", "abdominal", "batin", "karin"},
+    {"usg", "ultrason", "ultrasonografi", "sonografi", "ultrasound"},
 ]
 
 # Build inverted index: token → set of synonyms (incl. self)
@@ -129,3 +139,47 @@ def expand_tokens(tokens: list[str]) -> list[str]:
                 seen.add(syn)
                 out.append(syn)
     return out
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SUT Panel Aliases — phrase → list of SUT codes.
+#
+# Doctor umbrella terms ("karaciğer enzimleri", "TİT") map to one or more
+# specific SUT codes. Consumed by sut_suggestion_service to inject codes
+# into the candidate pool before LLM selection.
+#
+# Keys must be ASCII-folded + lowercased; match uses word boundaries.
+# ─────────────────────────────────────────────────────────────────────────────
+import re as _re
+from unicodedata import normalize as _unicode_normalize
+
+_SUT_PANEL_ALIASES: dict[str, list[str]] = {
+    # KCFT / LFT / Karaciğer fonksiyon testleri → AST + ALT + GGT + ALP (Serum/Plazma)
+    "karaciger fonksiyon testi":   ["L101280", "L100300", "L102780", "L100710"],
+    "karaciger fonksiyon testleri":["L101280", "L100300", "L102780", "L100710"],
+    "karaciger enzimleri":         ["L101280", "L100300", "L102780", "L100710"],
+    "karaciger enzimi":            ["L101280", "L100300", "L102780", "L100710"],
+    "karaciger testleri":          ["L101280", "L100300", "L102780", "L100710"],
+    "kcft":                        ["L101280", "L100300", "L102780", "L100710"],
+    "lft":                         ["L101280", "L100300", "L102780", "L100710"],
+    # TİT / Tam idrar tahlili → tek panel kodu (strip+mikroskopi içeriyor)
+    "tam idrar tahlili": ["L107010"],
+    "tam idrar analizi": ["L107010"],
+    "tam idrar":         ["L107010"],
+    "tit":               ["L107010"],
+}
+
+
+def find_panel_codes(text: str) -> list[str]:
+    """Scan free text for known panel/alias phrases; return matched SUT codes.
+
+    Returns deduplicated list in discovery order. Match is ASCII-folded
+    lowercase with word boundaries (so "tit" won't match inside "lestit").
+    """
+    folded = _unicode_normalize("NFKD", text.lower()).encode("ascii", "ignore").decode()
+    matched: dict[str, None] = {}
+    for phrase, codes in _SUT_PANEL_ALIASES.items():
+        if _re.search(rf"\b{_re.escape(phrase)}\b", folded):
+            for code in codes:
+                matched[code] = None
+    return list(matched.keys())

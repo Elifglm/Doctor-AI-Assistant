@@ -414,9 +414,11 @@ Bir tetkik için aday listesinde birden çok varyant olabilir. SADECE BİR TANE 
     → L106150/L106910 Serum/Plazma SECME
   - Ferritin: Serum/Plazma varyantı ÖNCELİKLİ
     → L102410 Ferritin (Serum/Plazma) > L102420 Ferritin (Kan)
-  - AST/ALT/Kreatinin/Üre/Kolesterol: Serum/Plazma standart
+  - AST/ALT/GGT/ALP/Kreatinin/Üre/Kolesterol: Serum/Plazma standart
     → L101280 AST (Serum/Plazma), L100300 ALT (Serum/Plazma)
-    → L101290/L100310 Vücut sıvıları varyantını ASLA seçme
+    → L102780 GGT (Serum/Plazma), L100710 ALP (Serum/Plazma)
+    → L101290/L100310/L102790/L100720 Vücut sıvıları varyantını ASLA seçme
+    → "karaciğer enzimi" / "KCFT" / "LFT" denince AST+ALT+GGT+ALP dördü birden istenir
   - CRP: standart (L101850) tek başına
     → L101840 CRP Lateks ve L106680 hsCRP ASLA (sadece doktor adlandırıyorsa)
 
@@ -519,6 +521,8 @@ class SUTSuggestionService:
             if tc["kodu"] not in seen:
                 seen.add(tc["kodu"])
                 candidates.append(tc)
+
+        candidates = await self._inject_panel_aliases(transcript, candidates)
 
         if not candidates:
             logger.warning("No SUT tetkik candidates found")
@@ -625,6 +629,8 @@ class SUTSuggestionService:
             f"[SUT-DEBUG] candidate sources: vector={len(candidates) - len(text_candidates) - len(explicit_candidates)} "
             f"text={len(text_candidates)} llm-explicit={len(explicit_candidates)}",
         )
+
+        candidates = await self._inject_panel_aliases(report_text, candidates)
 
         if not candidates:
             return []
@@ -901,6 +907,42 @@ class SUTSuggestionService:
                             "score": 0.95,
                             "source": f"llm_explicit:{name}",
                         })
+        return candidates
+
+    async def _inject_panel_aliases(
+        self, text: str, candidates: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Force-add SUT codes for panel-alias phrases (KCFT, TİT, ...).
+
+        Vector retrieval can miss panel-level intent (umbrella terms like
+        "karaciğer enzimleri"). This guarantees the panel's component
+        codes reach the candidate pool with high score before LLM select.
+        """
+        from apps.backend.src.services.medical_synonyms import find_panel_codes
+
+        panel_codes = find_panel_codes(text)
+        if not panel_codes:
+            return candidates
+
+        existing = {c["kodu"] for c in candidates}
+        added: list[str] = []
+        for code in panel_codes:
+            if code in existing:
+                continue
+            row = await self._sut.get_by_code(code)
+            if row is None:
+                logger.warning("Panel alias maps to unknown SUT code: %s", code)
+                continue
+            candidates.append({
+                "kodu": row.kodu,
+                "adi": row.adi,
+                "brans": row.brans,
+                "score": 1.0,
+                "source": "panel_alias",
+            })
+            added.append(code)
+        if added:
+            logger.info("Panel alias injected %d SUT codes: %s", len(added), added)
         return candidates
 
     async def _text_search_fallback(
