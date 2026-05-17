@@ -25,5 +25,6 @@ export interface Report {
   generation_method: string
   approved_at: string | null
   approved_by: string | null
+  openemr_encounter_id: number | null
   created_at: string
 }

@@ -50,6 +50,7 @@ def _to_response(report: ReportModel) -> ReportResponse:
         generation_method=report.generation_method,
         approved_at=report.approved_at,
         approved_by=report.approved_by,
+        openemr_encounter_id=report.openemr_encounter_id,
         created_at=report.created_at,
     )
 
@@ -484,5 +485,11 @@ async def push_report_to_openemr(
         details=f"encounter={push_result.get('encounter_id')}, icd10={push_result.get('icd10_count')}",
         ip_address=request.client.host if request.client else None,
     )
+
+    # Başarılı push'ta encounter id'sini rapora kalıcı olarak kaydet — sayfaya
+    # tekrar girildiğinde "HBYS'ye işlendi" göstergesi korunsun.
+    if push_result.get("success") and push_result.get("encounter_id"):
+        report.openemr_encounter_id = int(push_result["encounter_id"])
+        await db.commit()
 
     return push_result

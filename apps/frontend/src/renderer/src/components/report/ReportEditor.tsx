@@ -16,14 +16,34 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   const t = useT()
   const [sections, setSections] = useState<ReportSection[]>(report.content.sections)
 
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [showError, setShowError] = useState(false)
-  const [icdWarning, setIcdWarning] = useState(false)
-  const [openEmrWarning, setOpenEmrWarning] = useState(false)
+  // Tek bildirim alanı — mesajlar yan yana yığılmasın diye her yeni mesaj
+  // bir öncekinin yerini alır (teker teker gösterim).
+  const [feedback, setFeedback] = useState<{
+    kind: 'success' | 'error' | 'warning'
+    text: string
+  } | null>(null)
   const [isPushingOpenEMR, setIsPushingOpenEMR] = useState(false)
-  const [openEMRResult, setOpenEMRResult] = useState<{ success: boolean; message: string } | null>(null)
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // HBYS'ye gönderilmiş bir rapor için "işlendi" göstergesi kalıcı olsun —
+  // encounter id rapora kaydedildiği için sayfa her açıldığında geri yüklenir.
+  const [openEMRResult, setOpenEMRResult] = useState<{ success: boolean; message: string } | null>(
+    () =>
+      report.openemr_encounter_id != null
+        ? {
+            success: true,
+            message: t('report_sentToOpenEMR', { encounterId: report.openemr_encounter_id }),
+          }
+        : null,
+  )
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showFeedback = useCallback(
+    (kind: 'success' | 'error' | 'warning', text: string, ms = 5000): void => {
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current)
+      setFeedback({ kind, text })
+      feedbackTimerRef.current = setTimeout(() => setFeedback(null), ms)
+    },
+    [],
+  )
 
   const approvedCount = sections.filter((s) => s.status === 'approved').length
   const totalCount = sections.length
@@ -33,28 +53,17 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
       apiClient.put<Report>(`/api/v1/reports/${report.id}`, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['session'] })
-      setShowSuccess(true)
-      setShowError(false)
-      if (successTimerRef.current) clearTimeout(successTimerRef.current)
-      successTimerRef.current = setTimeout(() => {
-        setShowSuccess(false)
-      }, 3000)
+      showFeedback('success', t('report_saved'), 3000)
     },
     onError: () => {
-      setShowError(true)
-      setShowSuccess(false)
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
-      errorTimerRef.current = setTimeout(() => {
-        setShowError(false)
-      }, 5000)
+      showFeedback('error', t('report_saveError'))
     },
   })
 
-  // Cleanup timers on unmount
+  // Cleanup timer on unmount
   useEffect(() => {
     return () => {
-      if (successTimerRef.current) clearTimeout(successTimerRef.current)
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current)
     }
   }, [])
 
@@ -98,8 +107,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
   const handleApproveAll = (): void => {
     const icdSection = sections.find((s) => s.key === 'icd10_list')
     if (icdSection && (!icdSection.content || icdSection.content === 'BELIRTILMEDI')) {
-      setIcdWarning(true)
-      setTimeout(() => setIcdWarning(false), 5000)
+      showFeedback('warning', t('report_icd10Placeholder'))
       return
     }
 
@@ -117,12 +125,10 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
 
   const [showPdfPreview, setShowPdfPreview] = useState(false)
   const [isOpeningPreview, setIsOpeningPreview] = useState(false)
-  const [pdfError, setPdfError] = useState<string | null>(null)
 
   const handleOpenPdfPreview = async (): Promise<void> => {
     // Save current state silently first so the preview reflects latest edits.
     setIsOpeningPreview(true)
-    setPdfError(null)
     try {
       await apiClient.put<Report>(`/api/v1/reports/${report.id}`, {
         content: {
@@ -133,8 +139,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
       })
       setShowPdfPreview(true)
     } catch (err) {
-      setPdfError(err instanceof Error ? err.message : t('report_pdfDownloadError'))
-      setTimeout(() => setPdfError(null), 5000)
+      showFeedback('error', err instanceof Error ? err.message : t('report_pdfDownloadError'))
     } finally {
       setIsOpeningPreview(false)
     }
@@ -148,6 +153,7 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
         success: boolean
         encounter_id: number
         icd10_count: number
+        tetkik_count: number
         error: string
       }>(`/api/v1/reports/${report.id}/push-to-openemr`)
       if (res.success) {
@@ -155,9 +161,12 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
           success: true,
           message: t('report_sentToOpenEMR', {
             encounterId: res.encounter_id,
-            icd10Count: res.icd10_count,
           }),
         })
+        // Backend push sırasında openemr_encounter_id'yi rapora kaydetti.
+        // Session sorgusunu tazele ki frontend'deki rapor objesi güncellensin —
+        // "HBYS'ye işlendi" göstergesi Taslağı Kaydet'e gerek kalmadan kalıcı olsun.
+        void queryClient.invalidateQueries({ queryKey: ['session'] })
       } else {
         setOpenEMRResult({ success: false, message: res.error || t('report_sendFailed') })
       }
@@ -202,31 +211,44 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
               {t('report_sectionsApproved', { approved: approvedCount, total: totalCount })}
             </span>
           </div>
-          {showSuccess && (
-            <span className="text-xs text-emerald-600">{t('report_saved')}</span>
-          )}
-          {showError && (
-            <span className="text-xs text-red-600">{t('report_saveError')}</span>
-          )}
-          {icdWarning && (
-            <span className="text-xs text-amber-600 font-medium">{t('report_icd10Placeholder')}</span>
-          )}
-          {pdfError && (
-            <span className="text-xs text-red-600 font-medium">{pdfError}</span>
-          )}
-          {openEmrWarning && (
-            <span className="text-xs text-red-600 font-medium">
-              {t('report_sectionsNotApproved', { count: totalCount - approvedCount })}
+          {feedback && (
+            <span
+              className={`text-xs font-medium ${
+                feedback.kind === 'success'
+                  ? 'text-emerald-600'
+                  : feedback.kind === 'error'
+                    ? 'text-red-600'
+                    : 'text-amber-600'
+              }`}
+            >
+              {feedback.text}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => void handleOpenPdfPreview()}
+            onClick={() => {
+              // Tüm bölümler onaylanmadan PDF önizleme açılmaz — eksik/onaysız
+              // rapor PDF'e dökülmesin. Doktor önce "Tümünü Onayla" yapmalı.
+              if (approvedCount < totalCount) {
+                showFeedback(
+                  'warning',
+                  t('report_pdfWarning', { approved: approvedCount, total: totalCount }),
+                )
+                return
+              }
+              void handleOpenPdfPreview()
+            }}
             disabled={isOpeningPreview}
-            title={t('report_pdfPreviewTitle')}
-            className="flex items-center justify-center gap-1.5 rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
+            title={approvedCount < totalCount
+              ? t('report_pdfWarning', { approved: approvedCount, total: totalCount })
+              : t('report_pdfPreviewTitle')}
+            className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
+              approvedCount < totalCount
+                ? 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                : 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+            }`}
           >
             {isOpeningPreview ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -265,8 +287,10 @@ export function ReportEditor({ report }: ReportEditorProps): React.JSX.Element {
             type="button"
             onClick={() => {
               if (approvedCount < totalCount) {
-                setOpenEmrWarning(true)
-                setTimeout(() => setOpenEmrWarning(false), 5000)
+                showFeedback(
+                  'warning',
+                  t('report_sectionsNotApproved', { count: totalCount - approvedCount }),
+                )
                 return
               }
               void handlePushToOpenEMR()

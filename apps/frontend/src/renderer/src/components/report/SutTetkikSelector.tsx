@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils'
 import { useSutTetkikSearch } from '../../hooks/useSutTetkikSearch'
 import { apiClient } from '../../services/apiClient'
 import { useAuthStore } from '../../stores/authStore'
+import { useReportSuggestionStore } from '../../stores/reportSuggestionStore'
 import { useT } from '../../hooks/useT'
 import type {
   SUTConfirmedTetkik,
@@ -54,8 +55,19 @@ function formatTetkik(items: SUTConfirmedTetkik[]): string {
     .join('\n')
 }
 
+// Anamnez alanlarının (icd10/sut bölümleri hariç) parmak izi — "AI Tetkik
+// Öner" butonunun yalnızca anamnez metni değiştiğinde aktif olması için.
+function anamnesisFingerprint(sections?: ReportSectionData[]): string {
+  if (!sections) return ''
+  return sections
+    .filter((s) => s.key !== 'icd10_list' && s.key !== 'sut_tetkik_list')
+    .map((s) => s.content)
+    .join('')
+}
+
 export function SutTetkikSelector({ value, reportSections, brans: bransProp, sessionId, onChange }: SutTetkikSelectorProps) {
   const t = useT()
+  const storeSetSut = useReportSuggestionStore((s) => s.setSut)
   const parsed = parseExistingTetkik(value)
   const [selectedTetkik, setSelectedTetkik] = useState<SUTConfirmedTetkik[]>(() =>
     parsed.filter((p) => p.confidence === undefined).map(({ confidence: _, ...rest }) => rest)
@@ -65,8 +77,13 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
   // Same threshold used in handleSuggest below — apply here too so reports
   // saved before the threshold existed don't surface stale low-confidence picks.
   const SUT_MIN_CONFIDENCE = 0.85
-  const [suggestions, setSuggestions] = useState<SUTSuggestion[]>(() =>
-    parsed
+  const [suggestions, setSuggestions] = useState<SUTSuggestion[]>(() => {
+    // "Geri" ile sayfadan çıkıp dönülünce öneriler kaybolmasın: önce session
+    // bazlı önbelleğe bak, yoksa kayıtlı içerikten ayrıştır.
+    const cached =
+      sessionId != null ? useReportSuggestionStore.getState().sut[sessionId] : undefined
+    if (cached) return cached
+    return parsed
       .filter((p) => p.confidence !== undefined && p.confidence >= SUT_MIN_CONFIDENCE)
       .map((p) => ({
         kodu: p.kodu,
@@ -76,8 +93,15 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
         reasoning: '',
       }))
       .sort((a, b) => b.confidence - a.confidence)
-  )
+  })
   const [isSuggesting, setIsSuggesting] = useState(false)
+  // Son öneri anındaki anamnez parmak izi. Anamnez değişmediyse buton pasif.
+  const [lastSuggestFingerprint, setLastSuggestFingerprint] = useState<string>(
+    () => anamnesisFingerprint(reportSections),
+  )
+  const canSuggest =
+    suggestions.length === 0 ||
+    anamnesisFingerprint(reportSections) !== lastSuggestFingerprint
   const [isSendingToOpenEMR, setIsSendingToOpenEMR] = useState(false)
   const [openEMRResult, setOpenEMRResult] = useState<{
     success: boolean
@@ -114,6 +138,20 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
     onChangeRef.current(formatTetkik(selectedTetkik))
   }, [selectedTetkik])
 
+  // Kayıt sonrası otomatik gelen öneriler ilk yüklemede bölüm içeriğinden
+  // ayrıştırılır. Bunları da bir kez store'a yaz ki içerik sonradan
+  // (tetkik ekleme / kaydetme ile) değişse bile "geri" sonrası korunsunlar.
+  useEffect(() => {
+    if (
+      sessionId != null &&
+      suggestions.length > 0 &&
+      useReportSuggestionStore.getState().sut[sessionId] === undefined
+    ) {
+      storeSetSut(sessionId, suggestions)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const addTetkik = (kodu: string, adi: string, tetkikBrans: string) => {
     if (selectedTetkik.some((t) => t.kodu === kodu)) return
     setSelectedTetkik((prev) => [...prev, { kodu, adi, brans: tetkikBrans }])
@@ -143,13 +181,15 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
       // REPLACE the suggestion panel on every click — see ICD10Selector for
       // the rationale (avoids stale picks pinning above corrected ones).
       // selectedTetkik is stored separately and untouched by this reset.
-      setSuggestions(
-        data.suggestions
-          .filter((s) => s.confidence >= SUT_MIN_CONFIDENCE)
-          .sort((a, b) => b.confidence - a.confidence)
-      )
+      const next = data.suggestions
+        .filter((s) => s.confidence >= SUT_MIN_CONFIDENCE)
+        .sort((a, b) => b.confidence - a.confidence)
+      setSuggestions(next)
+      if (sessionId != null) storeSetSut(sessionId, next)
+      setLastSuggestFingerprint(anamnesisFingerprint(reportSections))
     } catch {
       setSuggestions([])
+      if (sessionId != null) storeSetSut(sessionId, [])
     } finally {
       setIsSuggesting(false)
     }
@@ -205,19 +245,34 @@ export function SutTetkikSelector({ value, reportSections, brans: bransProp, ses
     <div className="space-y-3">
       {/* AI Suggest Button */}
       {reportSections && reportSections.length > 0 && (
-        <button
-          type="button"
-          onClick={handleSuggest}
-          disabled={isSuggesting}
-          className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          {isSuggesting ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Sparkles className="h-3.5 w-3.5" />
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (canSuggest) void handleSuggest()
+            }}
+            disabled={isSuggesting}
+            title={canSuggest ? t('sut_aiSuggest') : t('sut_suggestNoChange')}
+            className={cn(
+              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium shadow-sm transition-colors disabled:opacity-50',
+              canSuggest
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+            )}
+          >
+            {isSuggesting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {t('sut_aiSuggest')}
+          </button>
+          {!canSuggest && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              {t('sut_suggestNoChange')}
+            </p>
           )}
-          {t('sut_aiSuggest')}
-        </button>
+        </div>
       )}
 
       {/* AI Suggestions */}

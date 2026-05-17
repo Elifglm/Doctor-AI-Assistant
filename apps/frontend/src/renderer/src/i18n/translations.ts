@@ -43,6 +43,7 @@ const tr: TranslationMap = {
   // ── ICD-10 Selector ────────────────────────────────────────────────────────
   icd10_aiSuggest: 'AI ile Öner',
   icd10_aiSuggestions: 'AI Önerileri:',
+  icd10_suggestNoChange: 'Anamnez metni değişmedi — farklı öneri için ilgili anamnez alanlarını düzenleyin.',
   icd10_searchPlaceholder: 'ICD-10 kod veya tanı adı yazın...',
   icd10_noResults: 'Sonuç bulunamadı',
   icd10_selected: 'Seçilen tanılar:',
@@ -234,7 +235,7 @@ const tr: TranslationMap = {
   report_downloadPdf: 'PDF İndir',
   report_sendToOpenEMR: "HBYS'ye Gönder",
   report_sentToOpenEMR:
-    "HBYS'ye gönderildi (Encounter #{encounterId}, {icd10Count} ICD-10 kodu)",
+    "Rapor HBYS'ye işlendi — Muayene kaydı #{encounterId} oluşturuldu",
   report_sendFailed: 'Gönderim başarısız',
   report_connectionError: "HBYS bağlantı hatası",
   report_sectionsNotApproved: '{count} bölüm henüz onaylanmadı',
@@ -485,6 +486,7 @@ const tr: TranslationMap = {
   // ── SUT Tetkik Selector ───────────────────────────────────────────────────────
   sut_aiSuggest: 'AI ile Tetkik Öner',
   sut_aiSuggestions: 'AI Tetkik Önerileri:',
+  sut_suggestNoChange: 'Anamnez metni değişmedi — farklı öneri için ilgili anamnez alanlarını düzenleyin.',
   sut_searchPlaceholder: 'SÜT kodu veya tetkik adı yazın...',
   sut_noResults: 'Sonuç bulunamadı',
   sut_selectedTests: 'Seçilen tetkikler:',
@@ -533,6 +535,7 @@ const en: TranslationMap = {
   // ── ICD-10 Selector ────────────────────────────────────────────────────────
   icd10_aiSuggest: 'Suggest with AI',
   icd10_aiSuggestions: 'AI Suggestions:',
+  icd10_suggestNoChange: 'Anamnesis text unchanged — edit the relevant fields for a different suggestion.',
   icd10_searchPlaceholder: 'Type ICD-10 code or diagnosis name...',
   icd10_noResults: 'No results found',
   icd10_selected: 'Selected diagnoses:',
@@ -693,7 +696,7 @@ const en: TranslationMap = {
   report_downloadPdf: 'Download PDF',
   report_sendToOpenEMR: 'Send to HBYS',
   report_sentToOpenEMR:
-    'Sent to HBYS (Encounter #{encounterId}, {icd10Count} ICD-10 codes)',
+    'Report processed in HBYS — Encounter #{encounterId} created',
   report_sendFailed: 'Send failed',
   report_connectionError: 'HBYS connection error',
   report_sectionsNotApproved: '{count} section(s) not yet approved',
@@ -944,6 +947,7 @@ const en: TranslationMap = {
   // ── SUT Tetkik Selector ───────────────────────────────────────────────────────
   sut_aiSuggest: 'Suggest Tests with AI',
   sut_aiSuggestions: 'AI Test Suggestions:',
+  sut_suggestNoChange: 'Anamnesis text unchanged — edit the relevant fields for a different suggestion.',
   sut_searchPlaceholder: 'Enter SUT code or test name...',
   sut_noResults: 'No results found',
   sut_selectedTests: 'Selected tests:',

@@ -113,6 +113,9 @@ class Report(Base):
     generation_method: str = Column(String(50), nullable=False, default="manual")
     approved_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
     approved_by: str | None = Column(String(200), nullable=True)
+    # OpenEMR/HBYS'ye başarıyla işlendiğinde oluşan encounter id'si. Set ise
+    # rapor HBYS ile entegre edilmiş demektir — kalıcı entegrasyon göstergesi.
+    openemr_encounter_id: int | None = Column(Integer, nullable=True)
     created_at: datetime = Column(
         DateTime(timezone=True),
         nullable=False,

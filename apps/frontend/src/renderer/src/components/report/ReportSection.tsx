@@ -92,6 +92,7 @@ export function ReportSectionCard({
             <ICD10Selector
               value={section.content}
               reportSections={allSections}
+              sessionId={sessionId}
               onChange={(formatted) => onContentChange(section.key, formatted)}
             />
           ) : section.key === 'sut_tetkik_list' ? (
