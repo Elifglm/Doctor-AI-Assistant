@@ -814,9 +814,9 @@ class ICD10SuggestionService:
 
         tani_names = parsed.get("tani", []) if isinstance(parsed, dict) else []
         semptom_names = parsed.get("semptom", []) if isinstance(parsed, dict) else []
-        print(
-            f"[ICD-DEBUG] LLM-extracted: tani={tani_names} semptom={semptom_names}",
-            flush=True,
+        logger.debug(
+            "LLM-extracted ICD candidates: tani=%s semptom=%s",
+            tani_names, semptom_names,
         )
 
         candidates: list[dict[str, Any]] = []

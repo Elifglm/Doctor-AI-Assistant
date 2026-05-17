@@ -8,6 +8,15 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
 
+# Force UTF-8 on stdout/stderr so Turkish characters in log/print output do not
+# crash on the Windows cp1252 console (UnicodeEncodeError). Must run before any
+# logging or print call.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+    except (AttributeError, ValueError):
+        pass
+
 # Add FFmpeg to PATH so whisperx and other subprocess calls can find it
 import glob as _glob
 

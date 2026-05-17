@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Mic, Loader2, AlertCircle, ShieldCheck, ShieldAlert, History } from 'lucide-react'
+import { Mic, Loader2, AlertCircle, History } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { useCreateSession } from '../hooks/useSession'
 import { useT } from '../hooks/useT'
@@ -43,8 +43,6 @@ export function PreSessionPage(): React.JSX.Element {
   const hasAppointment = Boolean(appointmentPatientId && appointmentPatientName)
 
   const visitType: VisitType = 'ilk_muayene'
-  const [preDiagnosis, setPreDiagnosis] = useState('')
-  const [location, setLocation] = useState('')
   const [kvkkConsent, setKvkkConsent] = useState(false)
   const [kvkkModalOpen, setKvkkModalOpen] = useState(false)
   const [selectedRecordingPath, setSelectedRecordingPath] = useState<string | null>(null)
@@ -84,8 +82,6 @@ export function PreSessionPage(): React.JSX.Element {
         patient_name: appointmentPatientName,
         visit_type: visitType,
         doctor_name: doctorName,
-        pre_diagnosis: preDiagnosis || undefined,
-        location: location || undefined,
         kvkk_consent: kvkkConsent,
         appointment_id: appointmentId || undefined,
       },
@@ -154,37 +150,6 @@ export function PreSessionPage(): React.JSX.Element {
             </div>
           </div>
 
-          <div>
-            <label
-              htmlFor="preDiagnosis"
-              className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"
-            >
-              {t('pre_preDiagnosis')}
-            </label>
-            <textarea
-              id="preDiagnosis"
-              value={preDiagnosis}
-              onChange={(e) => setPreDiagnosis(e.target.value)}
-              placeholder={t('pre_preDiagnosisPlaceholder')}
-              rows={3}
-              className="w-full resize-none rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="location" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
-              {t('pre_location')}
-            </label>
-            <input
-              id="location"
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder={t('pre_locationPlaceholder')}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
-          </div>
-
           {showRecordingPicker && (
             <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-900/20 p-4 space-y-3">
               <div className="flex items-start gap-2">
@@ -250,36 +215,27 @@ export function PreSessionPage(): React.JSX.Element {
           )}
 
           <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
-            {kvkkConsent ? (
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 leading-relaxed">
-                    {t('pre_kvkkAccepted')}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setKvkkConsent(false)}
-                    className="mt-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline"
-                  >
-                    {t('kvkk_decline')}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setKvkkModalOpen(true)}
-                className="flex w-full items-center justify-between gap-3 text-left transition-colors group"
-              >
-                <div className="flex items-start gap-3">
-                  <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300 leading-relaxed underline-offset-4 group-hover:underline">
-                    {t('pre_kvkkOpenModal')}
-                  </span>
-                </div>
-              </button>
-            )}
+            <div className="flex items-start gap-3">
+              <input
+                id="kvkkConsent"
+                type="checkbox"
+                checked={kvkkConsent}
+                onChange={(e) => setKvkkConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              />
+              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                <label htmlFor="kvkkConsent" className="cursor-pointer">
+                  {t('pre_kvkkConsent')}
+                </label>{' '}
+                <button
+                  type="button"
+                  onClick={() => setKvkkModalOpen(true)}
+                  className="font-medium text-blue-600 dark:text-blue-400 underline underline-offset-2 hover:text-blue-700 dark:hover:text-blue-300"
+                >
+                  {t('pre_kvkkReadLink')}
+                </button>
+              </p>
+            </div>
           </div>
 
           <KvkkConsentModal

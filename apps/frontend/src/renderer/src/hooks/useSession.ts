@@ -14,8 +14,6 @@ interface CreateSessionPayload {
   patient_name?: string
   visit_type: VisitType
   doctor_name: string
-  pre_diagnosis?: string
-  location?: string
   kvkk_consent: boolean
   appointment_id?: string
 }

@@ -357,8 +357,6 @@
           "patient_name": { "type": "string", "default": "" },
           "doctor_name": { "type": "string" },
           "visit_type": { "type": "string", "enum": ["ilk_muayene", "kontrol", "konsultasyon", "acil"], "default": "ilk_muayene" },
-          "pre_diagnosis": { "type": "string", "default": "" },
-          "location": { "type": "string", "default": "" },
           "kvkk_consent": { "type": "boolean" }
         },
         "required": ["doctor_name", "kvkk_consent"]
@@ -369,8 +367,6 @@
           "status": { "type": "string", "enum": ["NOT_STARTED", "RECORDING", "PROCESSING", "AWAITING_REVIEW", "COMPLETED", "ARCHIVED"] },
           "patient_id": { "type": "string" },
           "patient_name": { "type": "string" },
-          "pre_diagnosis": { "type": "string" },
-          "location": { "type": "string" },
           "audio_file_path": { "type": "string" },
           "audio_duration_seconds": { "type": "number" }
         }
@@ -384,8 +380,6 @@
           "doctor_name": { "type": "string" },
           "visit_type": { "type": "string" },
           "status": { "type": "string" },
-          "pre_diagnosis": { "type": "string" },
-          "location": { "type": "string" },
           "audio_file_path": { "type": "string" },
           "kvkk_consent": { "type": "boolean" },
           "started_at": { "type": "string", "format": "date-time" },

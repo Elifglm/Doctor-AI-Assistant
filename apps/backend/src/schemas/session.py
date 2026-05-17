@@ -16,8 +16,6 @@ class CreateSessionRequest(BaseModel):
     patient_name: str = Field(default="", max_length=200)
     doctor_name: str = Field(max_length=200)
     visit_type: str = "ilk_muayene"
-    pre_diagnosis: str = Field(default="", max_length=5000)
-    location: str = Field(default="", max_length=200)
     kvkk_consent: bool
     appointment_id: str = Field(default="", max_length=100)
 
@@ -26,8 +24,6 @@ class UpdateSessionRequest(BaseModel):
     status: Optional[str] = None
     patient_id: Optional[str] = None
     patient_name: Optional[str] = None
-    pre_diagnosis: Optional[str] = None
-    location: Optional[str] = None
     audio_file_path: Optional[str] = None
     audio_duration_seconds: Optional[float] = None
 
@@ -40,8 +36,6 @@ class SessionResponse(BaseModel):
     appointment_id: Optional[str] = None
     visit_type: str
     status: str
-    pre_diagnosis: Optional[str] = None
-    location: Optional[str] = None
     audio_file_path: Optional[str] = None
     kvkk_consent: Optional[bool] = None
     started_at: Optional[datetime] = None

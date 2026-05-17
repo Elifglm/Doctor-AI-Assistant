@@ -126,7 +126,11 @@ class OpenEMRService:
                     "client_id": self.config.client_id,
                     "client_secret": self.config.client_secret,
                     "user_role": "users",
-                    "scope": "openid api:oemr offline_access",
+                    "scope": (
+                        "openid offline_access api:oemr "
+                        "user/patient.read user/patient.write "
+                        "user/practitioner.read user/facility.read"
+                    ),
                     "username": self.config.username,
                     "password": self.config.password,
                 },

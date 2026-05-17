@@ -35,8 +35,6 @@ class SessionService:
             doctor_brans=doctor_brans,
             appointment_id=getattr(data, "appointment_id", "") or "",
             visit_type=data.visit_type,
-            pre_diagnosis=data.pre_diagnosis,
-            location=data.location,
             kvkk_consent=data.kvkk_consent,
             status="NOT_STARTED",
         )

@@ -43,8 +43,6 @@ class Session(Base):
     appointment_id: str = Column(String(100), nullable=True, default="")
     visit_type: str = Column(String(50), nullable=False, default="ilk_muayene")
     status: str = Column(String(50), nullable=False, default="NOT_STARTED")
-    pre_diagnosis: str = Column(Text, nullable=True, default="")
-    location: str = Column(String(200), nullable=True, default="")
     audio_file_path: str = Column(String(500), nullable=True)
     kvkk_consent: bool = Column(Boolean, nullable=False, default=False)
     started_at: datetime | None = Column(DateTime(timezone=True), nullable=True)

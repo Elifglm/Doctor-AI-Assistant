@@ -14,8 +14,6 @@ export interface Session {
   doctor_name: string
   visit_type: VisitType
   status: SessionStatus
-  pre_diagnosis: string
-  location: string
   audio_file_path: string | null
   kvkk_consent: boolean
   started_at: string | null
