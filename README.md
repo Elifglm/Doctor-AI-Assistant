@@ -25,6 +25,7 @@ OpenEMR (HBYS) sistemine aktarılabilir.
   - [5. Frontend kurulumu](#5-frontend-kurulumu)
 - [Çalıştırma](#çalıştırma)
 - [Docker ile çalıştırma](#docker-ile-çalıştırma)
+- [Hasta verisini içe aktarma](#hasta-verisini-içe-aktarma-paylaşılan-veritabanı-dumpı)
 - [OpenEMR (HBYS) entegrasyonu](#openemr-hbys-entegrasyonu)
 - [Testler](#testler)
 - [Proje yapısı](#proje-yapısı)
@@ -257,6 +258,43 @@ docker compose up openemr-init openemr-sut-init   # (ops.) ICD-10 + SUT seed
 
 GPU desteği için `docker-compose.gpu.yml` override dosyası kullanılır. Ayrıntılar
 ve sık karşılaşılan sorunlar: [`docker/README.md`](docker/README.md).
+
+---
+
+## Hasta verisini içe aktarma (paylaşılan veritabanı dump'ı)
+
+> **Önemli:** Hasta kayıtları (OpenEMR'deki hastalar, görüşme oturumları, raporlar)
+> **depoda yer almaz** — git deposu yalnızca veritabanı şemasını ve ICD-10/SUT
+> tohum verisini içerir. Bir klon kurulduğunda OpenEMR **boş** gelir.
+>
+> Hasta verisini paylaşmak için, ekipten biri MariaDB'yi tek bir `.sql` dosyasına
+> döker; diğerleri bu dosyayı içe aktarır. Hastaları OpenEMR arayüzünden tek tek
+> oluşturmaya gerek yoktur.
+
+Önkoşul: Docker ve MariaDB container'ı çalışıyor olmalı (`docker compose up -d mysql`).
+
+**Veriyi dışa aktarma (gönderen taraf):**
+
+```bash
+./scripts/db-export.sh
+```
+
+Script, `openemr` ve `klinikasistan` veritabanlarını
+`data/dumps/klinik_dump_<tarih>.sql` adlı tek bir dosyaya döker. Bu dosya ekiple
+paylaşılır (Drive, WeTransfer vb.).
+
+**Veriyi içe aktarma (alan taraf):**
+
+```bash
+./scripts/db-import.sh data/dumps/klinik_dump_<tarih>.sql
+```
+
+Script onay ister; **mevcut tabloların üzerine yazar.** İçe aktarma bittikten sonra
+backend çalışıyorsa yeniden başlatın (önbellek tazeleme için).
+
+> Scriptler `klinikasistan-mysql-1` container adını bekler. Container adınız
+> farklıysa (`docker ps` ile kontrol edin) script başındaki `CONTAINER=` satırını
+> düzenleyin.
 
 ---
 
