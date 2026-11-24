@@ -22,6 +22,21 @@ suggestions, which can be sent to OpenEMR. Capstone project, team of four.
 > verinizle indeksleri yeniden üretecek scriptleri içerir; veri olmadan
 > uygulama anamnez RAG'i kapalı olarak çalışır.
 
+## Sonuçlar
+
+20 sentetik dahiliye konsültasyonu üzerinde uçtan uca değerlendirme
+(ICD-10 exact F1 ortalama **0.635**, SUT tetkik F1 ortalama **0.667**) ve
+dahiliye-filtreli ICD-10 vektör veritabanının Recall@k kazancı:
+
+<p>
+  <img src="docs/images/graph_per_form_f1.png" alt="Form bazında ICD-10 ve SUT F1" width="100%">
+</p>
+<p>
+  <img src="docs/images/graph_recall_at_k.png" alt="ICD-10 Recall@k karşılaştırması" width="70%">
+</p>
+
+Ayrıntılı ablation raporları: `docs/` dizini.
+
 ## Ekran görüntüleri
 
 <!-- TODO: ekran görüntüleri / demo GIF'i docs/images/ altına eklenecek -->
