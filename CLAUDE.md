@@ -26,12 +26,8 @@ documentation in Turkish polyclinics.
 
 ## Anamnez RAG Setup
 Real-anamnesis RAG (BGE-M3 + metadata) uses a corpus of de-identified hospital
-reports. **Everything is committed** — clone-and-run works out of the box:
-- `data/Anemnez_tetkik/` (raw Excel, 10 MB)
-- `data/anamnez.db` (SQLite, 32 MB)
-- `data/anamnez_chroma_bge-m3_metadata/` (production ChromaDB, 153 MB)
-
-Smoke verify after clone: `python -m apps.backend.src.rag.test_rag_live`
+reports. The corpus and its indexes are **not included** in this repository (KVKK).
+Build them from your own data with `import_anamnez` and `build_anamnez_vectors`.
 
 If you want to **rebuild** the ChromaDB (e.g. swap embedding model), redirect to
 a separate folder so the committed one stays untouched:

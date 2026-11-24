@@ -6,8 +6,28 @@ metne çevirir, konuşmacıları ayırır ve büyük dil modeli (LLM) ile yapıl
 **anamnez**, **ICD-10 tanı kodu** ve **SUT tetkik** önerileri üretir. Sonuçlar
 OpenEMR (HBYS) sistemine aktarılabilir.
 
-> Bu bir bitirme/araştırma projesidir. Gerçek hasta verisiyle klinik kullanım
-> öncesi KVKK ve ilgili mevzuat uyumu ayrıca değerlendirilmelidir.
+> Bu bir bitirme/araştırma projesidir (Kadir Has Üniversitesi, Bilgisayar
+> Mühendisliği). Gerçek hasta verisiyle klinik kullanım öncesi KVKK ve ilgili
+> mevzuat uyumu ayrıca değerlendirilmelidir.
+
+**English summary:** Desktop app (Electron + React, FastAPI) that records a
+doctor–patient consultation, transcribes it with faster-whisper, separates
+speakers with pyannote, and uses an LLM (Claude Haiku 4.5) with RAG to produce a
+structured 25-field anamnesis, ICD-10 diagnosis codes and SUT lab-test
+suggestions, which can be sent to OpenEMR. Capstone project, team of four.
+
+> **Veri hakkında:** Geliştirmede kullanılan kimliksizleştirilmiş hastane
+> raporları, bunlardan üretilen anamnez veritabanı/ChromaDB indeksleri ve
+> değerlendirme çıktıları KVKK gereği bu depoda **yer almaz**. Kod, kendi
+> verinizle indeksleri yeniden üretecek scriptleri içerir; veri olmadan
+> uygulama anamnez RAG'i kapalı olarak çalışır.
+
+## Ekran görüntüleri
+
+<!-- TODO: ekran görüntüleri / demo GIF'i docs/images/ altına eklenecek -->
+| Görüşme kaydı | Anamnez inceleme | ICD-10 / SUT önerileri |
+|---|---|---|
+| _yakında_ | _yakında_ | _yakında_ |
 
 ---
 
@@ -191,8 +211,12 @@ HF_TOKEN=<hugging-face-token>
 
 ### 4. Veritabanı hazırlığı
 
-Anamnez RAG verisi (`data/anamnez.db`, ChromaDB) **depoda hazır gelir** — ek işlem
-gerekmez. ICD-10 vektör veritabanı yeni klonda bir kez kurulmalıdır:
+Anamnez RAG verisi (gerçek hasta raporları) bu depoda yoktur. Veri olmadan
+çalıştırmak için `.env` içinde `ANAMNEZ_RAG_ENABLED=false` ayarlayın; kendi
+kimliksizleştirilmiş verinizle indeksi `import_anamnez` ve
+`build_anamnez_vectors` scriptleri üretir.
+
+ICD-10 vektör veritabanı yeni klonda bir kez kurulmalıdır:
 
 ```bash
 # ICD-10 kodlarını içe aktar
@@ -202,11 +226,6 @@ python -m apps.backend.src.scripts.import_icd10 docker/openemr/icd10_tr.sql
 python -m apps.backend.src.scripts.build_icd10_vectors
 ```
 
-Doğrulama:
-
-```bash
-python -m apps.backend.src.rag.test_rag_live
-```
 
 ### 5. Frontend kurulumu
 
@@ -351,7 +370,7 @@ cd apps/frontend && npm test
 ├── src/, config/           # Eski/temel ASR pipeline (değiştirilmez)
 ├── shared/                 # Katmanlar arası API sözleşmesi
 ├── docker/                 # MariaDB + OpenEMR init scriptleri
-├── data/                   # SQLite DB'ler + ChromaDB verisi (depoda hazır)
+├── data/                   # Yerel SQLite/ChromaDB verisi (depoda yok, scriptlerle üretilir)
 ├── docs/                   # Araştırma ve değerlendirme raporları
 ├── bench_data/, bench_results/   # LLM/ASR kıyaslama verileri
 ├── scripts/                # Yardımcı scriptler

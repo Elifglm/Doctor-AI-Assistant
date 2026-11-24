@@ -124,3 +124,8 @@ icd10_export.csv
 # Docker compose dev override (developer-specific bind mounts).
 # Kopya icin: docker-compose.override.yml.example
 docker-compose.override.yml
+
+# Patient-derived data is never committed
+data/*
+!data/medical_synonyms.json
+apps/backend/src/rag/eval_results/

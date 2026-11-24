@@ -1,0 +1,3689 @@
+{
+  "symptoms": [
+    {
+      "halk_dili": [
+        "başım ağrıyor",
+        "başım sızlıyor",
+        "kafam ağrıyor",
+        "başımda ağrı var"
+      ],
+      "tibbi_terim_tr": "BAŞ AĞRISI",
+      "tibbi_terim_uluslararasi": "Sefalji",
+      "icd10": "R51",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "noroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "başım dönüyor",
+        "başım fır fır dönüyor",
+        "denge kaybı yaşıyorum",
+        "etrafım dönüyor"
+      ],
+      "tibbi_terim_tr": "BAŞ DÖNMESİ",
+      "tibbi_terim_uluslararasi": "Vertigo / Dizziness",
+      "icd10": "R42",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "noroloji",
+        "kbb"
+      ]
+    },
+    {
+      "halk_dili": [
+        "bayıldım",
+        "kendimden geçtim",
+        "düşüp bayıldım"
+      ],
+      "tibbi_terim_tr": "SENKOP",
+      "tibbi_terim_uluslararasi": "Syncope",
+      "icd10": "R55",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kardiyoloji",
+        "noroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "uyuşma var",
+        "ellerim uyuşuyor",
+        "ayaklarım karıncalanıyor"
+      ],
+      "tibbi_terim_tr": "PARESTEZİ",
+      "tibbi_terim_uluslararasi": "Paresthesia",
+      "icd10": "R20.2",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "noroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "uyku problemim var",
+        "uyuyamıyorum",
+        "geceleri uyanıyorum"
+      ],
+      "tibbi_terim_tr": "UYKUSUZLUK",
+      "tibbi_terim_uluslararasi": "Insomnia",
+      "icd10": "G47.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "psikiyatri",
+        "noroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "unutkanlık",
+        "hafızam zayıfladı",
+        "isimleri unutuyorum"
+      ],
+      "tibbi_terim_tr": "HAFIZA BOZUKLUĞU",
+      "tibbi_terim_uluslararasi": "Memory impairment",
+      "icd10": "R41.3",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "noroloji",
+        "psikiyatri"
+      ]
+    },
+    {
+      "halk_dili": [
+        "halsizim",
+        "yorgunum",
+        "bitkinim",
+        "enerjim yok"
+      ],
+      "tibbi_terim_tr": "HALSİZLİK",
+      "tibbi_terim_uluslararasi": "Fatigue / Asthenia",
+      "icd10": "R53",
+      "sik_gorulen_branslar": [
+        "dahiliye"
+      ]
+    },
+    {
+      "halk_dili": [
+        "ateşim var",
+        "ateşim yükseldi",
+        "yanıyorum"
+      ],
+      "tibbi_terim_tr": "ATEŞ",
+      "tibbi_terim_uluslararasi": "Fever / Pyrexia",
+      "icd10": "R50.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "enfeksiyon"
+      ]
+    },
+    {
+      "halk_dili": [
+        "üşüyorum",
+        "titriyorum",
+        "üşüme nöbeti geliyor"
+      ],
+      "tibbi_terim_tr": "ÜŞÜME-TİTREME",
+      "tibbi_terim_uluslararasi": "Chills / Rigors",
+      "icd10": "R68.83",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "enfeksiyon"
+      ]
+    },
+    {
+      "halk_dili": [
+        "geceleri terliyorum",
+        "gece terlemesi var",
+        "yatakta terliyorum"
+      ],
+      "tibbi_terim_tr": "GECE TERLEMESİ",
+      "tibbi_terim_uluslararasi": "Night sweats",
+      "icd10": "R61",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "endokrin",
+        "enfeksiyon"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kilo veriyorum",
+        "kilo kaybediyorum",
+        "zayıflıyorum istemeden"
+      ],
+      "tibbi_terim_tr": "KİLO KAYBI",
+      "tibbi_terim_uluslararasi": "Weight loss",
+      "icd10": "R63.4",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "endokrin",
+        "onkoloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kilo aldım",
+        "şişmanlıyorum",
+        "tartım sürekli artıyor"
+      ],
+      "tibbi_terim_tr": "KİLO ARTIŞI",
+      "tibbi_terim_uluslararasi": "Weight gain",
+      "icd10": "R63.5",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "endokrin"
+      ]
+    },
+    {
+      "halk_dili": [
+        "iştahım yok",
+        "yemek yiyemiyorum",
+        "iştahsızım"
+      ],
+      "tibbi_terim_tr": "İŞTAHSIZLIK",
+      "tibbi_terim_uluslararasi": "Anorexia",
+      "icd10": "R63.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "endokrin"
+      ]
+    },
+    {
+      "halk_dili": [
+        "çok susuyorum",
+        "sürekli su içiyorum",
+        "ağzım kuruyor"
+      ],
+      "tibbi_terim_tr": "POLİDİPSİ",
+      "tibbi_terim_uluslararasi": "Polydipsia",
+      "icd10": "R63.1",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "endokrin"
+      ]
+    },
+    {
+      "halk_dili": [
+        "karnım ağrıyor",
+        "midem ağrıyor",
+        "karın ağrım var"
+      ],
+      "tibbi_terim_tr": "KARIN AĞRISI",
+      "tibbi_terim_uluslararasi": "Abdominal pain",
+      "icd10": "R10.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "midem yanıyor",
+        "ekşime var",
+        "yemek borumda yanma"
+      ],
+      "tibbi_terim_tr": "EPİGASTRİK YANMA",
+      "tibbi_terim_uluslararasi": "Heartburn / Pyrosis",
+      "icd10": "R12",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "midem bulanıyor",
+        "kusacak gibiyim",
+        "midem fena oluyor"
+      ],
+      "tibbi_terim_tr": "BULANTI",
+      "tibbi_terim_uluslararasi": "Nausea",
+      "icd10": "R11.0",
+      "sik_gorulen_branslar": [
+        "dahiliye"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kusuyorum",
+        "kustum",
+        "yemekleri çıkarıyorum"
+      ],
+      "tibbi_terim_tr": "KUSMA",
+      "tibbi_terim_uluslararasi": "Vomiting / Emesis",
+      "icd10": "R11.10",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "ishal oldum",
+        "sürekli tuvalete gidiyorum",
+        "ishalim var"
+      ],
+      "tibbi_terim_tr": "DİYARE",
+      "tibbi_terim_uluslararasi": "Diarrhea",
+      "icd10": "K59.1",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kabızım",
+        "tuvalete çıkamıyorum",
+        "günlerdir tuvalet yok"
+      ],
+      "tibbi_terim_tr": "KONSTİPASYON",
+      "tibbi_terim_uluslararasi": "Constipation",
+      "icd10": "K59.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "yutkunamıyorum",
+        "yutmakta zorlanıyorum",
+        "lokma takılıyor"
+      ],
+      "tibbi_terim_tr": "DİSFAJİ",
+      "tibbi_terim_uluslararasi": "Dysphagia",
+      "icd10": "R13.10",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "hazmedemiyorum",
+        "şişkinlik var",
+        "midem dolu kalıyor"
+      ],
+      "tibbi_terim_tr": "DİSPEPSİ",
+      "tibbi_terim_uluslararasi": "Dyspepsia",
+      "icd10": "K30",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "karnım şişiyor",
+        "şişkinlik hissediyorum",
+        "gaz var"
+      ],
+      "tibbi_terim_tr": "ABDOMİNAL DİSTANSİYON",
+      "tibbi_terim_uluslararasi": "Abdominal distension",
+      "icd10": "R14.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kanlı dışkı",
+        "tuvaletimde kan görüyorum",
+        "büyük abdestte kan var"
+      ],
+      "tibbi_terim_tr": "HEMATOKEZYA",
+      "tibbi_terim_uluslararasi": "Hematochezia",
+      "icd10": "K92.1",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "dışkım siyah",
+        "katran rengi tuvalet",
+        "siyah dışkı"
+      ],
+      "tibbi_terim_tr": "MELENA",
+      "tibbi_terim_uluslararasi": "Melena",
+      "icd10": "K92.1",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "sarılık",
+        "gözlerim sararmış",
+        "cildim sarı"
+      ],
+      "tibbi_terim_tr": "İKTERUS",
+      "tibbi_terim_uluslararasi": "Jaundice",
+      "icd10": "R17",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "göğsümde sıkışma",
+        "göğsümde basınç",
+        "göğsüm daralıyor"
+      ],
+      "tibbi_terim_tr": "GÖĞÜSTE SIKIŞMA",
+      "tibbi_terim_uluslararasi": "Chest tightness / Angina",
+      "icd10": "R07.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kardiyoloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "göğsüm ağrıyor",
+        "kalbim ağrıyor",
+        "göğüs ağrım var"
+      ],
+      "tibbi_terim_tr": "GÖĞÜS AĞRISI",
+      "tibbi_terim_uluslararasi": "Chest pain",
+      "icd10": "R07.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kardiyoloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "çarpıntım var",
+        "kalbim hızlı çarpıyor",
+        "kalbim küt küt atıyor"
+      ],
+      "tibbi_terim_tr": "ÇARPINTI",
+      "tibbi_terim_uluslararasi": "Palpitations",
+      "icd10": "R00.2",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kardiyoloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "bacaklarım şişiyor",
+        "ayaklarım şişti",
+        "ayak bileğimde şişlik"
+      ],
+      "tibbi_terim_tr": "ALT EKSTREMİTE ÖDEMİ",
+      "tibbi_terim_uluslararasi": "Lower extremity edema",
+      "icd10": "R60.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kardiyoloji",
+        "nefroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "nefes alamıyorum",
+        "nefes darlığım var",
+        "soluksuz kalıyorum"
+      ],
+      "tibbi_terim_tr": "DİSPNE",
+      "tibbi_terim_uluslararasi": "Dyspnea",
+      "icd10": "R06.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kardiyoloji",
+        "göğüs hastalıkları"
+      ]
+    },
+    {
+      "halk_dili": [
+        "öksürüyorum",
+        "öksürüğüm var",
+        "kuru öksürüğüm var"
+      ],
+      "tibbi_terim_tr": "ÖKSÜRÜK",
+      "tibbi_terim_uluslararasi": "Cough",
+      "icd10": "R05",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "göğüs hastalıkları"
+      ]
+    },
+    {
+      "halk_dili": [
+        "balgam çıkarıyorum",
+        "balgamlı öksürük",
+        "kıvamlı tükürük geliyor"
+      ],
+      "tibbi_terim_tr": "BALGAMLI ÖKSÜRÜK",
+      "tibbi_terim_uluslararasi": "Productive cough",
+      "icd10": "R05",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "göğüs hastalıkları"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kanlı tükürük",
+        "öksürürken kan geldi",
+        "balgamımda kan"
+      ],
+      "tibbi_terim_tr": "HEMOPTİZİ",
+      "tibbi_terim_uluslararasi": "Hemoptysis",
+      "icd10": "R04.2",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "göğüs hastalıkları"
+      ]
+    },
+    {
+      "halk_dili": [
+        "hırıltı geliyor",
+        "göğsümde hışıltı",
+        "ıslık sesi"
+      ],
+      "tibbi_terim_tr": "HIŞILTI",
+      "tibbi_terim_uluslararasi": "Wheezing",
+      "icd10": "R06.2",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "göğüs hastalıkları"
+      ]
+    },
+    {
+      "halk_dili": [
+        "boğazım ağrıyor",
+        "boğazım yanıyor",
+        "yutkunurken ağrı"
+      ],
+      "tibbi_terim_tr": "BOĞAZ AĞRISI",
+      "tibbi_terim_uluslararasi": "Sore throat / Pharyngitis",
+      "icd10": "J02.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kbb"
+      ]
+    },
+    {
+      "halk_dili": [
+        "burnum akıyor",
+        "burun akıntım var",
+        "sümüğüm akıyor"
+      ],
+      "tibbi_terim_tr": "RİNORE",
+      "tibbi_terim_uluslararasi": "Rhinorrhea",
+      "icd10": "J00",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kbb"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kanlı idrar",
+        "idrarımda kan görüyorum",
+        "idrarım pembe"
+      ],
+      "tibbi_terim_tr": "HEMATÜRİ",
+      "tibbi_terim_uluslararasi": "Hematuria",
+      "icd10": "R31.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "üroloji",
+        "nefroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "sık idrara çıkıyorum",
+        "geceleri tuvalete kalkıyorum",
+        "idrarım sık geliyor"
+      ],
+      "tibbi_terim_tr": "POLLAKİÜRİ",
+      "tibbi_terim_uluslararasi": "Frequency / Pollakiuria",
+      "icd10": "R35.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "üroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "idrar yaparken yanıyor",
+        "idrarda yanma",
+        "idrar yapamıyorum"
+      ],
+      "tibbi_terim_tr": "DİZÜRİ",
+      "tibbi_terim_uluslararasi": "Dysuria",
+      "icd10": "R30.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "üroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "çok idrar yapıyorum",
+        "idrar miktarım arttı"
+      ],
+      "tibbi_terim_tr": "POLİÜRİ",
+      "tibbi_terim_uluslararasi": "Polyuria",
+      "icd10": "R35.8",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "endokrin"
+      ]
+    },
+    {
+      "halk_dili": [
+        "eklemlerim ağrıyor",
+        "diz ağrım var",
+        "eklem ağrısı"
+      ],
+      "tibbi_terim_tr": "ARTRALJİ",
+      "tibbi_terim_uluslararasi": "Arthralgia",
+      "icd10": "M25.5",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "romatoloji",
+        "ortopedi"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kaslarım ağrıyor",
+        "kas ağrım var",
+        "vücudum ağrıyor"
+      ],
+      "tibbi_terim_tr": "MİYALJİ",
+      "tibbi_terim_uluslararasi": "Myalgia",
+      "icd10": "M79.1",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "romatoloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "belim ağrıyor",
+        "bel ağrım var",
+        "alt sırtım ağrıyor"
+      ],
+      "tibbi_terim_tr": "BEL AĞRISI",
+      "tibbi_terim_uluslararasi": "Low back pain / Lumbago",
+      "icd10": "M54.5",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "fizik tedavi",
+        "ortopedi"
+      ]
+    },
+    {
+      "halk_dili": [
+        "sırtım ağrıyor",
+        "sırt ağrım var"
+      ],
+      "tibbi_terim_tr": "SIRT AĞRISI",
+      "tibbi_terim_uluslararasi": "Back pain",
+      "icd10": "M54.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "fizik tedavi"
+      ]
+    },
+    {
+      "halk_dili": [
+        "boynum ağrıyor",
+        "ense ağrım var",
+        "boyun tutulması"
+      ],
+      "tibbi_terim_tr": "SERVİKALJİ",
+      "tibbi_terim_uluslararasi": "Cervicalgia",
+      "icd10": "M54.2",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "fizik tedavi"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kaşıntım var",
+        "her yerim kaşınıyor",
+        "cildim kaşınıyor"
+      ],
+      "tibbi_terim_tr": "PRURİTUS",
+      "tibbi_terim_uluslararasi": "Pruritus",
+      "icd10": "L29.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "dermatoloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "döküntü var",
+        "ciltte kızarıklık",
+        "vücudumda lekeler çıktı"
+      ],
+      "tibbi_terim_tr": "DÖKÜNTÜ",
+      "tibbi_terim_uluslararasi": "Rash / Exanthema",
+      "icd10": "R21",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "dermatoloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "saçlarım dökülüyor",
+        "saç dökülmesi var"
+      ],
+      "tibbi_terim_tr": "ALOPESİ",
+      "tibbi_terim_uluslararasi": "Alopecia",
+      "icd10": "L65.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "dermatoloji",
+        "endokrin"
+      ]
+    },
+    {
+      "halk_dili": [
+        "soğuğa dayanamıyorum",
+        "üşüyorum sürekli"
+      ],
+      "tibbi_terim_tr": "SOĞUK İNTOLERANSI",
+      "tibbi_terim_uluslararasi": "Cold intolerance",
+      "icd10": "R68.83",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "endokrin"
+      ]
+    },
+    {
+      "halk_dili": [
+        "sıcağa dayanamıyorum",
+        "sürekli terliyorum"
+      ],
+      "tibbi_terim_tr": "SICAK İNTOLERANSI",
+      "tibbi_terim_uluslararasi": "Heat intolerance",
+      "icd10": "R68.89",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "endokrin"
+      ]
+    },
+    {
+      "halk_dili": [
+        "endişeliyim",
+        "kaygılıyım",
+        "huzursuzum",
+        "iç sıkıntım var"
+      ],
+      "tibbi_terim_tr": "ANKSİYETE",
+      "tibbi_terim_uluslararasi": "Anxiety",
+      "icd10": "F41.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "psikiyatri"
+      ]
+    },
+    {
+      "halk_dili": [
+        "mutsuzum",
+        "kederliyim",
+        "morali bozuk",
+        "hiçbir şey istemiyorum"
+      ],
+      "tibbi_terim_tr": "DEPRESİF DURUM",
+      "tibbi_terim_uluslararasi": "Depressed mood",
+      "icd10": "R45.2",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "psikiyatri"
+      ]
+    },
+    {
+      "halk_dili": [
+        "yorgunluk",
+        "yorgun hissediyorum",
+        "kendimi sürekli yorgun hissediyorum",
+        "enerjisizim"
+      ],
+      "tibbi_terim_tr": "YORGUNLUK",
+      "tibbi_terim_uluslararasi": "Fatigue",
+      "icd10": "R53.83",
+      "sik_gorulen_branslar": [
+        "dahiliye"
+      ]
+    },
+    {
+      "halk_dili": [
+        "karında su toplanması",
+        "asit",
+        "karnım şişti su toplandı"
+      ],
+      "tibbi_terim_tr": "ASİT (Karında Sıvı)",
+      "tibbi_terim_uluslararasi": "Ascites",
+      "icd10": "R18.8",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "dalakta büyüme",
+        "splenomegali",
+        "dalağım büyük"
+      ],
+      "tibbi_terim_tr": "SPLENOMEGALİ",
+      "tibbi_terim_uluslararasi": "Splenomegaly",
+      "icd10": "R16.1",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "hematoloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "karaciğerde büyüme",
+        "hepatomegali",
+        "karaciğerim büyük"
+      ],
+      "tibbi_terim_tr": "HEPATOMEGALİ",
+      "tibbi_terim_uluslararasi": "Hepatomegaly",
+      "icd10": "R16.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "gastroenteroloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "lenf bezleri büyümüş",
+        "boyumda şişlik bezler",
+        "lenfadenopati",
+        "koltukaltında şişlik"
+      ],
+      "tibbi_terim_tr": "LENFADENOPATİ",
+      "tibbi_terim_uluslararasi": "Lymphadenopathy",
+      "icd10": "R59.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "hematoloji",
+        "enfeksiyon"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kafam karışıyor",
+        "konfüzyon",
+        "düşünemiyorum bilincim açık değil"
+      ],
+      "tibbi_terim_tr": "KONFÜZYON",
+      "tibbi_terim_uluslararasi": "Confusion",
+      "icd10": "R41.0",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "noroloji",
+        "geriatri"
+      ]
+    },
+    {
+      "halk_dili": [
+        "nöbet geçirdim",
+        "konvülziyon",
+        "kasıldım"
+      ],
+      "tibbi_terim_tr": "KONVÜLZİYON",
+      "tibbi_terim_uluslararasi": "Convulsion / Seizure",
+      "icd10": "R56.9",
+      "sik_gorulen_branslar": [
+        "noroloji",
+        "dahiliye"
+      ]
+    },
+    {
+      "halk_dili": [
+        "görme bulanıklığı",
+        "gözlerim bulanık görüyor"
+      ],
+      "tibbi_terim_tr": "GÖRME BULANIKLIĞI",
+      "tibbi_terim_uluslararasi": "Blurred vision",
+      "icd10": "H53.8",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "goz"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kulak çınlaması",
+        "tinnitus",
+        "kulağımda uğultu"
+      ],
+      "tibbi_terim_tr": "TİNNİTUS",
+      "tibbi_terim_uluslararasi": "Tinnitus",
+      "icd10": "H93.19",
+      "sik_gorulen_branslar": [
+        "kbb",
+        "dahiliye"
+      ]
+    },
+    {
+      "halk_dili": [
+        "hıçkırık",
+        "hıçkırıklarım dinmiyor"
+      ],
+      "tibbi_terim_tr": "HIÇKIRIK",
+      "tibbi_terim_uluslararasi": "Hiccup / Singultus",
+      "icd10": "R06.6",
+      "sik_gorulen_branslar": [
+        "dahiliye"
+      ]
+    },
+    {
+      "halk_dili": [
+        "diz ağrım var",
+        "diz ağrısı"
+      ],
+      "tibbi_terim_tr": "DİZ AĞRISI",
+      "tibbi_terim_uluslararasi": "Knee pain",
+      "icd10": "M25.569",
+      "sik_gorulen_branslar": [
+        "ortopedi",
+        "dahiliye",
+        "fiz tedavi"
+      ]
+    },
+    {
+      "halk_dili": [
+        "boyumda kitle",
+        "boynumda şişlik",
+        "boynumda topuz"
+      ],
+      "tibbi_terim_tr": "BOYUNDA KİTLE",
+      "tibbi_terim_uluslararasi": "Neck mass",
+      "icd10": "R22.1",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kbb",
+        "endokrin"
+      ]
+    },
+    {
+      "halk_dili": [
+        "morarma",
+        "ciltte morluklar",
+        "peteşi",
+        "purpura",
+        "vücudumda morluklar var"
+      ],
+      "tibbi_terim_tr": "PETEŞİ / PURPURA",
+      "tibbi_terim_uluslararasi": "Petechiae / Purpura",
+      "icd10": "R23.3",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "hematoloji",
+        "dermatoloji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "soğuk algınlığı belirtileri",
+        "üşütme",
+        "grip oldum"
+      ],
+      "tibbi_terim_tr": "ÜST SOLUNUM YOLU SEMPTOMLARI",
+      "tibbi_terim_uluslararasi": "URI symptoms",
+      "icd10": "J06.9",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "aile hekimliği"
+      ]
+    },
+    {
+      "halk_dili": [
+        "nefes darlığı krizi",
+        "ortopne",
+        "yatınca nefes alamıyorum"
+      ],
+      "tibbi_terim_tr": "ORTOPNE",
+      "tibbi_terim_uluslararasi": "Orthopnea",
+      "icd10": "R06.01",
+      "sik_gorulen_branslar": [
+        "dahiliye",
+        "kardiyoloji",
+        "gogus hastaliklari"
+      ]
+    }
+  ],
+  "diseases": [
+    {
+      "halk_dili": [
+        "yüksek tansiyon",
+        "tansiyonum yüksek",
+        "tansiyon hastalığı",
+        "hipertansiyonum var"
+      ],
+      "tibbi_terim_tr": "HİPERTANSİYON",
+      "kisaltma": "HT",
+      "icd10": "I10",
+      "alt_tipler": [
+        "I10 - Esansiyel HT",
+        "I11 - Hipertansif kalp hastalığı",
+        "I12 - Hipertansif böbrek hastalığı"
+      ]
+    },
+    {
+      "halk_dili": [
+        "şeker hastalığı",
+        "şekerim var",
+        "diyabetim var",
+        "kandaki şekerim yüksek"
+      ],
+      "tibbi_terim_tr": "DİABETES MELLİTUS",
+      "kisaltma": "DM",
+      "icd10": "E11.9",
+      "alt_tipler": [
+        "E10 - Tip 1 DM",
+        "E11 - Tip 2 DM",
+        "E13 - Diğer spesifik DM"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kolesterolüm yüksek",
+        "yağ oranım yüksek",
+        "kolesterol hastalığı"
+      ],
+      "tibbi_terim_tr": "HİPERLİPİDEMİ",
+      "kisaltma": "HLP",
+      "icd10": "E78.5",
+      "alt_tipler": [
+        "E78.0 - Saf hiperkolesterolemi",
+        "E78.1 - Saf hipertrigliseridemi",
+        "E78.2 - Mikst hiperlipidemi"
+      ]
+    },
+    {
+      "halk_dili": [
+        "tiroid hastalığı",
+        "guatr",
+        "tiroidim çalışmıyor",
+        "hipotiroidim var"
+      ],
+      "tibbi_terim_tr": "HİPOTİROİDİ",
+      "kisaltma": null,
+      "icd10": "E03.9",
+      "alt_tipler": [
+        "E03.9 - Hipotiroidi",
+        "E06.3 - Otoimmun tiroidit (Hashimoto)"
+      ]
+    },
+    {
+      "halk_dili": [
+        "zehirli guatr",
+        "tiroidim hızlı çalışıyor",
+        "hipertiroidim"
+      ],
+      "tibbi_terim_tr": "HİPERTİROİDİ",
+      "kisaltma": null,
+      "icd10": "E05.9",
+      "alt_tipler": [
+        "E05.0 - Graves hastalığı",
+        "E05.1 - Toksik nodüler guatr"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kansızlık",
+        "kanım az",
+        "demir eksikliğim var",
+        "anemim var"
+      ],
+      "tibbi_terim_tr": "DEMİR EKSİKLİĞİ ANEMİSİ",
+      "kisaltma": "IDA",
+      "icd10": "D50.9",
+      "alt_tipler": [
+        "D50 - Demir eksikliği",
+        "D51 - B12 eksikliği",
+        "D52 - Folat eksikliği"
+      ]
+    },
+    {
+      "halk_dili": [
+        "B12 düşük",
+        "B12 eksikliğim var",
+        "vitaminim düşük"
+      ],
+      "tibbi_terim_tr": "VİTAMİN B12 EKSİKLİĞİ",
+      "kisaltma": null,
+      "icd10": "E53.8",
+      "alt_tipler": [
+        "D51.0 - Pernisiyöz anemi",
+        "E53.8 - B12 eksikliği"
+      ]
+    },
+    {
+      "halk_dili": [
+        "D vitaminim düşük",
+        "kemiklerim zayıf"
+      ],
+      "tibbi_terim_tr": "VİTAMİN D EKSİKLİĞİ",
+      "kisaltma": null,
+      "icd10": "E55.9",
+      "alt_tipler": null
+    },
+    {
+      "halk_dili": [
+        "mide iltihabı",
+        "midem yara",
+        "gastritim var"
+      ],
+      "tibbi_terim_tr": "GASTRİT",
+      "kisaltma": null,
+      "icd10": "K29.7",
+      "alt_tipler": [
+        "K29.0 - Akut gastrit",
+        "K29.5 - Kronik gastrit",
+        "K29.7 - Gastrit, tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "mide ülserim",
+        "ülser var",
+        "mide yarası"
+      ],
+      "tibbi_terim_tr": "PEPTİK ÜLKUS",
+      "kisaltma": null,
+      "icd10": "K27.9",
+      "alt_tipler": [
+        "K25 - Mide ülseri",
+        "K26 - Duodenum ülseri",
+        "K27 - Peptik ülser"
+      ]
+    },
+    {
+      "halk_dili": [
+        "reflü",
+        "reflüm var",
+        "ekşime hastalığı"
+      ],
+      "tibbi_terim_tr": "GASTROÖZOFAGİYAL REFLÜ HASTALIĞI",
+      "kisaltma": "GÖRH",
+      "icd10": "K21.9",
+      "alt_tipler": [
+        "K21.0 - Özofajitli GÖRH",
+        "K21.9 - Özofajitsiz GÖRH"
+      ]
+    },
+    {
+      "halk_dili": [
+        "mide mikrobu",
+        "helikobakterim var"
+      ],
+      "tibbi_terim_tr": "HELICOBACTER PYLORI ENFEKSİYONU",
+      "kisaltma": null,
+      "icd10": "B96.81",
+      "alt_tipler": null
+    },
+    {
+      "halk_dili": [
+        "bağırsak sendromum",
+        "spastik kolon",
+        "huzursuz bağırsak"
+      ],
+      "tibbi_terim_tr": "İRRİTABL BAĞIRSAK SENDROMU",
+      "kisaltma": "İBS",
+      "icd10": "K58.9",
+      "alt_tipler": [
+        "K58.0 - İBS-D (diyareli)",
+        "K58.9 - İBS"
+      ]
+    },
+    {
+      "halk_dili": [
+        "yağlı karaciğer",
+        "karaciğerimde yağlanma var"
+      ],
+      "tibbi_terim_tr": "HEPATOSTEATOZ",
+      "kisaltma": "NAFLD",
+      "icd10": "K76.0",
+      "alt_tipler": null
+    },
+    {
+      "halk_dili": [
+        "damar tıkanıklığı",
+        "kalp damarlarım tıkalı",
+        "anjiyomda darlık"
+      ],
+      "tibbi_terim_tr": "KORONER ARTER HASTALIĞI",
+      "kisaltma": "KAH",
+      "icd10": "I25.10",
+      "alt_tipler": [
+        "I20 - Anjina pektoris",
+        "I21 - Akut MI",
+        "I25 - Kronik iskemik kalp hastalığı"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kalp yetmezliği",
+        "kalbim yorgun",
+        "kalp pompalayamıyor"
+      ],
+      "tibbi_terim_tr": "KALP YETMEZLİĞİ",
+      "kisaltma": "KKY",
+      "icd10": "I50.9",
+      "alt_tipler": [
+        "I50.1 - Sol kalp yetmezliği",
+        "I50.9 - Konjestif kalp yetmezliği"
+      ]
+    },
+    {
+      "halk_dili": [
+        "ritim bozukluğu",
+        "atriyal fibrilasyonum",
+        "kalp ritmim düzensiz"
+      ],
+      "tibbi_terim_tr": "ATRİYAL FİBRİLASYON",
+      "kisaltma": "AF",
+      "icd10": "I48.91",
+      "alt_tipler": [
+        "I48.0 - Paroksismal AF",
+        "I48.1 - Persistan AF",
+        "I48.2 - Kronik AF"
+      ]
+    },
+    {
+      "halk_dili": [
+        "KOAH",
+        "akciğerlerim yetersiz",
+        "amfizemim var"
+      ],
+      "tibbi_terim_tr": "KRONİK OBSTRÜKTİF AKCİĞER HASTALIĞI",
+      "kisaltma": "KOAH",
+      "icd10": "J44.9",
+      "alt_tipler": [
+        "J44.0 - KOAH alt sol yol enfeksiyonlu",
+        "J44.1 - KOAH akut alevlenme"
+      ]
+    },
+    {
+      "halk_dili": [
+        "astımım",
+        "nefes darlığım kronik",
+        "alerjik astım"
+      ],
+      "tibbi_terim_tr": "ASTIM",
+      "kisaltma": null,
+      "icd10": "J45.9",
+      "alt_tipler": [
+        "J45.0 - Allerjik astım",
+        "J45.1 - Non-allerjik astım"
+      ]
+    },
+    {
+      "halk_dili": [
+        "böbrek yetmezliği",
+        "böbreklerim çalışmıyor",
+        "diyalize giriyorum"
+      ],
+      "tibbi_terim_tr": "KRONİK BÖBREK YETMEZLİĞİ",
+      "kisaltma": "KBY",
+      "icd10": "N18.9",
+      "alt_tipler": [
+        "N18.3 - KBY Evre 3",
+        "N18.4 - KBY Evre 4",
+        "N18.5 - KBY Evre 5",
+        "N18.6 - Son dönem KBY"
+      ]
+    },
+    {
+      "halk_dili": [
+        "üst solunum yolu enfeksiyonu",
+        "soğuk algınlığı",
+        "gribim var"
+      ],
+      "tibbi_terim_tr": "AKUT ÜST SOLUNUM YOLU ENFEKSİYONU",
+      "kisaltma": "ÜSYE",
+      "icd10": "J06.9",
+      "alt_tipler": [
+        "J00 - Soğuk algınlığı",
+        "J02 - Akut farenjit",
+        "J03 - Akut tonsillit"
+      ]
+    },
+    {
+      "halk_dili": [
+        "idrar yolu enfeksiyonu",
+        "idrarımda enfeksiyon var",
+        "sistitim var"
+      ],
+      "tibbi_terim_tr": "İDRAR YOLU ENFEKSİYONU",
+      "kisaltma": "İYE",
+      "icd10": "N39.0",
+      "alt_tipler": [
+        "N30 - Sistit",
+        "N10 - Akut piyelonefrit",
+        "N39.0 - İYE"
+      ]
+    },
+    {
+      "halk_dili": [
+        "migrenim var",
+        "migren ağrım",
+        "tek taraflı baş ağrım"
+      ],
+      "tibbi_terim_tr": "MİGREN",
+      "kisaltma": null,
+      "icd10": "G43.909",
+      "alt_tipler": [
+        "G43.0 - Aurasız migren",
+        "G43.1 - Auralı migren"
+      ]
+    },
+    {
+      "halk_dili": [
+        "depresyondayım",
+        "depresyon tanım var",
+        "antidepresan kullanıyorum"
+      ],
+      "tibbi_terim_tr": "MAJOR DEPRESİF BOZUKLUK",
+      "kisaltma": "MDB",
+      "icd10": "F32.9",
+      "alt_tipler": [
+        "F32 - Depresif epizod",
+        "F33 - Tekrarlayan depresif bozukluk"
+      ]
+    },
+    {
+      "halk_dili": [
+        "anksiyete bozukluğum",
+        "panik atağım var",
+        "yaygın kaygı"
+      ],
+      "tibbi_terim_tr": "ANKSİYETE BOZUKLUĞU",
+      "kisaltma": null,
+      "icd10": "F41.9",
+      "alt_tipler": [
+        "F41.0 - Panik bozukluk",
+        "F41.1 - Yaygın anksiyete"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kemik erimesi",
+        "osteoporozum var",
+        "kemiklerim zayıf"
+      ],
+      "tibbi_terim_tr": "OSTEOPOROZ",
+      "kisaltma": null,
+      "icd10": "M81.0",
+      "alt_tipler": [
+        "M80 - Patolojik kırıklı osteoporoz",
+        "M81 - Patolojik kırıksız osteoporoz"
+      ]
+    },
+    {
+      "halk_dili": [
+        "romatizmam",
+        "RA hastalığım",
+        "eklem romatizması"
+      ],
+      "tibbi_terim_tr": "ROMATOİD ARTRİT",
+      "kisaltma": "RA",
+      "icd10": "M06.9",
+      "alt_tipler": [
+        "M05 - Seropozitif RA",
+        "M06 - Diğer RA"
+      ]
+    },
+    {
+      "halk_dili": [
+        "gut hastalığım",
+        "ürik asitim yüksek",
+        "ayak başparmağım şişiyor"
+      ],
+      "tibbi_terim_tr": "GUT",
+      "kisaltma": null,
+      "icd10": "M10.9",
+      "alt_tipler": [
+        "M10.0 - İdiyopatik gut",
+        "M10.9 - Gut, tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "ürik asit yüksekliği",
+        "ürik asitim çıktı"
+      ],
+      "tibbi_terim_tr": "HİPERÜRİSEMİ",
+      "kisaltma": null,
+      "icd10": "E79.0",
+      "alt_tipler": null
+    },
+    {
+      "halk_dili": [
+        "obez",
+        "şişmanım",
+        "fazla kiloluyum çok"
+      ],
+      "tibbi_terim_tr": "OBEZİTE",
+      "kisaltma": null,
+      "icd10": "E66.9",
+      "alt_tipler": [
+        "E66.0 - Aşırı kalori kaynaklı",
+        "E66.01 - Morbid obezite"
+      ]
+    },
+    {
+      "halk_dili": [
+        "menenjit",
+        "menenjite",
+        "menenjit ihtimali",
+        "meningit",
+        "meninjit",
+        "beyin zarı iltihabı",
+        "menenjit şüphesi"
+      ],
+      "tibbi_terim_tr": "MENENJİT",
+      "kisaltma": "",
+      "icd10": "G03",
+      "alt_tipler": [
+        "A87 - Viral menenjit",
+        "G00 - Bakteriyel menenjit",
+        "G03 - Menenjit, diğer ve tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "sistit",
+        "akut sistit",
+        "mesane iltihabı",
+        "sistitim var"
+      ],
+      "tibbi_terim_tr": "SİSTİT",
+      "kisaltma": null,
+      "icd10": "N30.9",
+      "alt_tipler": [
+        "N30.0 - Akut sistit",
+        "N30.9 - Sistit, tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "pnömoni",
+        "zatürre",
+        "akciğer enfeksiyonu",
+        "pnömonim var"
+      ],
+      "tibbi_terim_tr": "PNÖMONİ",
+      "kisaltma": null,
+      "icd10": "J18.9",
+      "alt_tipler": [
+        "J18.9 - Pnömoni, etkeni tanımlanmamış",
+        "J15 - Bakteriyel pnömoni"
+      ]
+    },
+    {
+      "halk_dili": [
+        "gastroenterit",
+        "barsak enfeksiyonu",
+        "ishal hastalığı",
+        "ishal kusma"
+      ],
+      "tibbi_terim_tr": "GASTROENTERİT",
+      "kisaltma": null,
+      "icd10": "A09",
+      "alt_tipler": [
+        "A09 - Gastroenterit ve kolit, tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "bronşit",
+        "akut bronşit",
+        "bronşitim var"
+      ],
+      "tibbi_terim_tr": "AKUT BRONŞİT",
+      "kisaltma": null,
+      "icd10": "J20.9",
+      "alt_tipler": [
+        "J20 - Akut bronşit",
+        "J21 - Akut bronşiolit"
+      ]
+    },
+    {
+      "halk_dili": [
+        "sinüzit",
+        "sinüs iltihabı",
+        "sinüzitim var"
+      ],
+      "tibbi_terim_tr": "SİNÜZİT",
+      "kisaltma": null,
+      "icd10": "J32.9",
+      "alt_tipler": [
+        "J01 - Akut sinüzit",
+        "J32 - Kronik sinüzit"
+      ]
+    },
+    {
+      "halk_dili": [
+        "farenjit",
+        "boğaz iltihabı",
+        "boğaz enfeksiyonu",
+        "farenjitim var"
+      ],
+      "tibbi_terim_tr": "AKUT FARENJİT",
+      "kisaltma": null,
+      "icd10": "J02.9",
+      "alt_tipler": [
+        "J02 - Akut farenjit",
+        "J03 - Akut tonsillit"
+      ]
+    },
+    {
+      "halk_dili": [
+        "tonsillit",
+        "bademcik iltihabı",
+        "tonsillitim var"
+      ],
+      "tibbi_terim_tr": "AKUT TONSİLLİT",
+      "kisaltma": null,
+      "icd10": "J03.9",
+      "alt_tipler": [
+        "J03 - Akut tonsillit"
+      ]
+    },
+    {
+      "halk_dili": [
+        "otitis media",
+        "orta kulak iltihabı",
+        "kulak enfeksiyonu",
+        "kulak ağrım var"
+      ],
+      "tibbi_terim_tr": "AKUT OTİTİS MEDİA",
+      "kisaltma": "OM",
+      "icd10": "H66.9",
+      "alt_tipler": [
+        "H66.0 - Akut süpüratif otitis media",
+        "H66.9 - Otitis media"
+      ]
+    },
+    {
+      "halk_dili": [
+        "pyelonefrit",
+        "böbrek iltihabı",
+        "akut pyelonefrit",
+        "böbrek enfeksiyonu"
+      ],
+      "tibbi_terim_tr": "AKUT PYELONEFRİT",
+      "kisaltma": null,
+      "icd10": "N10",
+      "alt_tipler": [
+        "N10 - Akut tübülointerstisyel nefrit"
+      ]
+    },
+    {
+      "halk_dili": [
+        "hiperglisemi",
+        "kan şekeri yüksekliği",
+        "şekerim yükseldi"
+      ],
+      "tibbi_terim_tr": "HİPERGLİSEMİ",
+      "kisaltma": null,
+      "icd10": "R73.9",
+      "alt_tipler": [
+        "R73 - Yüksek kan glukozu"
+      ]
+    },
+    {
+      "halk_dili": [
+        "hashimoto",
+        "tiroid iltihabı",
+        "tiroid bezimde sorun var",
+        "boynumda guatr"
+      ],
+      "tibbi_terim_tr": "HASHİMOTO TİROİDİTİ",
+      "kisaltma": "",
+      "icd10": "E06.3",
+      "alt_tipler": [
+        "E06.3 - Otoimmün tiroidit",
+        "E03.9 - Hipotiroidi sonucu"
+      ]
+    },
+    {
+      "halk_dili": [
+        "karaciğer sertleşmesi",
+        "siroz",
+        "karaciğer sirozu",
+        "karaciğerim sertleşmiş"
+      ],
+      "tibbi_terim_tr": "KARACİĞER SİROZU",
+      "kisaltma": "",
+      "icd10": "K74.6",
+      "alt_tipler": [
+        "K70.3 - Alkolik siroz",
+        "K74.0 - Hepatik fibrozis",
+        "K74.6 - Siroz, tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "pankreas iltihabı",
+        "pankreatit",
+        "şiddetli karın ağrım var pankreasım"
+      ],
+      "tibbi_terim_tr": "AKUT PANKREATİT",
+      "kisaltma": "",
+      "icd10": "K85.9",
+      "alt_tipler": [
+        "K85.0 - İdiyopatik akut pankreatit",
+        "K85.1 - Biliyer pankreatit",
+        "K86.1 - Kronik pankreatit"
+      ]
+    },
+    {
+      "halk_dili": [
+        "safra taşı",
+        "safrada taş var",
+        "safra kesemde taş",
+        "kolelitiyazis"
+      ],
+      "tibbi_terim_tr": "KOLELİTİYAZİS (Safra Taşı)",
+      "kisaltma": "",
+      "icd10": "K80.20",
+      "alt_tipler": [
+        "K80.0 - Kolesistitli safra taşı",
+        "K80.20 - Kolesistitsiz safra taşı"
+      ]
+    },
+    {
+      "halk_dili": [
+        "safra kesesi iltihabı",
+        "kolesistit",
+        "safra kesem iltihaplı"
+      ],
+      "tibbi_terim_tr": "KOLESİSTİT",
+      "kisaltma": "",
+      "icd10": "K81.9",
+      "alt_tipler": [
+        "K81.0 - Akut kolesistit",
+        "K81.1 - Kronik kolesistit"
+      ]
+    },
+    {
+      "halk_dili": [
+        "ülseratif kolit",
+        "kanlı ishal hastalığım",
+        "iltihaplı bağırsak"
+      ],
+      "tibbi_terim_tr": "ÜLSERATİF KOLİT",
+      "kisaltma": "ÜK",
+      "icd10": "K51.90",
+      "alt_tipler": [
+        "K51.0 - Ülseratif pankoliti",
+        "K51.5 - Sol taraflı ülseratif kolit"
+      ]
+    },
+    {
+      "halk_dili": [
+        "crohn hastalığı",
+        "krohn",
+        "crohn",
+        "iltihaplı bağırsak hastalığı"
+      ],
+      "tibbi_terim_tr": "CROHN HASTALIĞI",
+      "kisaltma": "",
+      "icd10": "K50.90",
+      "alt_tipler": [
+        "K50.0 - İnce bağırsak Crohn",
+        "K50.1 - Kalın bağırsak Crohn"
+      ]
+    },
+    {
+      "halk_dili": [
+        "çölyak",
+        "gluten hastalığım",
+        "buğdaya alerjim",
+        "çölyak hastalığı"
+      ],
+      "tibbi_terim_tr": "ÇÖLYAK HASTALIĞI",
+      "kisaltma": "",
+      "icd10": "K90.0",
+      "alt_tipler": [
+        "K90.0 - Çölyak hastalığı"
+      ]
+    },
+    {
+      "halk_dili": [
+        "akciğer pıhtısı",
+        "pulmoner emboli",
+        "akciğere pıhtı atmış",
+        "pe"
+      ],
+      "tibbi_terim_tr": "PULMONER EMBOLİ",
+      "kisaltma": "PE",
+      "icd10": "I26.99",
+      "alt_tipler": [
+        "I26.0 - Akut PE, akut kor pulmonale",
+        "I26.99 - Akut PE, akut kor pulmonale olmayan"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kalp krizi",
+        "kalp krizi geçirdim",
+        "miyokard infarktüsü",
+        "kalbim tutuldu"
+      ],
+      "tibbi_terim_tr": "AKUT MİYOKARD İNFARKTÜSÜ",
+      "kisaltma": "AMI",
+      "icd10": "I21.9",
+      "alt_tipler": [
+        "I21.0 - STEMI ön yüz",
+        "I21.4 - NSTEMI",
+        "I21.9 - AMI, tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "göğüs ağrısı krizi",
+        "anjin",
+        "anjina",
+        "göğüs sıkışması nöbeti"
+      ],
+      "tibbi_terim_tr": "ANJİNA PEKTORİS",
+      "kisaltma": "",
+      "icd10": "I20.9",
+      "alt_tipler": [
+        "I20.0 - Kararsız anjina",
+        "I20.1 - Anjina prensmetal",
+        "I20.9 - Kararlı anjina"
+      ]
+    },
+    {
+      "halk_dili": [
+        "şeker koması",
+        "diyabetik koma",
+        "ketoasidoz",
+        "şekerim çok yüksek hastaneye yattım"
+      ],
+      "tibbi_terim_tr": "DİYABETİK KETOASİDOZ",
+      "kisaltma": "DKA",
+      "icd10": "E11.10",
+      "alt_tipler": [
+        "E10.10 - Tip 1 DM ile DKA",
+        "E11.10 - Tip 2 DM ile DKA"
+      ]
+    },
+    {
+      "halk_dili": [
+        "şekerim düştü",
+        "hipoglisemi",
+        "düşük şeker",
+        "şekerim çok düştü bayıldım"
+      ],
+      "tibbi_terim_tr": "HİPOGLİSEMİ",
+      "kisaltma": "",
+      "icd10": "E16.2",
+      "alt_tipler": [
+        "E16.0 - İlaç bağlı hipoglisemi",
+        "E16.2 - Hipoglisemi, tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kalsiyumum yüksek",
+        "hiperkalsemi",
+        "kanda kalsiyum yüksekliği"
+      ],
+      "tibbi_terim_tr": "HİPERKALSEMİ",
+      "kisaltma": "",
+      "icd10": "E83.52",
+      "alt_tipler": [
+        "E83.52 - Hiperkalsemi"
+      ]
+    },
+    {
+      "halk_dili": [
+        "potasyumum düşük",
+        "hipokalemi",
+        "potasyum eksikliği"
+      ],
+      "tibbi_terim_tr": "HİPOKALEMİ",
+      "kisaltma": "",
+      "icd10": "E87.6",
+      "alt_tipler": [
+        "E87.6 - Hipokalemi"
+      ]
+    },
+    {
+      "halk_dili": [
+        "sodyumum düşük",
+        "hiponatremi",
+        "tuzum düşük"
+      ],
+      "tibbi_terim_tr": "HİPONATREMİ",
+      "kisaltma": "",
+      "icd10": "E87.1",
+      "alt_tipler": [
+        "E87.1 - Hipoozmolalite ve hiponatremi"
+      ]
+    },
+    {
+      "halk_dili": [
+        "verem",
+        "tüberküloz",
+        "akciğer veremi",
+        "balgamımda kan veremim olabilir"
+      ],
+      "tibbi_terim_tr": "TÜBERKÜLOZ",
+      "kisaltma": "TB",
+      "icd10": "A15.9",
+      "alt_tipler": [
+        "A15.0 - Akciğer TB",
+        "A15.9 - TB, tanımlanmamış",
+        "A19.9 - Miliyer TB"
+      ]
+    },
+    {
+      "halk_dili": [
+        "sarılık",
+        "hepatit b",
+        "hbv",
+        "sarılık geçirdim"
+      ],
+      "tibbi_terim_tr": "VİRAL HEPATİT B",
+      "kisaltma": "HBV",
+      "icd10": "B16.9",
+      "alt_tipler": [
+        "B16.9 - Akut hepatit B",
+        "B18.1 - Kronik hepatit B"
+      ]
+    },
+    {
+      "halk_dili": [
+        "hepatit c",
+        "hcv",
+        "c sarılığı"
+      ],
+      "tibbi_terim_tr": "VİRAL HEPATİT C",
+      "kisaltma": "HCV",
+      "icd10": "B17.10",
+      "alt_tipler": [
+        "B17.10 - Akut hepatit C",
+        "B18.2 - Kronik hepatit C"
+      ]
+    },
+    {
+      "halk_dili": [
+        "lupus",
+        "sle",
+        "lupus hastalığı",
+        "kelebek döküntüsü"
+      ],
+      "tibbi_terim_tr": "SİSTEMİK LUPUS ERİTEMATOZUS",
+      "kisaltma": "SLE",
+      "icd10": "M32.9",
+      "alt_tipler": [
+        "M32.0 - İlaç bağlı SLE",
+        "M32.10 - SLE organ tutulumu ile",
+        "M32.9 - SLE, tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "fibromiyalji",
+        "tüm vücudum ağrıyor",
+        "yaygın ağrı"
+      ],
+      "tibbi_terim_tr": "FİBROMİYALJİ",
+      "kisaltma": "FM",
+      "icd10": "M79.7",
+      "alt_tipler": [
+        "M79.7 - Fibromiyalji"
+      ]
+    },
+    {
+      "halk_dili": [
+        "polisitemi",
+        "kanım koyu",
+        "hemoglobinim çok yüksek"
+      ],
+      "tibbi_terim_tr": "POLİSİTEMİ",
+      "kisaltma": "",
+      "icd10": "D45",
+      "alt_tipler": [
+        "D45 - Polisitemia vera"
+      ]
+    },
+    {
+      "halk_dili": [
+        "trombositopeni",
+        "trombositlerim düşük",
+        "kan pulcuğum az"
+      ],
+      "tibbi_terim_tr": "TROMBOSİTOPENİ",
+      "kisaltma": "",
+      "icd10": "D69.6",
+      "alt_tipler": [
+        "D69.3 - İmmün trombositopeni (ITP)",
+        "D69.6 - Trombositopeni, tanımlanmamış"
+      ]
+    },
+    {
+      "halk_dili": [
+        "beta talasemi",
+        "akdeniz anemisi",
+        "talasemi"
+      ],
+      "tibbi_terim_tr": "TALASEMİ",
+      "kisaltma": "",
+      "icd10": "D56.9",
+      "alt_tipler": [
+        "D56.0 - Alfa talasemi",
+        "D56.1 - Beta talasemi",
+        "D56.3 - Talasemi taşıyıcılığı"
+      ]
+    },
+    {
+      "halk_dili": [
+        "pulmoner ödem",
+        "akciğerimde su toplandı",
+        "akciğerde sıvı"
+      ],
+      "tibbi_terim_tr": "AKUT AKCİĞER ÖDEMİ",
+      "kisaltma": "",
+      "icd10": "J81.0",
+      "alt_tipler": [
+        "J81.0 - Akut akciğer ödemi"
+      ]
+    }
+  ],
+  "lab_tests": [
+    {
+      "halk_dili": [
+        "kan sayımı",
+        "tam kan",
+        "hemogram"
+      ],
+      "tibbi_terim_tr": "TAM KAN SAYIMI (Hemogram)",
+      "sut_kodu": "L102450",
+      "panel_uyesi": "hematoloji"
+    },
+    {
+      "halk_dili": [
+        "üre",
+        "böbrek değerim üre"
+      ],
+      "tibbi_terim_tr": "ÜRE",
+      "sut_kodu": "L103490",
+      "panel_uyesi": "biyokimya / böbrek paneli"
+    },
+    {
+      "halk_dili": [
+        "kreatinin",
+        "böbrek kreatinin"
+      ],
+      "tibbi_terim_tr": "KREATİNİN",
+      "sut_kodu": "L103240",
+      "panel_uyesi": "biyokimya / böbrek paneli"
+    },
+    {
+      "halk_dili": [
+        "böbrek filtre değeri",
+        "eGFR",
+        "GFR"
+      ],
+      "tibbi_terim_tr": "eGFR (Tahmini Glomerüler Filtrasyon Hızı)",
+      "sut_kodu": null,
+      "panel_uyesi": "böbrek paneli"
+    },
+    {
+      "halk_dili": [
+        "AST",
+        "SGOT",
+        "karaciğer enzimi AST"
+      ],
+      "tibbi_terim_tr": "AST (Aspartat Aminotransferaz)",
+      "sut_kodu": "L102050",
+      "panel_uyesi": "karaciğer paneli"
+    },
+    {
+      "halk_dili": [
+        "ALT",
+        "SGPT",
+        "karaciğer enzimi ALT"
+      ],
+      "tibbi_terim_tr": "ALT (Alanin Aminotransferaz)",
+      "sut_kodu": "L101820",
+      "panel_uyesi": "karaciğer paneli"
+    },
+    {
+      "halk_dili": [
+        "alkalen fosfataz",
+        "ALP"
+      ],
+      "tibbi_terim_tr": "ALP (Alkalen Fosfataz)",
+      "sut_kodu": "L101800",
+      "panel_uyesi": "karaciğer paneli"
+    },
+    {
+      "halk_dili": [
+        "GGT",
+        "gama GT"
+      ],
+      "tibbi_terim_tr": "GGT (Gama-Glutamil Transferaz)",
+      "sut_kodu": "L102880",
+      "panel_uyesi": "karaciğer paneli"
+    },
+    {
+      "halk_dili": [
+        "bilirubin",
+        "total bilirubin",
+        "sarılık değeri"
+      ],
+      "tibbi_terim_tr": "TOTAL BİLİRUBİN",
+      "sut_kodu": "L102230",
+      "panel_uyesi": "karaciğer paneli"
+    },
+    {
+      "halk_dili": [
+        "direkt bilirubin"
+      ],
+      "tibbi_terim_tr": "DİREKT BİLİRUBİN",
+      "sut_kodu": "L102220",
+      "panel_uyesi": "karaciğer paneli"
+    },
+    {
+      "halk_dili": [
+        "albümin",
+        "kan albümini"
+      ],
+      "tibbi_terim_tr": "ALBÜMİN",
+      "sut_kodu": "L101790",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "total protein",
+        "kanım protein"
+      ],
+      "tibbi_terim_tr": "TOTAL PROTEİN",
+      "sut_kodu": "L103450",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "sodyum",
+        "tuzum"
+      ],
+      "tibbi_terim_tr": "SODYUM (Na)",
+      "sut_kodu": "L103380",
+      "panel_uyesi": "elektrolit"
+    },
+    {
+      "halk_dili": [
+        "potasyum"
+      ],
+      "tibbi_terim_tr": "POTASYUM (K)",
+      "sut_kodu": "L103340",
+      "panel_uyesi": "elektrolit"
+    },
+    {
+      "halk_dili": [
+        "klor"
+      ],
+      "tibbi_terim_tr": "KLOR (Cl)",
+      "sut_kodu": "L103080",
+      "panel_uyesi": "elektrolit"
+    },
+    {
+      "halk_dili": [
+        "kalsiyum"
+      ],
+      "tibbi_terim_tr": "KALSİYUM (Ca)",
+      "sut_kodu": "L102990",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "fosfor"
+      ],
+      "tibbi_terim_tr": "FOSFOR (P)",
+      "sut_kodu": "L102790",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "magnezyum"
+      ],
+      "tibbi_terim_tr": "MAGNEZYUM (Mg)",
+      "sut_kodu": "L103260",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "kolesterol",
+        "total kolesterol"
+      ],
+      "tibbi_terim_tr": "TOTAL KOLESTEROL",
+      "sut_kodu": "L103140",
+      "panel_uyesi": "lipid paneli"
+    },
+    {
+      "halk_dili": [
+        "LDL",
+        "kötü kolesterol"
+      ],
+      "tibbi_terim_tr": "LDL KOLESTEROL",
+      "sut_kodu": "L103180",
+      "panel_uyesi": "lipid paneli"
+    },
+    {
+      "halk_dili": [
+        "HDL",
+        "iyi kolesterol"
+      ],
+      "tibbi_terim_tr": "HDL KOLESTEROL",
+      "sut_kodu": "L103160",
+      "panel_uyesi": "lipid paneli"
+    },
+    {
+      "halk_dili": [
+        "trigliserid",
+        "TG"
+      ],
+      "tibbi_terim_tr": "TRİGLİSERİD",
+      "sut_kodu": "L103480",
+      "panel_uyesi": "lipid paneli"
+    },
+    {
+      "halk_dili": [
+        "TSH",
+        "tiroid testi"
+      ],
+      "tibbi_terim_tr": "TSH (Tiroid Stimülan Hormon)",
+      "sut_kodu": "L103440",
+      "panel_uyesi": "tiroid"
+    },
+    {
+      "halk_dili": [
+        "serbest T3",
+        "sT3",
+        "T3"
+      ],
+      "tibbi_terim_tr": "sT3 (Serbest Triiyodotironin)",
+      "sut_kodu": "L103385",
+      "panel_uyesi": "tiroid"
+    },
+    {
+      "halk_dili": [
+        "serbest T4",
+        "sT4",
+        "T4"
+      ],
+      "tibbi_terim_tr": "sT4 (Serbest Tiroksin)",
+      "sut_kodu": "L103390",
+      "panel_uyesi": "tiroid"
+    },
+    {
+      "halk_dili": [
+        "anti-TPO",
+        "tiroid antikorum"
+      ],
+      "tibbi_terim_tr": "Anti-TPO (Anti-Tiroid Peroksidaz)",
+      "sut_kodu": "L101920",
+      "panel_uyesi": "tiroid otoantikor"
+    },
+    {
+      "halk_dili": [
+        "TSH reseptör antikoru",
+        "TRAb",
+        "anti-TR-Ab",
+        "TSH reseptor antikoru"
+      ],
+      "tibbi_terim_tr": "Anti-TR-Ab (TSH Reseptör Antikoru)",
+      "sut_kodu": "L101940",
+      "kisaltma": "TRAb",
+      "panel_uyesi": "tiroid otoantikor"
+    },
+    {
+      "halk_dili": [
+        "B12 vitamini",
+        "B12 düzeyi"
+      ],
+      "tibbi_terim_tr": "VİTAMİN B12",
+      "sut_kodu": "L103530",
+      "panel_uyesi": "vitamin"
+    },
+    {
+      "halk_dili": [
+        "folik asit",
+        "folat"
+      ],
+      "tibbi_terim_tr": "FOLAT (Folik Asit)",
+      "sut_kodu": "L102760",
+      "panel_uyesi": "vitamin"
+    },
+    {
+      "halk_dili": [
+        "D vitamini",
+        "25-OH D"
+      ],
+      "tibbi_terim_tr": "25-HİDROKSİ VİTAMİN D",
+      "sut_kodu": "L101165",
+      "panel_uyesi": "vitamin"
+    },
+    {
+      "halk_dili": [
+        "demir",
+        "serum demir"
+      ],
+      "tibbi_terim_tr": "DEMİR (Fe)",
+      "sut_kodu": "L102610",
+      "panel_uyesi": "anemi paneli"
+    },
+    {
+      "halk_dili": [
+        "demir bağlama",
+        "TIBC",
+        "demir bağlama kapasitesi"
+      ],
+      "tibbi_terim_tr": "DEMİR BAĞLAMA KAPASİTESİ (TIBC)",
+      "sut_kodu": "L102620",
+      "panel_uyesi": "anemi paneli"
+    },
+    {
+      "halk_dili": [
+        "ferritin",
+        "demir deposu"
+      ],
+      "tibbi_terim_tr": "FERRİTİN",
+      "sut_kodu": "L102720",
+      "panel_uyesi": "anemi paneli"
+    },
+    {
+      "halk_dili": [
+        "CRP",
+        "iltihap değeri"
+      ],
+      "tibbi_terim_tr": "CRP (C-Reaktif Protein)",
+      "sut_kodu": "L102330",
+      "panel_uyesi": "enfeksiyon / inflamasyon"
+    },
+    {
+      "halk_dili": [
+        "sedim",
+        "sedimantasyon",
+        "ESR",
+        "sedimantasyon hızı",
+        "sedimentasyon",
+        "SEDİMENTASYON",
+        "SEDIMENTASYON",
+        "sedim hızı"
+      ],
+      "tibbi_terim_tr": "Sedimantasyon Hızı",
+      "sut_kodu": "L106650",
+      "panel_uyesi": "enfeksiyon / inflamasyon"
+    },
+    {
+      "halk_dili": [
+        "idrar tahlili",
+        "TIT",
+        "tam idrar"
+      ],
+      "tibbi_terim_tr": "TAM İDRAR TETKİKİ (TİT)",
+      "sut_kodu": "L102950",
+      "panel_uyesi": "üriner"
+    },
+    {
+      "halk_dili": [
+        "troponin",
+        "kalp enzimi troponin"
+      ],
+      "tibbi_terim_tr": "TROPONİN I",
+      "sut_kodu": "L103465",
+      "panel_uyesi": "kardiyak"
+    },
+    {
+      "halk_dili": [
+        "NT-proBNP",
+        "BNP",
+        "kalp yetmezliği değeri"
+      ],
+      "tibbi_terim_tr": "NT-proBNP",
+      "sut_kodu": "L101930",
+      "panel_uyesi": "kardiyak"
+    },
+    {
+      "halk_dili": [
+        "INR",
+        "kanın pıhtılaşması",
+        "PT/INR"
+      ],
+      "tibbi_terim_tr": "PT / INR (Protrombin Zamanı)",
+      "sut_kodu": "L103330",
+      "panel_uyesi": "koagülasyon"
+    },
+    {
+      "halk_dili": [
+        "açlık şekeri",
+        "açlık kan şekeri",
+        "AKŞ",
+        "şekerim",
+        "kan şekeri (açlık)"
+      ],
+      "tibbi_terim_tr": "Açlık Kan Şekeri",
+      "sut_kodu": "L103030",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "tokluk şekeri",
+        "TKŞ",
+        "yemek sonrası şeker",
+        "tokluk kan şekeri"
+      ],
+      "tibbi_terim_tr": "Tokluk Kan Şekeri",
+      "sut_kodu": "L102890",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "insülin açlık",
+        "açlık insülin",
+        "insülinim"
+      ],
+      "tibbi_terim_tr": "İnsülin (Açlık)",
+      "sut_kodu": "L103780",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "3 aylık şeker",
+        "HbA1c",
+        "glikolize hemoglobin",
+        "hba1c"
+      ],
+      "tibbi_terim_tr": "HEMOGLOBIN A1C",
+      "sut_kodu": "L102820",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "BOS glukoz",
+        "lomber ponksiyon glukoz",
+        "LP glukoz",
+        "beyin omurilik sıvısı şekeri"
+      ],
+      "tibbi_terim_tr": "Glukoz (BOS)",
+      "sut_kodu": "L102920",
+      "panel_uyesi": "BOS analizi"
+    },
+    {
+      "halk_dili": [
+        "BOS protein",
+        "BOS proteini",
+        "lomber ponksiyon protein"
+      ],
+      "tibbi_terim_tr": "Protein elektroforezi (BOS)",
+      "sut_kodu": "L106380",
+      "panel_uyesi": "BOS analizi"
+    },
+    {
+      "halk_dili": [
+        "BOS albümin",
+        "lomber albümin"
+      ],
+      "tibbi_terim_tr": "Albümin (BOS)",
+      "sut_kodu": "L100350",
+      "panel_uyesi": "BOS analizi"
+    },
+    {
+      "halk_dili": [
+        "romatoid faktör",
+        "rf",
+        "romatizma testi"
+      ],
+      "tibbi_terim_tr": "ROMATOİD FAKTÖR (RF)",
+      "sut_kodu": "L106570",
+      "panel_uyesi": "romatoloji"
+    },
+    {
+      "halk_dili": [
+        "anti ccp",
+        "anti-ccp",
+        "ccp"
+      ],
+      "tibbi_terim_tr": "ANTİ-CCP (Anti-Sitrüline Peptid)",
+      "sut_kodu": "L101220",
+      "panel_uyesi": "romatoloji"
+    },
+    {
+      "halk_dili": [
+        "ana",
+        "antinükleer antikor",
+        "lupus testi"
+      ],
+      "tibbi_terim_tr": "ANA (Antinükleer Antikor)",
+      "sut_kodu": "L101200",
+      "panel_uyesi": "romatoloji / immünoloji"
+    },
+    {
+      "halk_dili": [
+        "aso",
+        "anti streptolizin",
+        "boğaz iltihabı testi"
+      ],
+      "tibbi_terim_tr": "ASO (Anti-Streptolizin O)",
+      "sut_kodu": "L101260",
+      "panel_uyesi": "enfeksiyon / romatoloji"
+    },
+    {
+      "halk_dili": [
+        "prokalsitonin",
+        "pct",
+        "sepsis testi"
+      ],
+      "tibbi_terim_tr": "PROCALCİTONİN",
+      "sut_kodu": "L106480",
+      "panel_uyesi": "enfeksiyon / yoğun bakım"
+    },
+    {
+      "halk_dili": [
+        "d dimer",
+        "ddimer",
+        "pıhtı testi",
+        "emboli testi"
+      ],
+      "tibbi_terim_tr": "D-DİMER",
+      "sut_kodu": "L102140",
+      "panel_uyesi": "koagülasyon"
+    },
+    {
+      "halk_dili": [
+        "pth",
+        "paratiroid hormon",
+        "parathormon"
+      ],
+      "tibbi_terim_tr": "PTH (Parathormon)",
+      "sut_kodu": "L106220",
+      "panel_uyesi": "endokrin"
+    },
+    {
+      "halk_dili": [
+        "kortizol",
+        "cortisol",
+        "stres hormonu"
+      ],
+      "tibbi_terim_tr": "KORTİZOL",
+      "sut_kodu": "L101900",
+      "panel_uyesi": "endokrin"
+    },
+    {
+      "halk_dili": [
+        "cea",
+        "kanser belirteci"
+      ],
+      "tibbi_terim_tr": "CEA (Karsinoembriyonik Antijen)",
+      "sut_kodu": "L101720",
+      "panel_uyesi": "tümör belirteci"
+    },
+    {
+      "halk_dili": [
+        "ca 19 9",
+        "ca19-9",
+        "pankreas tümör belirteci"
+      ],
+      "tibbi_terim_tr": "CA 19-9",
+      "sut_kodu": "L101680",
+      "panel_uyesi": "tümör belirteci"
+    },
+    {
+      "halk_dili": [
+        "ca 125",
+        "yumurtalık kanseri belirteci"
+      ],
+      "tibbi_terim_tr": "CA 125",
+      "sut_kodu": "L101620",
+      "panel_uyesi": "tümör belirteci"
+    },
+    {
+      "halk_dili": [
+        "afp",
+        "alfa fetoprotein",
+        "karaciğer kanser belirteci"
+      ],
+      "tibbi_terim_tr": "AFP (Alfa-Fetoprotein)",
+      "sut_kodu": "L100400",
+      "panel_uyesi": "tümör belirteci"
+    },
+    {
+      "halk_dili": [
+        "psa",
+        "prostat testi",
+        "prostat spesifik antijen"
+      ],
+      "tibbi_terim_tr": "PSA (Prostat Spesifik Antijen)",
+      "sut_kodu": "L106450",
+      "panel_uyesi": "tümör belirteci / üroloji"
+    },
+    {
+      "halk_dili": [
+        "hbsag",
+        "hepatit b yüzey antijeni",
+        "sarılık testi"
+      ],
+      "tibbi_terim_tr": "HBsAg",
+      "sut_kodu": "907450",
+      "panel_uyesi": "viral seroloji"
+    },
+    {
+      "halk_dili": [
+        "anti hbs",
+        "hepatit b antikoru"
+      ],
+      "tibbi_terim_tr": "Anti-HBs",
+      "sut_kodu": "907330",
+      "panel_uyesi": "viral seroloji"
+    },
+    {
+      "halk_dili": [
+        "anti hcv",
+        "hepatit c testi"
+      ],
+      "tibbi_terim_tr": "Anti-HCV",
+      "sut_kodu": "906640",
+      "panel_uyesi": "viral seroloji"
+    },
+    {
+      "halk_dili": [
+        "hiv testi",
+        "anti hiv"
+      ],
+      "tibbi_terim_tr": "Anti-HIV",
+      "sut_kodu": "906700",
+      "panel_uyesi": "viral seroloji"
+    },
+    {
+      "halk_dili": [
+        "idrar kültürü",
+        "idrar mikrop testi"
+      ],
+      "tibbi_terim_tr": "İDRAR KÜLTÜRÜ",
+      "sut_kodu": "904110",
+      "panel_uyesi": "mikrobiyoloji"
+    },
+    {
+      "halk_dili": [
+        "kan kültürü",
+        "kanda mikrop var mı"
+      ],
+      "tibbi_terim_tr": "KAN KÜLTÜRÜ",
+      "sut_kodu": "904120",
+      "panel_uyesi": "mikrobiyoloji"
+    },
+    {
+      "halk_dili": [
+        "ldh",
+        "laktat dehidrogenaz"
+      ],
+      "tibbi_terim_tr": "LDH (Laktat Dehidrogenaz)",
+      "sut_kodu": "L104920",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "ck",
+        "cpk",
+        "kreatin kinaz"
+      ],
+      "tibbi_terim_tr": "CK (Kreatin Kinaz)",
+      "sut_kodu": "L101720",
+      "panel_uyesi": "biyokimya / kardiyak"
+    },
+    {
+      "halk_dili": [
+        "lipaz",
+        "pankreas enzim testi"
+      ],
+      "tibbi_terim_tr": "LİPAZ",
+      "sut_kodu": "L104960",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "amilaz",
+        "tükürük bezi testi"
+      ],
+      "tibbi_terim_tr": "AMİLAZ",
+      "sut_kodu": "L100800",
+      "panel_uyesi": "biyokimya"
+    },
+    {
+      "halk_dili": [
+        "homa-ir",
+        "insülin direnci",
+        "insülin direnci testi"
+      ],
+      "tibbi_terim_tr": "HOMA-IR",
+      "sut_kodu": "",
+      "panel_uyesi": "endokrin / hesaplanan"
+    },
+    {
+      "halk_dili": [
+        "gaitada gizli kan",
+        "gizli kan testi",
+        "dışkıda kan"
+      ],
+      "tibbi_terim_tr": "GAİTADA GİZLİ KAN",
+      "sut_kodu": "905390",
+      "panel_uyesi": "tarama / GİS"
+    },
+    {
+      "halk_dili": [
+        "hba1c",
+        "şeker hafızası",
+        "ortalama şeker",
+        "üç aylık şeker"
+      ],
+      "tibbi_terim_tr": "HEMOGLOBIN A1C (alternatif girişim)",
+      "sut_kodu": "L102820",
+      "panel_uyesi": "endokrin"
+    }
+  ],
+  "imaging": [
+    {
+      "halk_dili": [
+        "akciğer filmi",
+        "göğüs filmi",
+        "akciğer grafisi",
+        "akciğer testi",
+        "akciğer röntgeni"
+      ],
+      "tibbi_terim_tr": "AKCİĞER GRAFİSİ (PA)",
+      "sut_kodu": "801840"
+    },
+    {
+      "halk_dili": [
+        "batın grafisi",
+        "karın filmi",
+        "ADBG"
+      ],
+      "tibbi_terim_tr": "AYAKTA DİREKT BATIN GRAFİSİ (ADBG)",
+      "sut_kodu": "802050"
+    },
+    {
+      "halk_dili": [
+        "EKG",
+        "elektrokardiyografi",
+        "kalp filmi"
+      ],
+      "tibbi_terim_tr": "EKG (Elektrokardiyografi)",
+      "sut_kodu": "700070"
+    },
+    {
+      "halk_dili": [
+        "EKO",
+        "ekokardiyografi",
+        "kalp ultrasonu"
+      ],
+      "tibbi_terim_tr": "EKOKARDİYOGRAFİ (Transtorasik)",
+      "sut_kodu": "703320"
+    },
+    {
+      "halk_dili": [
+        "batın USG",
+        "karın ultrasonu",
+        "tüm batın USG",
+        "tüm batın",
+        "tümbatım",
+        "tümbatın",
+        "tum batin"
+      ],
+      "tibbi_terim_tr": "TÜM BATIN ULTRASONOGRAFİSİ",
+      "sut_kodu": "803570"
+    },
+    {
+      "halk_dili": [
+        "üst batın USG",
+        "karaciğer ultrasonu"
+      ],
+      "tibbi_terim_tr": "ÜST BATIN ULTRASONOGRAFİSİ",
+      "sut_kodu": "803580"
+    },
+    {
+      "halk_dili": [
+        "tiroid USG",
+        "guatr ultrasonu"
+      ],
+      "tibbi_terim_tr": "TİROİD ULTRASONOGRAFİSİ",
+      "sut_kodu": "803470"
+    },
+    {
+      "halk_dili": [
+        "meme USG",
+        "meme ultrasonu"
+      ],
+      "tibbi_terim_tr": "MEME ULTRASONOGRAFİSİ",
+      "sut_kodu": "803340"
+    },
+    {
+      "halk_dili": [
+        "karotis Doppler",
+        "boyun damarı ultrasonu"
+      ],
+      "tibbi_terim_tr": "KAROTİS DOPPLER USG",
+      "sut_kodu": "803100"
+    },
+    {
+      "halk_dili": [
+        "idrar yolu USG",
+        "üriner sistem ultrasonu",
+        "renal USG",
+        "böbrek ultrasonu",
+        "böbrek USG",
+        "üriner USG",
+        "üriner sistem USG"
+      ],
+      "tibbi_terim_tr": "ÜRİNER SİSTEM (BÖBREK) USG",
+      "sut_kodu": "803590"
+    },
+    {
+      "halk_dili": [
+        "beyin tomografisi",
+        "kafa BT",
+        "beyin BT"
+      ],
+      "tibbi_terim_tr": "BEYİN BİLGİSAYARLI TOMOGRAFİ",
+      "sut_kodu": "802620"
+    },
+    {
+      "halk_dili": [
+        "toraks tomografisi",
+        "akciğer BT",
+        "göğüs BT"
+      ],
+      "tibbi_terim_tr": "TORAKS BİLGİSAYARLI TOMOGRAFİ",
+      "sut_kodu": "802820"
+    },
+    {
+      "halk_dili": [
+        "batın tomografisi",
+        "karın BT"
+      ],
+      "tibbi_terim_tr": "BATIN BİLGİSAYARLI TOMOGRAFİ",
+      "sut_kodu": "802620"
+    },
+    {
+      "halk_dili": [
+        "beyin MR",
+        "kafa emarı"
+      ],
+      "tibbi_terim_tr": "BEYİN MANYETİK REZONANS GÖRÜNTÜLEME",
+      "sut_kodu": "804560"
+    },
+    {
+      "halk_dili": [
+        "lomber MR",
+        "bel MR",
+        "bel emarı"
+      ],
+      "tibbi_terim_tr": "LOMBER MR",
+      "sut_kodu": "804760"
+    },
+    {
+      "halk_dili": [
+        "servikal MR",
+        "boyun MR"
+      ],
+      "tibbi_terim_tr": "SERVİKAL MR",
+      "sut_kodu": "804860"
+    },
+    {
+      "halk_dili": [
+        "effort",
+        "eforlu EKG",
+        "treadmill testi"
+      ],
+      "tibbi_terim_tr": "EFORLU EKG (Treadmill Testi)",
+      "sut_kodu": "703420"
+    },
+    {
+      "halk_dili": [
+        "holter",
+        "ritim holteri",
+        "24 saatlik EKG"
+      ],
+      "tibbi_terim_tr": "HOLTER EKG (24 saatlik ritim)",
+      "sut_kodu": "703520"
+    },
+    {
+      "halk_dili": [
+        "endoskopi",
+        "mide endoskopisi",
+        "üst endoskopi"
+      ],
+      "tibbi_terim_tr": "ÜST GASTROİNTESTİNAL ENDOSKOPİ",
+      "sut_kodu": "611330"
+    },
+    {
+      "halk_dili": [
+        "kolonoskopi",
+        "bağırsak endoskopisi"
+      ],
+      "tibbi_terim_tr": "KOLONOSKOPİ",
+      "sut_kodu": "611220"
+    },
+    {
+      "halk_dili": [
+        "beyin görüntülemesi",
+        "beyin görüntüleme",
+        "kafa filmi",
+        "beyin BT",
+        "beyin tomografi",
+        "beyin tomografisi",
+        "kafa BT",
+        "BT beyin"
+      ],
+      "tibbi_terim_tr": "BT Beyin (Kontrastsız)",
+      "sut_kodu": "R100040"
+    },
+    {
+      "halk_dili": [
+        "beyin MR",
+        "beyin manyetik",
+        "beyin manyetik rezonans",
+        "MR beyin",
+        "kafa MR",
+        "beyin görüntülemesi",
+        "beyin görüntüleme",
+        "kafa filmi"
+      ],
+      "tibbi_terim_tr": "MR Beyin, kontrastsız",
+      "sut_kodu": "R103050"
+    },
+    {
+      "halk_dili": [
+        "mamografi",
+        "meme filmi"
+      ],
+      "tibbi_terim_tr": "MAMOGRAFİ",
+      "sut_kodu": "802270"
+    },
+    {
+      "halk_dili": [
+        "dexa",
+        "kemik dansitometrisi",
+        "kemik yoğunluk ölçümü",
+        "kemik erimesi testi"
+      ],
+      "tibbi_terim_tr": "KEMİK DANSİTOMETRİSİ (DEXA)",
+      "sut_kodu": "802900"
+    },
+    {
+      "halk_dili": [
+        "pelvis usg",
+        "pelvik ultrason",
+        "alt karın ultrason"
+      ],
+      "tibbi_terim_tr": "PELVİS ULTRASONOGRAFİSİ",
+      "sut_kodu": "803350"
+    },
+    {
+      "halk_dili": [
+        "boyun usg",
+        "boyun ultrasonu"
+      ],
+      "tibbi_terim_tr": "BOYUN ULTRASONOGRAFİSİ",
+      "sut_kodu": "803100"
+    },
+    {
+      "halk_dili": [
+        "tiroid sintigrafisi",
+        "tiroid sintigrafi"
+      ],
+      "tibbi_terim_tr": "TİROİD SİNTİGRAFİSİ",
+      "sut_kodu": "707470"
+    },
+    {
+      "halk_dili": [
+        "kemik sintigrafisi",
+        "kemik taraması"
+      ],
+      "tibbi_terim_tr": "TÜM VÜCUT KEMİK SİNTİGRAFİSİ",
+      "sut_kodu": "707170"
+    },
+    {
+      "halk_dili": [
+        "miyokard perfüzyon sintigrafisi",
+        "kalp sintigrafisi",
+        "talyum testi"
+      ],
+      "tibbi_terim_tr": "MİYOKARD PERFÜZYON SİNTİGRAFİSİ",
+      "sut_kodu": "707330"
+    },
+    {
+      "halk_dili": [
+        "bronkoskopi",
+        "akciğer kamerası"
+      ],
+      "tibbi_terim_tr": "BRONKOSKOPİ",
+      "sut_kodu": "612750"
+    },
+    {
+      "halk_dili": [
+        "ercp",
+        "safra yolları endoskopisi"
+      ],
+      "tibbi_terim_tr": "ERCP (Endoskopik Retrograd Kolanjiopankreatografi)",
+      "sut_kodu": "611280"
+    },
+    {
+      "halk_dili": [
+        "sigmoidoskopi",
+        "kalın bağırsak alt kısım taraması"
+      ],
+      "tibbi_terim_tr": "SİGMOİDOSKOPİ",
+      "sut_kodu": "611320"
+    },
+    {
+      "halk_dili": [
+        "lomber ponksiyon",
+        "bel ponksiyonu",
+        "bos alma"
+      ],
+      "tibbi_terim_tr": "LOMBER PONKSİYON",
+      "sut_kodu": "550640"
+    },
+    {
+      "halk_dili": [
+        "bt anjiyografi",
+        "bta",
+        "kontrastlı bt anjio"
+      ],
+      "tibbi_terim_tr": "BT ANJİOGRAFİ",
+      "sut_kodu": "802630"
+    },
+    {
+      "halk_dili": [
+        "pet ct",
+        "pet bt",
+        "pozitron emisyon tomografi"
+      ],
+      "tibbi_terim_tr": "PET-BT",
+      "sut_kodu": "707520"
+    },
+    {
+      "halk_dili": [
+        "alt ekstremite venöz doppler",
+        "bacak damarlarına ultrason",
+        "bacak vendamarı doppler"
+      ],
+      "tibbi_terim_tr": "ALT EKSTREMİTE VENÖZ DOPPLER USG",
+      "sut_kodu": "803140"
+    }
+  ],
+  "medications": [
+    {
+      "halk_dili": [
+        "tansiyon hapı",
+        "ramipril"
+      ],
+      "tibbi_terim_tr": "Ramipril",
+      "ilac_grubu": "ACE inhibitörü",
+      "endikasyon_icd10": [
+        "I10",
+        "I11",
+        "I50.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "perindopril",
+        "tansiyon ilacı"
+      ],
+      "tibbi_terim_tr": "Perindopril",
+      "ilac_grubu": "ACE inhibitörü",
+      "endikasyon_icd10": [
+        "I10",
+        "I50.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "valsartan",
+        "tansiyon hapı"
+      ],
+      "tibbi_terim_tr": "Valsartan",
+      "ilac_grubu": "ARB (Anjiotensin Reseptör Blokeri)",
+      "endikasyon_icd10": [
+        "I10",
+        "I50.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "losartan",
+        "tansiyon ilacı"
+      ],
+      "tibbi_terim_tr": "Losartan",
+      "ilac_grubu": "ARB (Anjiotensin Reseptör Blokeri)",
+      "endikasyon_icd10": [
+        "I10"
+      ]
+    },
+    {
+      "halk_dili": [
+        "amlodipin",
+        "norvasc",
+        "tansiyon hapı"
+      ],
+      "tibbi_terim_tr": "Amlodipin",
+      "ilac_grubu": "Kalsiyum Kanal Blokeri (CCB)",
+      "endikasyon_icd10": [
+        "I10",
+        "I20"
+      ]
+    },
+    {
+      "halk_dili": [
+        "beloc",
+        "metoprolol",
+        "kalp ilacı"
+      ],
+      "tibbi_terim_tr": "Metoprolol",
+      "ilac_grubu": "Beta Blokeri",
+      "endikasyon_icd10": [
+        "I10",
+        "I20",
+        "I48.91",
+        "I50.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "concor",
+        "bisoprolol"
+      ],
+      "tibbi_terim_tr": "Bisoprolol",
+      "ilac_grubu": "Beta Blokeri",
+      "endikasyon_icd10": [
+        "I10",
+        "I50.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "esidrex",
+        "hidroklorotiyazid",
+        "su atıcı"
+      ],
+      "tibbi_terim_tr": "Hidroklorotiyazid",
+      "ilac_grubu": "Tiyazid Diüretik",
+      "endikasyon_icd10": [
+        "I10"
+      ]
+    },
+    {
+      "halk_dili": [
+        "lasix",
+        "furosemid",
+        "su attırıcı",
+        "kalp yetmezliği ilacı"
+      ],
+      "tibbi_terim_tr": "Furosemid",
+      "ilac_grubu": "Loop Diüretik",
+      "endikasyon_icd10": [
+        "I50.9",
+        "N18.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "glucophage",
+        "metformin",
+        "şeker hapı"
+      ],
+      "tibbi_terim_tr": "Metformin",
+      "ilac_grubu": "Biguanid (Antidiyabetik)",
+      "endikasyon_icd10": [
+        "E11.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "jardiance",
+        "empagliflozin",
+        "şeker ilacı"
+      ],
+      "tibbi_terim_tr": "Empagliflozin",
+      "ilac_grubu": "SGLT-2 İnhibitörü",
+      "endikasyon_icd10": [
+        "E11.9",
+        "I50.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "januvia",
+        "sitagliptin",
+        "şeker hapı"
+      ],
+      "tibbi_terim_tr": "Sitagliptin",
+      "ilac_grubu": "DPP-4 İnhibitörü",
+      "endikasyon_icd10": [
+        "E11.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "lantus",
+        "insulin glarjin",
+        "uzun etkili insülin"
+      ],
+      "tibbi_terim_tr": "İnsülin Glarjin",
+      "ilac_grubu": "Bazal İnsülin",
+      "endikasyon_icd10": [
+        "E10",
+        "E11.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "lipitor",
+        "atorvastatin",
+        "kolesterol hapı"
+      ],
+      "tibbi_terim_tr": "Atorvastatin",
+      "ilac_grubu": "Statin",
+      "endikasyon_icd10": [
+        "E78.5",
+        "I25.10"
+      ]
+    },
+    {
+      "halk_dili": [
+        "crestor",
+        "rosuvastatin",
+        "kolesterol ilacı"
+      ],
+      "tibbi_terim_tr": "Rosuvastatin",
+      "ilac_grubu": "Statin",
+      "endikasyon_icd10": [
+        "E78.5",
+        "I25.10"
+      ]
+    },
+    {
+      "halk_dili": [
+        "aspirin",
+        "asetilsalisilik asit",
+        "kan sulandırıcı"
+      ],
+      "tibbi_terim_tr": "Asetilsalisilik Asit (Aspirin)",
+      "ilac_grubu": "Antiagregan",
+      "endikasyon_icd10": [
+        "I25.10",
+        "I63.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "plavix",
+        "klopidogrel"
+      ],
+      "tibbi_terim_tr": "Klopidogrel",
+      "ilac_grubu": "Antiagregan (P2Y12 inhibitörü)",
+      "endikasyon_icd10": [
+        "I25.10",
+        "I21"
+      ]
+    },
+    {
+      "halk_dili": [
+        "coumadin",
+        "warfarin",
+        "kan sulandırıcı"
+      ],
+      "tibbi_terim_tr": "Varfarin",
+      "ilac_grubu": "Antikoagülan (Vitamin K antagonisti)",
+      "endikasyon_icd10": [
+        "I48.91",
+        "I26"
+      ]
+    },
+    {
+      "halk_dili": [
+        "eliquis",
+        "apiksaban",
+        "yeni kuşak kan sulandırıcı"
+      ],
+      "tibbi_terim_tr": "Apiksaban",
+      "ilac_grubu": "DOAK (Direkt Oral Antikoagülan)",
+      "endikasyon_icd10": [
+        "I48.91"
+      ]
+    },
+    {
+      "halk_dili": [
+        "pantpas",
+        "pantoprazol",
+        "mide hapı"
+      ],
+      "tibbi_terim_tr": "Pantoprazol",
+      "ilac_grubu": "Proton Pompa İnhibitörü (PPI)",
+      "endikasyon_icd10": [
+        "K21.9",
+        "K27.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "nexium",
+        "esomeprazol",
+        "mide ilacı"
+      ],
+      "tibbi_terim_tr": "Esomeprazol",
+      "ilac_grubu": "Proton Pompa İnhibitörü (PPI)",
+      "endikasyon_icd10": [
+        "K21.9",
+        "K27.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "levotiron",
+        "levotiroksin",
+        "tiroid hapı"
+      ],
+      "tibbi_terim_tr": "Levotiroksin",
+      "ilac_grubu": "Tiroid Hormonu",
+      "endikasyon_icd10": [
+        "E03.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "thyromazol",
+        "metimazol",
+        "antitiroid"
+      ],
+      "tibbi_terim_tr": "Metimazol",
+      "ilac_grubu": "Antitiroid",
+      "endikasyon_icd10": [
+        "E05.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "allopurinol",
+        "ürikoliz",
+        "ürik asit ilacı"
+      ],
+      "tibbi_terim_tr": "Allopurinol",
+      "ilac_grubu": "Ksantin Oksidaz İnhibitörü",
+      "endikasyon_icd10": [
+        "M10.9",
+        "E79.0"
+      ]
+    },
+    {
+      "halk_dili": [
+        "kolşisin",
+        "gut atak ilacı"
+      ],
+      "tibbi_terim_tr": "Kolşisin",
+      "ilac_grubu": "Anti-inflamatuar (Gut)",
+      "endikasyon_icd10": [
+        "M10.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "lustral",
+        "sertralin",
+        "antidepresan"
+      ],
+      "tibbi_terim_tr": "Sertralin",
+      "ilac_grubu": "SSRI (Antidepresan)",
+      "endikasyon_icd10": [
+        "F32.9",
+        "F41.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "augmentin",
+        "amoksisilin klavulanat",
+        "antibiyotik"
+      ],
+      "tibbi_terim_tr": "Amoksisilin / Klavulanat",
+      "ilac_grubu": "Beta-laktam Antibiyotik",
+      "endikasyon_icd10": [
+        "J06.9",
+        "N39.0"
+      ]
+    },
+    {
+      "halk_dili": [
+        "cipro",
+        "siprofloksasin",
+        "antibiyotik"
+      ],
+      "tibbi_terim_tr": "Siprofloksasin",
+      "ilac_grubu": "Florokinolon Antibiyotik",
+      "endikasyon_icd10": [
+        "N39.0",
+        "N30"
+      ]
+    },
+    {
+      "halk_dili": [
+        "parol",
+        "parasetamol",
+        "ağrı kesici",
+        "ateş düşürücü"
+      ],
+      "tibbi_terim_tr": "Parasetamol",
+      "ilac_grubu": "Analjezik / Antipiretik",
+      "endikasyon_icd10": [
+        "R51",
+        "R50.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "apranax",
+        "naproksen",
+        "ağrı kesici"
+      ],
+      "tibbi_terim_tr": "Naproksen",
+      "ilac_grubu": "NSAİİ (Non-Steroid Anti-İnflamatuar)",
+      "endikasyon_icd10": [
+        "M25.5",
+        "M54.5"
+      ]
+    },
+    {
+      "halk_dili": [
+        "liraglutid",
+        "victoza",
+        "saxenda",
+        "kilo iğnesi"
+      ],
+      "tibbi_terim_tr": "Liraglutid",
+      "ilac_grubu": "GLP-1 Reseptör Agonisti",
+      "endikasyon_icd10": [
+        "E11.9",
+        "E66.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "semaglutid",
+        "ozempic",
+        "rybelsus",
+        "wegovy"
+      ],
+      "tibbi_terim_tr": "Semaglutid",
+      "ilac_grubu": "GLP-1 Reseptör Agonisti",
+      "endikasyon_icd10": [
+        "E11.9",
+        "E66.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "gliklazid",
+        "diamicron"
+      ],
+      "tibbi_terim_tr": "Gliklazid",
+      "ilac_grubu": "Sülfonilüre",
+      "endikasyon_icd10": [
+        "E11.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "glimepirid",
+        "amaryl"
+      ],
+      "tibbi_terim_tr": "Glimepirid",
+      "ilac_grubu": "Sülfonilüre",
+      "endikasyon_icd10": [
+        "E11.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "azitromisin",
+        "zitromax",
+        "azomex"
+      ],
+      "tibbi_terim_tr": "Azitromisin",
+      "ilac_grubu": "Makrolid Antibiyotik",
+      "endikasyon_icd10": [
+        "J18.9",
+        "J20.9",
+        "J32.9",
+        "J03.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "sefuroksim",
+        "cefaks",
+        "zinnat"
+      ],
+      "tibbi_terim_tr": "Sefuroksim",
+      "ilac_grubu": "2. Kuşak Sefalosporin",
+      "endikasyon_icd10": [
+        "J18.9",
+        "N39.0",
+        "J32.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "doksisiklin",
+        "doxicline"
+      ],
+      "tibbi_terim_tr": "Doksisiklin",
+      "ilac_grubu": "Tetrasiklin Antibiyotik",
+      "endikasyon_icd10": [
+        "J20.9",
+        "A78"
+      ]
+    },
+    {
+      "halk_dili": [
+        "salbutamol",
+        "ventolin",
+        "nefes açıcı sprey"
+      ],
+      "tibbi_terim_tr": "Salbutamol",
+      "ilac_grubu": "Kısa Etkili Beta-2 Agonist (SABA)",
+      "endikasyon_icd10": [
+        "J45.9",
+        "J44.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "tiotropium",
+        "spiriva"
+      ],
+      "tibbi_terim_tr": "Tiotropium",
+      "ilac_grubu": "Uzun Etkili Antikolinerjik (LAMA)",
+      "endikasyon_icd10": [
+        "J44.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "budesonid",
+        "pulmicort"
+      ],
+      "tibbi_terim_tr": "Budesonid",
+      "ilac_grubu": "İnhale Kortikosteroid (ICS)",
+      "endikasyon_icd10": [
+        "J45.9",
+        "J44.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "montelukast",
+        "singulair",
+        "onceair"
+      ],
+      "tibbi_terim_tr": "Montelukast",
+      "ilac_grubu": "Lökotrien Reseptör Antagonisti (LTRA)",
+      "endikasyon_icd10": [
+        "J45.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "prednizolon",
+        "deltacortril",
+        "kortizon hapı"
+      ],
+      "tibbi_terim_tr": "Prednizolon",
+      "ilac_grubu": "Sistemik Kortikosteroid",
+      "endikasyon_icd10": [
+        "M06.9",
+        "M32.9",
+        "J45.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "metilprednizolon",
+        "prednol",
+        "depo medrol"
+      ],
+      "tibbi_terim_tr": "Metilprednizolon",
+      "ilac_grubu": "Sistemik Kortikosteroid",
+      "endikasyon_icd10": [
+        "J45.9",
+        "M06.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "ibuprofen",
+        "brufen",
+        "advil"
+      ],
+      "tibbi_terim_tr": "İbuprofen",
+      "ilac_grubu": "NSAİİ",
+      "endikasyon_icd10": [
+        "M25.5",
+        "R51"
+      ]
+    },
+    {
+      "halk_dili": [
+        "diklofenak",
+        "voltaren",
+        "cataflam"
+      ],
+      "tibbi_terim_tr": "Diklofenak",
+      "ilac_grubu": "NSAİİ",
+      "endikasyon_icd10": [
+        "M25.5",
+        "M54.5"
+      ]
+    },
+    {
+      "halk_dili": [
+        "famotidin",
+        "famodine",
+        "mide koruyucu"
+      ],
+      "tibbi_terim_tr": "Famotidin",
+      "ilac_grubu": "H2 Reseptör Blokeri",
+      "endikasyon_icd10": [
+        "K21.9",
+        "K29.7"
+      ]
+    },
+    {
+      "halk_dili": [
+        "metoklopramid",
+        "metpamid",
+        "bulantı ilacı"
+      ],
+      "tibbi_terim_tr": "Metoklopramid",
+      "ilac_grubu": "Antiemetik (Dopamin Antagonisti)",
+      "endikasyon_icd10": [
+        "R11.0"
+      ]
+    },
+    {
+      "halk_dili": [
+        "ondansetron",
+        "zofer"
+      ],
+      "tibbi_terim_tr": "Ondansetron",
+      "ilac_grubu": "Antiemetik (5-HT3 Antagonisti)",
+      "endikasyon_icd10": [
+        "R11.0",
+        "R11.10"
+      ]
+    },
+    {
+      "halk_dili": [
+        "loperamid",
+        "lopermid",
+        "ishal kesici"
+      ],
+      "tibbi_terim_tr": "Loperamid",
+      "ilac_grubu": "Antidiyareik",
+      "endikasyon_icd10": [
+        "K59.1",
+        "A09"
+      ]
+    },
+    {
+      "halk_dili": [
+        "mesalazin",
+        "asacol",
+        "salofalk"
+      ],
+      "tibbi_terim_tr": "Mesalazin",
+      "ilac_grubu": "5-Aminosalisilat (IBD)",
+      "endikasyon_icd10": [
+        "K51.90",
+        "K50.90"
+      ]
+    },
+    {
+      "halk_dili": [
+        "enoksaparin",
+        "clexane",
+        "kan sulandırıcı iğne"
+      ],
+      "tibbi_terim_tr": "Enoksaparin (LMWH)",
+      "ilac_grubu": "Düşük Moleküler Ağırlıklı Heparin",
+      "endikasyon_icd10": [
+        "I26.99",
+        "I82.40"
+      ]
+    },
+    {
+      "halk_dili": [
+        "rivaroksaban",
+        "xarelto"
+      ],
+      "tibbi_terim_tr": "Rivaroksaban",
+      "ilac_grubu": "DOAK (Faktör Xa İnhibitörü)",
+      "endikasyon_icd10": [
+        "I48.91",
+        "I26.99"
+      ]
+    },
+    {
+      "halk_dili": [
+        "spironolakton",
+        "aldactone"
+      ],
+      "tibbi_terim_tr": "Spironolakton",
+      "ilac_grubu": "Mineralokortikoid Reseptör Antagonisti",
+      "endikasyon_icd10": [
+        "I50.9",
+        "K74.6",
+        "I10"
+      ]
+    },
+    {
+      "halk_dili": [
+        "d3 vitamini",
+        "d vitamini damlası",
+        "vit d takviyesi"
+      ],
+      "tibbi_terim_tr": "Kolekalsiferol (D3)",
+      "ilac_grubu": "Vitamin Takviyesi",
+      "endikasyon_icd10": [
+        "E55.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "b12 iğnesi",
+        "b12 ampul",
+        "kobalamin"
+      ],
+      "tibbi_terim_tr": "Siyanokobalamin (B12)",
+      "ilac_grubu": "Vitamin Takviyesi",
+      "endikasyon_icd10": [
+        "E53.8"
+      ]
+    },
+    {
+      "halk_dili": [
+        "folik asit",
+        "folat takviyesi",
+        "folbiol"
+      ],
+      "tibbi_terim_tr": "Folik Asit",
+      "ilac_grubu": "Vitamin Takviyesi",
+      "endikasyon_icd10": [
+        "D52.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "demir ilacı",
+        "ferro sulfat",
+        "ferrum hausmann"
+      ],
+      "tibbi_terim_tr": "Demir Sülfat",
+      "ilac_grubu": "Demir Takviyesi",
+      "endikasyon_icd10": [
+        "D50.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "metotreksat",
+        "trexan",
+        "methorex"
+      ],
+      "tibbi_terim_tr": "Metotreksat",
+      "ilac_grubu": "DMARD (Konvansiyonel)",
+      "endikasyon_icd10": [
+        "M06.9"
+      ]
+    },
+    {
+      "halk_dili": [
+        "hidroksiklorokin",
+        "plaquenil"
+      ],
+      "tibbi_terim_tr": "Hidroksiklorokin",
+      "ilac_grubu": "DMARD / Antimalaryal",
+      "endikasyon_icd10": [
+        "M32.9",
+        "M06.9"
+      ]
+    }
+  ]
+}
