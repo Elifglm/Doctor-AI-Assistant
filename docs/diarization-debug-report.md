@@ -204,7 +204,7 @@ class DiarizationSettings(BaseModel):
 ## .env Dosyasi
 
 ```
-HF_TOKEN=hf_REDACTED
+HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx
 ASR_LOG_LEVEL=INFO
 ```
 
