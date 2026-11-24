@@ -22,6 +22,29 @@ suggestions, which can be sent to OpenEMR. Capstone project, team of four.
 > verinizle indeksleri yeniden üretecek scriptleri içerir; veri olmadan
 > uygulama anamnez RAG'i kapalı olarak çalışır.
 
+## Ekran görüntüleri
+
+> Görüntülerdeki hasta/doktor bilgileri demo amaçlı kurgusaldır.
+
+**Rapor inceleme:** konuşmacılara ayrılmış transkript (solda), LLM'in ürettiği
+25 alanlı anamnez taslağı (sağda), doktor onayı ve HBYS'ye gönderim.
+
+![Rapor inceleme ekranı](docs/images/ui-report-review.png)
+
+| ICD-10 tanı önerileri | SUT tetkik önerileri |
+|---|---|
+| ![ICD-10 önerileri](docs/images/ui-icd10-suggestions.png) | ![SUT önerileri](docs/images/ui-sut-suggestions.png) |
+
+| Pipeline | KVKK: 4 katmanlı kimliksizleştirme |
+|---|---|
+| ![Pipeline](docs/images/pipeline.png) | ![De-identification](docs/images/deidentification.png) |
+
+<details>
+<summary>Üretilen anamnez raporu (PDF çıktısı)</summary>
+
+![Anamnez raporu](docs/images/generated-anamnesis-report.png)
+</details>
+
 ## Sonuçlar
 
 20 sentetik dahiliye konsültasyonu üzerinde uçtan uca değerlendirme
@@ -35,14 +58,11 @@ dahiliye-filtreli ICD-10 vektör veritabanının Recall@k kazancı:
   <img src="docs/images/graph_recall_at_k.png" alt="ICD-10 Recall@k karşılaştırması" width="70%">
 </p>
 
+Ablation çalışmasında her adımın ICD-10 macro F1'e katkısı (baseline 0.455 → 0.665):
+
+![Ablation](docs/images/ablation-icd10-f1.png)
+
 Ayrıntılı ablation raporları: `docs/` dizini.
-
-## Ekran görüntüleri
-
-<!-- TODO: ekran görüntüleri / demo GIF'i docs/images/ altına eklenecek -->
-| Görüşme kaydı | Anamnez inceleme | ICD-10 / SUT önerileri |
-|---|---|---|
-| _yakında_ | _yakında_ | _yakında_ |
 
 ---
 
